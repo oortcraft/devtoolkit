@@ -1,0 +1,16 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-[var(--color-border)]">
+  <div class="mx-auto flex max-w-7xl items-center justify-between px-10 py-6">
+    <p class="text-[13px] text-[var(--color-muted-foreground)]">
+      &copy; {year} DevToolkit. Built for developers.
+    </p>
+    <nav class="flex gap-6 text-[13px] text-[var(--color-muted-foreground)]">
+      <a href="/about" class="transition-colors hover:text-[var(--color-foreground)]">About</a>
+      <a href="/privacy" class="transition-colors hover:text-[var(--color-foreground)]">Privacy</a>
+      <a href="/contact" class="transition-colors hover:text-[var(--color-foreground)]">Contact</a>
+    </nav>
+  </div>
+</footer>

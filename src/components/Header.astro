@@ -1,0 +1,44 @@
+---
+const pathname = Astro.url.pathname;
+---
+
+<header class="sticky top-0 z-50 border-b border-[var(--color-border)] bg-white/80 backdrop-blur-md">
+  <nav class="mx-auto flex max-w-7xl items-center justify-between px-10 py-4">
+    <a href="/" class="flex items-center gap-2">
+      <div class="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-primary)]">
+        <span class="font-mono text-xs font-bold text-[var(--color-primary-foreground)]">{'{/'}</span>
+      </div>
+      <span class="text-lg font-bold text-[var(--color-foreground)]">DevToolkit</span>
+    </a>
+
+    <input type="checkbox" id="menu-toggle" class="peer hidden" />
+    <label for="menu-toggle" class="cursor-pointer sm:hidden" aria-label="Toggle menu">
+      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </label>
+
+    <ul class="hidden items-center gap-8 text-sm peer-checked:absolute peer-checked:left-0 peer-checked:top-full peer-checked:flex peer-checked:w-full peer-checked:flex-col peer-checked:gap-0 peer-checked:border-b peer-checked:border-[var(--color-border)] peer-checked:bg-white sm:flex">
+      <li>
+        <a href="/tools/json-formatter" class:list={["block px-4 py-3 transition-colors hover:text-[var(--color-foreground)] sm:p-0", pathname.startsWith('/tools') ? 'font-medium text-[var(--color-foreground)]' : 'text-[var(--color-muted-foreground)]']}>
+          Tools
+        </a>
+      </li>
+      <li>
+        <a href="/blog" class:list={["block px-4 py-3 transition-colors hover:text-[var(--color-foreground)] sm:p-0", pathname.startsWith('/blog') ? 'font-medium text-[var(--color-foreground)]' : 'text-[var(--color-muted-foreground)]']}>
+          Blog
+        </a>
+      </li>
+      <li>
+        <a href="/about" class:list={["block px-4 py-3 transition-colors hover:text-[var(--color-foreground)] sm:p-0", pathname === '/about' ? 'font-medium text-[var(--color-foreground)]' : 'text-[var(--color-muted-foreground)]']}>
+          About
+        </a>
+      </li>
+      <li>
+        <a href="https://github.com" target="_blank" rel="noopener" class="hidden rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-2 text-sm font-medium text-[var(--color-foreground)] shadow-sm transition-colors hover:bg-[var(--color-secondary)] sm:inline-block">
+          GitHub
+        </a>
+      </li>
+    </ul>
+  </nav>
+</header>

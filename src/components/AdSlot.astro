@@ -1,0 +1,22 @@
+---
+interface Props {
+  position: 'header' | 'sidebar' | 'in-content' | 'footer';
+}
+
+const { position } = Astro.props;
+
+const minHeights: Record<string, string> = {
+  header: 'min-h-[90px]',
+  sidebar: 'min-h-[250px]',
+  'in-content': 'min-h-[250px]',
+  footer: 'min-h-[90px]',
+};
+---
+
+<!-- Ad Slot: {position} — Insert Ezoic/AdSense code here -->
+<div
+  data-ad-slot={position}
+  class:list={["hidden", minHeights[position]]}
+  aria-hidden="true"
+>
+</div>

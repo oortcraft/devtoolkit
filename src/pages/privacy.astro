@@ -1,0 +1,83 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Privacy Policy | DevToolkit"
+  description="DevToolkit privacy policy. Learn how we handle your data — spoiler: we barely collect any."
+>
+  <div class="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+    <h1 class="mb-2 text-4xl font-bold text-slate-900">Privacy Policy</h1>
+    <p class="mb-10 text-sm text-slate-400">Last updated: March 2026</p>
+
+    <div class="prose prose-slate max-w-none">
+      <p>
+        DevToolkit is designed with privacy as a core principle. All tool operations — JSON formatting, validation, conversion, and so on — run entirely in your browser using client-side JavaScript. No data you enter into any tool is ever transmitted to our servers or any third party.
+      </p>
+
+      <h2>Data We Collect</h2>
+      <p>
+        We use <strong>Google Analytics</strong> to understand aggregate usage patterns (page views, popular tools, general geographic regions). This helps us prioritize which tools to build next. Google Analytics collects:
+      </p>
+      <ul>
+        <li>Pages visited and time spent</li>
+        <li>General location (country/city level)</li>
+        <li>Browser type and operating system</li>
+        <li>Referring website</li>
+      </ul>
+      <p>
+        We do <strong>not</strong> collect: the content you paste into tools, personal identifiers, email addresses, or any information that could identify you as an individual.
+      </p>
+
+      <h2>Cookies</h2>
+      <p>
+        Google Analytics sets cookies to distinguish unique visitors and sessions. These cookies are named <code>_ga</code>, <code>_gid</code>, and <code>_gat</code> and are scoped to the <code>devtoolkit.dev</code> domain. They do not contain personally identifiable information.
+      </p>
+      <p>
+        In the future, if we introduce display advertising (e.g., Google AdSense or Ezoic), those services may set additional cookies for ad personalization. We will update this policy before enabling advertising and will respect any browser-level Do Not Track signals where technically feasible.
+      </p>
+
+      <h2>Third-Party Services</h2>
+      <p>DevToolkit uses the following third-party services:</p>
+      <ul>
+        <li>
+          <strong>Google Analytics</strong> — usage analytics. Governed by
+          <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.
+        </li>
+        <li>
+          <strong>Hosting provider</strong> — static site hosting. No dynamic server-side processing of user inputs occurs.
+        </li>
+      </ul>
+
+      <h2>Client-Side Data Processing</h2>
+      <p>
+        This is the most important section: <strong>every tool on DevToolkit processes your data locally in your browser.</strong> When you paste JSON into the formatter or validator, that data is handled by JavaScript running on your machine. It is never sent over the network to DevToolkit's servers or any third-party API.
+      </p>
+      <p>
+        This means you can safely use DevToolkit with sensitive data — API credentials, private configuration files, internal JSON payloads — without risk of exposure.
+      </p>
+
+      <h2>Data Retention</h2>
+      <p>
+        Because we do not collect tool input data, there is nothing to retain or delete. Google Analytics data is retained for 26 months per Google's default retention policy. You can opt out of Google Analytics across all sites by installing the
+        <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Google Analytics Opt-out Browser Add-on</a>.
+      </p>
+
+      <h2>Your Rights</h2>
+      <p>
+        Depending on your jurisdiction, you may have rights regarding personal data (access, rectification, erasure, etc.). Since we collect only anonymous analytics data, most of these rights are satisfied by default. For any privacy concerns, contact us at the address below.
+      </p>
+
+      <h2>Changes to This Policy</h2>
+      <p>
+        We may update this policy as DevToolkit evolves. Material changes will be reflected in the "Last updated" date at the top of this page.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        For privacy questions or concerns, email us at
+        <a href="mailto:contact@devtoolkit.dev">contact@devtoolkit.dev</a>.
+      </p>
+    </div>
+  </div>
+</BaseLayout>

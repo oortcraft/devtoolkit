@@ -1,0 +1,103 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="About | DevToolkit"
+  description="DevToolkit provides free, fast, and private developer tools that run entirely in your browser."
+>
+  <div class="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+    <h1 class="mb-4 text-4xl font-bold text-slate-900">About DevToolkit</h1>
+
+    <p class="mb-8 text-xl text-slate-500">
+      DevToolkit provides free, fast, and private developer tools that run entirely in your browser.
+    </p>
+
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-semibold text-slate-900">Our Mission</h2>
+      <p class="text-slate-600">
+        Developers spend too much time searching for reliable tools that respect their privacy and just work. DevToolkit was built to solve that problem — a single place for the utilities developers reach for every day, with zero friction and zero compromise on privacy.
+      </p>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="mb-6 text-2xl font-semibold text-slate-900">Key Features</h2>
+      <ul class="space-y-4">
+        <li class="flex items-start gap-3">
+          <span class="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
+            <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+          </span>
+          <div>
+            <strong class="text-slate-900">Runs in your browser</strong>
+            <p class="text-sm text-slate-600">Every tool processes data locally using JavaScript. Nothing is sent to a server.</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
+            <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+          </span>
+          <div>
+            <strong class="text-slate-900">No data sent to servers</strong>
+            <p class="text-sm text-slate-600">Your API keys, configs, and sensitive JSON payloads stay on your device.</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
+            <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+          </span>
+          <div>
+            <strong class="text-slate-900">Open source friendly</strong>
+            <p class="text-sm text-slate-600">Built with Astro and standard web technologies. Transparent, auditable, and community-driven.</p>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
+            <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+          </span>
+          <div>
+            <strong class="text-slate-900">Always free</strong>
+            <p class="text-sm text-slate-600">No subscriptions, no paywalls, no rate limits. Use everything without restrictions.</p>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="rounded-xl border border-blue-100 bg-blue-50 p-6">
+      <h2 class="mb-3 text-xl font-semibold text-slate-900">More Tools Coming Soon</h2>
+      <p class="mb-4 text-slate-600">
+        We're actively expanding DevToolkit with new tool categories. Planned additions include:
+      </p>
+      <ul class="space-y-1 text-sm text-slate-600">
+        <li class="flex items-center gap-2">
+          <span class="text-blue-400">→</span> Base64 encoder/decoder
+        </li>
+        <li class="flex items-center gap-2">
+          <span class="text-blue-400">→</span> URL encoder/decoder
+        </li>
+        <li class="flex items-center gap-2">
+          <span class="text-blue-400">→</span> JWT decoder and inspector
+        </li>
+        <li class="flex items-center gap-2">
+          <span class="text-blue-400">→</span> Regex tester
+        </li>
+        <li class="flex items-center gap-2">
+          <span class="text-blue-400">→</span> Diff viewer for text and JSON
+        </li>
+        <li class="flex items-center gap-2">
+          <span class="text-blue-400">→</span> Timestamp converter
+        </li>
+      </ul>
+      <p class="mt-4 text-sm text-slate-500">
+        Have a tool request? <a href="/contact" class="text-blue-500 hover:underline">Let us know.</a>
+      </p>
+    </section>
+  </div>
+</BaseLayout>

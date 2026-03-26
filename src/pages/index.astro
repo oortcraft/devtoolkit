@@ -1,0 +1,163 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StructuredData from '../components/StructuredData.astro';
+import { tools } from '../lib/tools';
+import { getCollection } from 'astro:content';
+
+const allPosts = await getCollection('blog');
+const recentPosts = allPosts
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 2);
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'DevToolkit',
+  url: 'https://devtoolkit.dev',
+  description: 'Free online developer tools for JSON formatting, validation, conversion, and more.',
+};
+
+const iconMap: Record<string, string> = {
+  'json-formatter': '{ }',
+  'json-validator': '✓',
+  'json-to-yaml': '⇄',
+};
+---
+
+<BaseLayout
+  title="DevToolkit - Free Online Developer Tools"
+  description="Free online developer tools for JSON formatting, validation, and conversion. Fast, private, and runs entirely in your browser."
+>
+  <StructuredData data={structuredData} />
+
+  <!-- Hero -->
+  <section class="flex flex-col items-center px-10 py-20">
+    <span class="mb-6 rounded-full bg-[var(--color-primary)] px-3 py-0.5 text-xs font-semibold text-[var(--color-primary-foreground)]">
+      Free & Open Source
+    </span>
+    <h1 class="mb-6 max-w-[800px] text-center text-[56px] font-extrabold leading-[1.1] tracking-tight text-[var(--color-foreground)]">
+      Developer Tools,<br />Simplified.
+    </h1>
+    <p class="mb-8 max-w-[600px] text-center text-lg leading-relaxed text-[var(--color-muted-foreground)]">
+      Fast, private, browser-based tools for developers.<br />
+      No sign-up. No data sent to servers. Just paste and go.
+    </p>
+    <div class="flex gap-3">
+      <a href="#tools" class="rounded-md bg-[var(--color-primary)] px-6 py-2 text-sm font-medium text-[var(--color-primary-foreground)] transition-colors hover:bg-[var(--color-primary)]/90">
+        Explore Tools
+      </a>
+      <a href="/blog" class="rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-6 py-2 text-sm font-medium text-[var(--color-foreground)] shadow-sm transition-colors hover:bg-[var(--color-secondary)]">
+        Read the Blog
+      </a>
+    </div>
+  </section>
+
+  <!-- Tool Cards -->
+  <section id="tools" class="px-10 py-16">
+    <div class="mx-auto max-w-7xl">
+      <div class="mb-8 flex flex-col items-center gap-2">
+        <h2 class="text-[28px] font-bold text-[var(--color-foreground)]">JSON Tools</h2>
+        <p class="text-base text-[var(--color-muted-foreground)]">
+          Paste, transform, and validate JSON data instantly in your browser.
+        </p>
+      </div>
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {tools.map((tool) => (
+          <a
+            href={`/tools/${tool.slug}`}
+            class="group flex flex-col rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm transition-all hover:border-[var(--color-muted-foreground)]/30 hover:shadow-md"
+          >
+            <div class="px-6 pt-6 pb-4">
+              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-secondary)]">
+                <span class="font-mono text-sm font-semibold text-[var(--color-foreground)]">
+                  {iconMap[tool.slug] || '{}'}
+                </span>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2 px-6 pb-6">
+              <h3 class="text-base font-semibold text-[var(--color-foreground)] group-hover:text-[var(--color-foreground)]">
+                {tool.name.replace(' & Beautifier', '').replace(' Converter', '')}
+              </h3>
+              <p class="text-sm leading-relaxed text-[var(--color-muted-foreground)]">{tool.description}</p>
+              <span class="text-sm font-medium text-[var(--color-primary)]">
+                Try it →
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="bg-[var(--color-secondary)] px-10 py-16">
+    <div class="mx-auto grid max-w-7xl gap-10 sm:grid-cols-3">
+      <div class="flex flex-col items-center gap-2 text-center">
+        <svg class="mb-1 h-6 w-6 text-[var(--color-foreground)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <h3 class="text-sm font-semibold text-[var(--color-foreground)]">Lightning Fast</h3>
+        <p class="text-[13px] leading-relaxed text-[var(--color-muted-foreground)]">
+          All tools run entirely in your browser. No server round-trips.
+        </p>
+      </div>
+      <div class="flex flex-col items-center gap-2 text-center">
+        <svg class="mb-1 h-6 w-6 text-[var(--color-foreground)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        <h3 class="text-sm font-semibold text-[var(--color-foreground)]">100% Private</h3>
+        <p class="text-[13px] leading-relaxed text-[var(--color-muted-foreground)]">
+          Your data never leaves your device. No tracking, no storage.
+        </p>
+      </div>
+      <div class="flex flex-col items-center gap-2 text-center">
+        <svg class="mb-1 h-6 w-6 text-[var(--color-foreground)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+        <h3 class="text-sm font-semibold text-[var(--color-foreground)]">Free Forever</h3>
+        <p class="text-[13px] leading-relaxed text-[var(--color-muted-foreground)]">
+          No sign-up, no paywall, no limits. Just developer tools that work.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Blog Section -->
+  {recentPosts.length > 0 && (
+    <section class="px-10 py-16">
+      <div class="mx-auto max-w-7xl">
+        <div class="mb-8 flex items-center justify-between">
+          <h2 class="text-[28px] font-bold text-[var(--color-foreground)]">Latest from the Blog</h2>
+          <a href="/blog" class="text-sm font-medium text-[var(--color-primary)] hover:underline">
+            View all posts →
+          </a>
+        </div>
+        <div class="grid gap-5 sm:grid-cols-2">
+          {recentPosts.map((post) => (
+            <a
+              href={`/blog/${post.id}`}
+              class="group rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm transition-all hover:shadow-md"
+            >
+              <p class="mb-2 text-xs text-[var(--color-muted-foreground)]">
+                {post.data.pubDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+              <h3 class="mb-2 text-base font-semibold text-[var(--color-foreground)]">
+                {post.data.title}
+              </h3>
+              <p class="text-sm leading-relaxed text-[var(--color-muted-foreground)]">{post.data.description}</p>
+              {post.data.tags && post.data.tags.length > 0 && (
+                <div class="mt-4 flex flex-wrap gap-2">
+                  {post.data.tags.map((tag) => (
+                    <span class="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-xs text-[var(--color-muted-foreground)]">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+</BaseLayout>

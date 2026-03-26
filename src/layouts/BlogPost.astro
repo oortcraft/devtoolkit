@@ -1,0 +1,72 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import AdSlot from '../components/AdSlot.astro';
+import StructuredData from '../components/StructuredData.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  pubDate: Date;
+  updatedDate?: Date;
+  relatedTools?: string[];
+}
+
+const { title, description, pubDate, updatedDate, relatedTools } = Astro.props;
+
+const toolLinks: Record<string, { name: string; href: string }> = {
+  'json-formatter': { name: 'JSON Formatter', href: '/tools/json-formatter' },
+  'json-validator': { name: 'JSON Validator', href: '/tools/json-validator' },
+  'json-to-yaml': { name: 'JSON to YAML Converter', href: '/tools/json-to-yaml' },
+};
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description,
+  datePublished: pubDate.toISOString(),
+  ...(updatedDate && { dateModified: updatedDate.toISOString() }),
+  publisher: {
+    '@type': 'Organization',
+    name: 'DevToolkit',
+    url: 'https://devtoolkit.dev',
+  },
+};
+---
+
+<BaseLayout title={`${title} | DevToolkit`} description={description}>
+  <StructuredData data={structuredData} />
+  <article class="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <header class="mb-8">
+      <h1 class="mb-2 text-4xl font-bold text-slate-900">{title}</h1>
+      <time class="text-sm text-slate-500" datetime={pubDate.toISOString()}>
+        {pubDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+      </time>
+      {updatedDate && (
+        <span class="ml-2 text-sm text-slate-400">
+          (Updated: {updatedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })})
+        </span>
+      )}
+    </header>
+    <AdSlot position="header" />
+    <div class="prose prose-slate max-w-none prose-headings:scroll-mt-20 prose-a:text-primary prose-code:rounded prose-code:bg-slate-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-pre:bg-slate-900">
+      <slot />
+    </div>
+    <AdSlot position="footer" />
+    {relatedTools && relatedTools.length > 0 && (
+      <div class="mt-12 rounded-lg border border-slate-200 bg-slate-50 p-6">
+        <h2 class="mb-3 text-lg font-semibold text-slate-900">Related Tools</h2>
+        <div class="flex flex-wrap gap-3">
+          {relatedTools.map((slug) => {
+            const tool = toolLinks[slug];
+            return tool ? (
+              <a href={tool.href} class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-primary hover:border-primary hover:bg-blue-50">
+                {tool.name} →
+              </a>
+            ) : null;
+          })}
+        </div>
+      </div>
+    )}
+  </article>
+</BaseLayout>

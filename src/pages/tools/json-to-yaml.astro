@@ -1,0 +1,49 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import JsonToYaml from '../../components/tools/JsonToYaml';
+---
+<ToolLayout
+  title="JSON to YAML Converter - Free Online Tool | DevToolkit"
+  description="Convert JSON to YAML format instantly in your browser. Free, fast, and private — no data is sent to any server."
+  toolName="JSON to YAML Converter"
+  toolUrl="https://devtoolkit.dev/tools/json-to-yaml"
+>
+  <div slot="tool">
+    <JsonToYaml client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the JSON to YAML Converter</h2>
+    <p>Paste your JSON data into the left editor. The converter automatically converts it to YAML as you type — no button click required. Use the "Copy" button to copy the YAML output to your clipboard.</p>
+
+    <h2>JSON vs YAML: What is the Difference?</h2>
+    <p>Both JSON (JavaScript Object Notation) and YAML (YAML Ain't Markup Language) are human-readable data serialization formats, but they serve slightly different purposes and have different strengths.</p>
+    <p><strong>JSON</strong> is strict, compact, and universally supported. It is the dominant format for REST APIs, web storage, and data interchange between services. Every JSON document is valid (a subset of) JavaScript, making it easy to parse in virtually any programming language.</p>
+    <p><strong>YAML</strong> is designed to be maximally human-readable. It uses indentation instead of brackets and braces, omits quotes around most strings, and supports comments — something JSON does not. These features make YAML popular for configuration files in tools like Docker Compose, Kubernetes, GitHub Actions, Ansible, and many CI/CD systems.</p>
+
+    <h2>When Should You Use YAML Instead of JSON?</h2>
+    <ul>
+      <li><strong>Configuration files</strong> — YAML is far easier to read and edit by hand. Most modern DevOps tooling (Kubernetes, Helm, GitHub Actions) uses YAML for this reason.</li>
+      <li><strong>Files with comments</strong> — YAML supports <code>#</code> comments; JSON does not. This makes YAML much better for annotated configuration.</li>
+      <li><strong>Multi-line strings</strong> — YAML has native block scalar syntax (<code>|</code> and <code>&gt;</code>) for clean multi-line strings without escape sequences.</li>
+      <li><strong>Human-authored documents</strong> — When a person (not a machine) will write or maintain the file, YAML is often preferred because it requires less punctuation.</li>
+    </ul>
+
+    <h2>When Should You Stick with JSON?</h2>
+    <ul>
+      <li>API payloads and HTTP responses</li>
+      <li>Browser storage (localStorage, IndexedDB)</li>
+      <li>Any context where you need maximum tooling compatibility</li>
+      <li>When strict typing and no-ambiguity is critical</li>
+    </ul>
+
+    <h2>FAQ</h2>
+    <h3>Is my data safe?</h3>
+    <p>Yes. The conversion happens entirely in your browser using JavaScript. No data is sent to any server at any time.</p>
+    <h3>Does YAML support everything JSON supports?</h3>
+    <p>Yes. YAML is a superset of JSON, meaning every valid JSON document is also valid YAML. Converting from JSON to YAML is always lossless — no data is changed or lost.</p>
+    <h3>Can I convert YAML back to JSON?</h3>
+    <p>This tool converts JSON to YAML only. For the reverse direction, look for a YAML to JSON converter.</p>
+    <h3>What is the maximum input size?</h3>
+    <p>The converter supports inputs up to 1MB in size.</p>
+  </Fragment>
+</ToolLayout>

@@ -1,0 +1,44 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import AdSlot from '../components/AdSlot.astro';
+import StructuredData from '../components/StructuredData.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  toolName: string;
+  toolUrl: string;
+}
+
+const { title, description, toolName, toolUrl } = Astro.props;
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: toolName,
+  url: toolUrl,
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Any',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  description,
+};
+---
+
+<BaseLayout title={title} description={description}>
+  <StructuredData data={structuredData} />
+  <div class="mx-auto max-w-7xl px-10 py-8">
+    <AdSlot position="header" />
+    <div class="mb-1">
+      <h1 class="text-[28px] font-bold text-[var(--color-foreground)]">{toolName}</h1>
+      <p class="text-[15px] text-[var(--color-muted-foreground)]">{description}</p>
+    </div>
+    <div class="mt-6">
+      <slot name="tool" />
+    </div>
+    <AdSlot position="in-content" />
+    <div class="prose prose-neutral mt-12 max-w-none prose-headings:font-semibold prose-headings:text-[var(--color-foreground)] prose-p:text-[var(--color-muted-foreground)] prose-a:text-[var(--color-primary)] prose-code:rounded prose-code:bg-[var(--color-secondary)] prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-pre:bg-[#1e1e2e]">
+      <slot name="content" />
+    </div>
+    <AdSlot position="footer" />
+  </div>
+</BaseLayout>

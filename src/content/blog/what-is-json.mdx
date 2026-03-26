@@ -1,0 +1,217 @@
+---
+title: "What is JSON? A Complete Guide for Developers"
+description: "Learn what JSON is, its syntax, data types, and common use cases. A comprehensive guide to JavaScript Object Notation for beginners and experienced developers."
+pubDate: "2026-03-20"
+tags: ["json", "tutorial", "fundamentals"]
+relatedTools: ["json-formatter", "json-validator"]
+---
+
+JSON is everywhere. It powers REST APIs, configuration files, databases, and inter-process communication across virtually every programming language and platform. Yet many developers use JSON daily without fully understanding its rules, limitations, and best practices. This guide covers everything you need to know.
+
+## What is JSON?
+
+**JSON** (JavaScript Object Notation) is a lightweight, text-based data interchange format. Despite the "JavaScript" in its name, JSON is completely language-independent. Every major programming language — Python, Go, Java, Ruby, Rust, PHP, and dozens more — has built-in or standard-library support for parsing and generating JSON.
+
+JSON was created by Douglas Crockford in the early 2000s as a simpler alternative to XML for transmitting structured data. It was formally specified in [RFC 4627](https://www.rfc-editor.org/rfc/rfc4627) in 2006 and later updated in [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259) in 2017, which is the current standard.
+
+The format gained rapid adoption because it maps naturally onto the data structures developers already use: objects (hash maps/dictionaries) and arrays (lists). It is also human-readable, compact, and trivial to parse programmatically.
+
+## JSON Syntax
+
+A JSON document is either a single **value** — which can be an object, array, string, number, boolean, or null. The two most common top-level structures are objects and arrays.
+
+### Objects
+
+A JSON object is an unordered collection of key–value pairs enclosed in curly braces. Keys must be strings (double-quoted). Values can be any valid JSON type.
+
+```json
+{
+  "name": "Alice",
+  "age": 30,
+  "isAdmin": false,
+  "address": {
+    "city": "San Francisco",
+    "zip": "94102"
+  }
+}
+```
+
+Key rules for objects:
+- Keys **must** be double-quoted strings (single quotes are not valid JSON)
+- Key–value pairs are separated by commas
+- No trailing comma is allowed after the last pair
+- Duplicate keys are technically allowed by the spec but produce undefined behavior — avoid them
+
+### Arrays
+
+A JSON array is an ordered list of values enclosed in square brackets.
+
+```json
+["apple", "banana", "cherry"]
+```
+
+Arrays can contain mixed types and nested structures:
+
+```json
+[
+  { "id": 1, "name": "Alice" },
+  { "id": 2, "name": "Bob" },
+  42,
+  true,
+  null
+]
+```
+
+## JSON Data Types
+
+JSON supports exactly **six data types**:
+
+### 1. String
+
+A sequence of Unicode characters enclosed in double quotes. Backslash is used for escape sequences.
+
+```json
+"Hello, World!"
+"Line one\nLine two"
+"Path: C:\\Users\\alice"
+"Unicode: \u0041"
+```
+
+Common escape sequences: `\"` (double quote), `\\` (backslash), `\/` (forward slash), `\n` (newline), `\t` (tab), `\r` (carriage return), `\uXXXX` (Unicode code point).
+
+### 2. Number
+
+JSON numbers are IEEE 754 double-precision floating-point. There is no separate integer type in the spec, though most parsers expose integers as a distinct type.
+
+```json
+42
+-17
+3.14159
+1.5e10
+-2.5E-3
+```
+
+Note: JSON does not support `Infinity`, `-Infinity`, or `NaN`. Use strings or omit the field if you need to represent these values.
+
+### 3. Boolean
+
+```json
+true
+false
+```
+
+Must be lowercase. `True`, `TRUE`, `False` are all invalid.
+
+### 4. Null
+
+```json
+null
+```
+
+Represents the intentional absence of a value. Must be lowercase.
+
+### 5. Object
+
+As described above — a collection of string-keyed pairs.
+
+### 6. Array
+
+An ordered list of values of any type.
+
+## Common Use Cases
+
+### REST APIs
+
+JSON is the de facto standard for REST API request and response bodies. When you call a GitHub API endpoint, send a Stripe payment, or query a weather service, the payload is almost certainly JSON.
+
+```json
+{
+  "status": "success",
+  "data": {
+    "userId": 12345,
+    "email": "alice@example.com",
+    "createdAt": "2026-01-15T08:30:00Z"
+  }
+}
+```
+
+### Configuration Files
+
+Tools like ESLint (`.eslintrc.json`), TypeScript (`tsconfig.json`), npm (`package.json`), and VS Code settings use JSON for configuration because it is easy for both humans and machines to read and write.
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "strict": true,
+    "outDir": "./dist"
+  }
+}
+```
+
+### Data Storage and Databases
+
+Document-oriented databases (MongoDB, CouchDB, Firestore) store records as JSON or BSON (Binary JSON). PostgreSQL and MySQL support JSON column types for semi-structured data.
+
+### Inter-Process Communication
+
+Microservices, message queues (Kafka, RabbitMQ), WebSockets, and local IPC mechanisms commonly use JSON as their message format due to its universality.
+
+## JSON vs Other Formats
+
+### JSON vs XML
+
+XML was the dominant data interchange format before JSON. JSON is generally preferred for APIs because it is less verbose, easier to parse, and maps directly to native data structures. XML retains advantages for document-centric content, namespace support, and rich schema validation (XSD).
+
+```xml
+<!-- XML -->
+<user>
+  <name>Alice</name>
+  <age>30</age>
+</user>
+```
+
+```json
+// JSON
+{ "name": "Alice", "age": 30 }
+```
+
+### JSON vs YAML
+
+YAML is a superset of JSON and adds features like comments, multi-line strings, anchors, and a more human-friendly syntax without quotes. YAML is popular for configuration files (Docker Compose, Kubernetes, GitHub Actions). JSON is preferred when machine generation and parsing performance matter most.
+
+### JSON vs MessagePack / CBOR
+
+For high-throughput systems where bandwidth or parsing speed is critical, binary formats like MessagePack or CBOR offer the same data model as JSON but in a compact binary encoding — typically 20–50% smaller and faster to parse.
+
+## Best Practices
+
+**Use camelCase for keys.** The JSON spec does not mandate any naming convention, but camelCase (`firstName`, `createdAt`) is the dominant convention in JavaScript ecosystems. snake_case is common in Python and Ruby APIs. Pick one and be consistent.
+
+**Keep nesting shallow.** Deeply nested JSON (more than 3–4 levels) becomes difficult to read and query. Consider flattening structures or splitting into separate resources.
+
+**Use ISO 8601 for dates.** JSON has no native date type. The universally accepted convention is ISO 8601 strings: `"2026-03-20T10:30:00Z"`.
+
+**Avoid using `null` excessively.** Distinguish between a field being absent (omit the key) and a field being explicitly set to nothing (`null`). Overusing `null` makes APIs harder to consume.
+
+**Validate before sending.** Malformed JSON is one of the most common sources of API errors. Always validate your JSON before transmitting it — use a tool like the [JSON Validator](/tools/json-validator) to catch syntax errors early.
+
+**Format for readability during development.** Pretty-printed JSON is much easier to debug. Use the [JSON Formatter](/tools/json-formatter) to beautify JSON payloads when inspecting API responses or log files.
+
+## FAQ
+
+**Is JSON case-sensitive?**
+
+Yes. Key names are case-sensitive (`"Name"` and `"name"` are different keys), and the literal values `true`, `false`, and `null` must be lowercase.
+
+**Can JSON contain comments?**
+
+No. Standard JSON does not support comments. If you need comments in configuration files, consider JSONC (JSON with Comments, supported by VS Code and TypeScript) or switch to YAML or TOML, which both allow comments.
+
+**What is the maximum size for a JSON file?**
+
+The JSON specification imposes no size limit. Practical limits depend on the parser and available memory. Most browsers and servers handle JSON payloads up to several megabytes without issue, but streaming parsers are recommended for very large files.
+
+**What is the difference between JSON and a JavaScript object literal?**
+
+They look similar but have key differences: JSON requires double-quoted keys; JavaScript object literals allow unquoted keys. JSON does not support functions, `undefined`, `Date` objects, or circular references. JSON is always a string until parsed; a JavaScript object is a live in-memory structure.
