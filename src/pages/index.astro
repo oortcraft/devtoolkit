@@ -61,12 +61,12 @@ const iconMap: Record<string, string> = {
   <section id="tools" class="px-10 py-16">
     <div class="mx-auto max-w-7xl">
       <div class="mb-8 flex flex-col items-center gap-2">
-        <h2 class="text-[28px] font-bold text-[var(--color-foreground)]">JSON Tools</h2>
+        <h2 class="text-[28px] font-bold text-[var(--color-foreground)]">Developer Tools</h2>
         <p class="text-base text-[var(--color-muted-foreground)]">
-          Paste, transform, and validate JSON data instantly in your browser.
+          Free, browser-based tools for encoding, hashing, formatting, and more.
         </p>
       </div>
-      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {tools.map((tool) => (
           <a
             href={`/tools/${tool.slug}`}
