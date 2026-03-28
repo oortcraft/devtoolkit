@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { tools } from '../../lib/tools';
+
+const iconMap: Record<string, string> = {
+  'json-formatter': '{ }',
+  'json-validator': '✓',
+  'json-to-yaml': '⇄',
+};
+---
+
+<BaseLayout
+  title="Developer Tools | DevToolkit"
+  description="Free online developer tools for JSON formatting, validation, and conversion."
+>
+  <div class="mx-auto max-w-7xl px-4 py-12 sm:px-10">
+    <h1 class="mb-2 text-3xl font-bold text-[var(--color-foreground)]">Developer Tools</h1>
+    <p class="mb-8 text-[var(--color-muted-foreground)]">Free, fast, browser-based tools. No sign-up required.</p>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {tools.map((tool) => (
+        <a
+          href={`/tools/${tool.slug}`}
+          class="group flex flex-col rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-sm transition-all hover:shadow-md"
+        >
+          <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-secondary)]">
+            <span class="font-mono text-sm font-semibold text-[var(--color-foreground)]">
+              {iconMap[tool.slug] || '{}'}
+            </span>
+          </div>
+          <h2 class="mb-1 text-base font-semibold text-[var(--color-foreground)]">{tool.name}</h2>
+          <p class="mb-3 flex-1 text-sm leading-relaxed text-[var(--color-muted-foreground)]">{tool.description}</p>
+          <span class="text-sm font-medium text-[var(--color-primary)]">Open tool →</span>
+        </a>
+      ))}
+    </div>
+  </div>
+</BaseLayout>

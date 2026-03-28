@@ -2,6 +2,7 @@
 import BaseLayout from './BaseLayout.astro';
 import AdSlot from '../components/AdSlot.astro';
 import StructuredData from '../components/StructuredData.astro';
+import { tools } from '../lib/tools';
 
 interface Props {
   title: string;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 const { title, description, toolName, toolUrl } = Astro.props;
+const currentSlug = Astro.url.pathname.replace(/^\/tools\//, '').replace(/\/$/, '');
 
 const structuredData = {
   '@context': 'https://schema.org',
@@ -26,11 +28,29 @@ const structuredData = {
 
 <BaseLayout title={title} description={description}>
   <StructuredData data={structuredData} />
-  <div class="mx-auto max-w-7xl px-10 py-8">
+  <div class="mx-auto max-w-7xl px-4 py-6 sm:px-10 sm:py-8">
     <AdSlot position="header" />
+
+    <!-- Tool Navigation Tabs -->
+    <nav class="mb-6 flex gap-1 overflow-x-auto rounded-lg bg-[var(--color-secondary)] p-1">
+      {tools.map((tool) => (
+        <a
+          href={`/tools/${tool.slug}`}
+          class:list={[
+            "whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors",
+            currentSlug === tool.slug
+              ? "bg-[var(--color-background)] text-[var(--color-foreground)] shadow-sm"
+              : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+          ]}
+        >
+          {tool.name.replace(' & Beautifier', '').replace(' Converter', '')}
+        </a>
+      ))}
+    </nav>
+
     <div class="mb-1">
-      <h1 class="text-[28px] font-bold text-[var(--color-foreground)]">{toolName}</h1>
-      <p class="text-[15px] text-[var(--color-muted-foreground)]">{description}</p>
+      <h1 class="text-2xl font-bold text-[var(--color-foreground)] sm:text-[28px]">{toolName}</h1>
+      <p class="text-[14px] text-[var(--color-muted-foreground)] sm:text-[15px]">{description}</p>
     </div>
     <div class="mt-6">
       <slot name="tool" />

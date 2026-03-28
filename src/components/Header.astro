@@ -20,7 +20,7 @@ const pathname = Astro.url.pathname;
 
     <ul class="hidden items-center gap-8 text-sm peer-checked:absolute peer-checked:left-0 peer-checked:top-full peer-checked:flex peer-checked:w-full peer-checked:flex-col peer-checked:gap-0 peer-checked:border-b peer-checked:border-[var(--color-border)] peer-checked:bg-white sm:flex">
       <li>
-        <a href="/tools/json-formatter" class:list={["block px-4 py-3 transition-colors hover:text-[var(--color-foreground)] sm:p-0", pathname.startsWith('/tools') ? 'font-medium text-[var(--color-foreground)]' : 'text-[var(--color-muted-foreground)]']}>
+        <a href="/tools" class:list={["block px-4 py-3 transition-colors hover:text-[var(--color-foreground)] sm:p-0", pathname.startsWith('/tools') ? 'font-medium text-[var(--color-foreground)]' : 'text-[var(--color-muted-foreground)]']}>
           Tools
         </a>
       </li>
