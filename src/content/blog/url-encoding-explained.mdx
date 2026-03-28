@@ -1,0 +1,327 @@
+---
+title: "URL Encoding Explained: Why and How It Works"
+description: "Understand URL encoding (percent encoding), why it's needed, which characters must be encoded, and how to use it in your code."
+pubDate: "2026-03-26"
+tags: ["url", "encoding", "web"]
+relatedTools: ["url-encoder"]
+---
+
+You have almost certainly encountered URL encoding without realizing it — those `%20` sequences in browser address bars, the `%2F` in API paths, or the `+` signs in search query strings. URL encoding is one of those foundational web mechanics that quietly keeps the internet working. This guide explains what it is, why it exists, and how to handle it correctly in your code.
+
+## What is URL Encoding?
+
+**URL encoding**, formally called **percent encoding**, is a mechanism for encoding arbitrary characters in a Uniform Resource Identifier (URI) using only the characters that are safe in a URL. It is defined in [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986), the foundational specification for URIs.
+
+The basic rule: any character that is not a safe "unreserved" character is represented as a percent sign (`%`) followed by two hexadecimal digits representing the character's byte value in UTF-8.
+
+For example:
+- Space → `%20`
+- `#` → `%23`
+- `&` → `%26`
+- `é` → `%C3%A9` (two bytes in UTF-8: 0xC3, 0xA9)
+
+## Why URL Encoding is Needed
+
+A URL is fundamentally a text string, but it must satisfy strict structural rules. The URL syntax uses many characters as delimiters with specific meanings:
+
+- `/` separates path segments
+- `?` begins the query string
+- `&` separates query parameters
+- `#` begins the fragment identifier
+- `=` separates parameter names from values
+- `:` separates scheme from host, and host from port
+
+If your data contains any of these characters, the URL parser will misinterpret them as structural delimiters. Consider a search query for `C++ & Java`:
+
+```
+# Unencoded — breaks URL parsing:
+https://example.com/search?q=C++ & Java
+
+# Properly encoded:
+https://example.com/search?q=C%2B%2B+%26+Java
+```
+
+The unencoded version would be interpreted as two separate parameters (`q=C++` and `Java`), which is not what you want.
+
+Beyond ASCII special characters, URLs can only contain characters from the ASCII character set. Non-ASCII characters — accented letters, Chinese characters, emoji — must be encoded. For example, a URL containing `München` must encode the `ü` as `%C3%BC`.
+
+## Which Characters Need Encoding
+
+RFC 3986 divides characters into three categories:
+
+### Unreserved Characters (never encode these)
+
+These 66 characters are always safe in any part of a URL:
+
+| Category | Characters |
+|---|---|
+| Uppercase letters | A–Z |
+| Lowercase letters | a–z |
+| Digits | 0–9 |
+| Safe symbols | `-` `_` `.` `~` |
+
+### Reserved Characters (encode when used as data)
+
+Reserved characters have special structural meaning in URLs. Encode them when they appear in *data* (like a query parameter value), but leave them unencoded when they serve their structural role.
+
+| Character | Role in URL | Encoded as |
+|---|---|---|
+| `:` | Scheme/port separator | `%3A` |
+| `/` | Path separator | `%2F` |
+| `?` | Query string start | `%3F` |
+| `#` | Fragment start | `%23` |
+| `[` `]` | IPv6 address brackets | `%5B` `%5D` |
+| `@` | Userinfo delimiter | `%40` |
+| `!` `$` `&` `'` `(` `)` `*` `+` `,` `;` `=` | Sub-delimiters | `%21` etc. |
+
+### Characters That Must Always Be Encoded
+
+Any byte value not in the unreserved or reserved sets must be percent-encoded. This includes:
+- Space (0x20) → `%20`
+- Control characters (0x00–0x1F, 0x7F)
+- Non-ASCII bytes (0x80–0xFF) — which arise when UTF-8 encoding non-ASCII characters
+
+## How Percent Encoding Works
+
+The encoding process is straightforward:
+
+1. Determine the UTF-8 byte sequence for the character.
+2. For each byte that needs encoding, output `%` followed by the two-character uppercase hex representation of that byte.
+
+**Example: encoding `café`**
+
+```
+c → unreserved → c
+a → unreserved → a
+f → unreserved → f
+é → UTF-8: 0xC3 0xA9 → %C3%A9
+
+Result: caf%C3%A9
+```
+
+**Example: encoding `hello world`**
+
+```
+h e l l o → unreserved → hello
+(space) → 0x20 → %20
+w o r l d → unreserved → world
+
+Result: hello%20world
+```
+
+Try encoding any string with [our URL Encoder tool](/tools/url-encoder).
+
+## encodeURIComponent vs encodeURI in JavaScript
+
+JavaScript provides two built-in encoding functions that behave differently, and confusing them is a very common source of bugs.
+
+### `encodeURIComponent()`
+
+Encodes a **component** of a URL — a single query parameter value, a path segment value, or any other piece of data being embedded in a URL. It encodes everything except unreserved characters.
+
+```javascript
+encodeURIComponent("hello world");   // "hello%20world"
+encodeURIComponent("C++ & Java");    // "C%2B%2B%20%26%20Java"
+encodeURIComponent("https://x.com"); // "https%3A%2F%2Fx.com"
+encodeURIComponent("café");          // "caf%C3%A9"
+
+// Typical usage: building a query string
+const query = "what is C++ & Java?";
+const url = `https://example.com/search?q=${encodeURIComponent(query)}`;
+// Result: https://example.com/search?q=what%20is%20C%2B%2B%20%26%20Java%3F
+```
+
+### `encodeURI()`
+
+Encodes an **entire URI**, leaving structural characters intact. It does NOT encode `:`, `/`, `?`, `#`, `&`, `=`, and several others, because these are assumed to be structural.
+
+```javascript
+encodeURI("https://example.com/search?q=hello world");
+// "https://example.com/search?q=hello%20world"
+// Note: only the space was encoded; the : / ? = were left alone
+
+encodeURI("https://example.com/search?q=C++ & Java");
+// "https://example.com/search?q=C++%20&%20Java"
+// BUG: & and + were not encoded — the query string is now ambiguous!
+```
+
+**The rule:** Use `encodeURIComponent()` for data values. Use `encodeURI()` only when you already have a complete URL and just need to encode stray non-ASCII characters in it.
+
+```javascript
+// Correct pattern for building URLs with user data
+function buildSearchUrl(baseUrl, params) {
+  const queryString = Object.entries(params)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join("&");
+  return `${baseUrl}?${queryString}`;
+}
+
+buildSearchUrl("https://api.example.com/search", {
+  q: "C++ & Java",
+  lang: "en",
+  page: "1"
+});
+// "https://api.example.com/search?q=C%2B%2B%20%26%20Java&lang=en&page=1"
+```
+
+## Common Pitfalls
+
+### Double Encoding
+
+Double encoding happens when you encode an already-encoded string. The `%` in `%20` gets encoded to `%2520`, so the server receives a literal `%20` string instead of a space.
+
+```javascript
+// Bug: encoding an already-encoded value
+const encoded = encodeURIComponent("hello world"); // "hello%20world"
+const doubleEncoded = encodeURIComponent(encoded); // "hello%2520world" — wrong!
+
+// Fix: encode raw data only once
+const url = `https://example.com?q=${encodeURIComponent("hello world")}`;
+```
+
+### Space as `+` vs `%20`
+
+In HTML form submissions using `application/x-www-form-urlencoded` encoding, spaces are encoded as `+` rather than `%20`. This is a legacy convention from HTML forms, not part of RFC 3986.
+
+```
+# RFC 3986 percent encoding (correct for general URLs):
+hello world → hello%20world
+
+# HTML form encoding (application/x-www-form-urlencoded):
+hello world → hello+world
+```
+
+Most server frameworks handle both, but when constructing URLs manually for APIs, always use `%20`. The `+` convention applies only within form-encoded request bodies.
+
+## URL Encoding in Different Languages
+
+### JavaScript
+
+```javascript
+// Encode a component value
+encodeURIComponent("user@example.com"); // "user%40example.com"
+
+// Decode
+decodeURIComponent("user%40example.com"); // "user@example.com"
+
+// Using URLSearchParams (handles encoding automatically)
+const params = new URLSearchParams({ q: "C++ & Java", lang: "en" });
+params.toString(); // "q=C%2B%2B+%26+Java&lang=en"
+// Note: URLSearchParams uses + for spaces (form encoding)
+
+const url = new URL("https://api.example.com/search");
+url.searchParams.set("q", "C++ & Java");
+url.toString(); // "https://api.example.com/search?q=C%2B%2B+%26+Java"
+```
+
+### Python
+
+```python
+from urllib.parse import quote, unquote, urlencode, quote_plus
+
+# Encode a path segment or query value
+quote("hello world")          # "hello%20world"
+quote("C++ & Java")           # "C%2B%2B%20%26%20Java"
+quote("café")                 # "caf%C3%A9"
+
+# quote_plus uses + for spaces (form encoding)
+quote_plus("hello world")     # "hello+world"
+
+# Decode
+unquote("hello%20world")      # "hello world"
+unquote("caf%C3%A9")          # "café"
+
+# Build a query string
+params = {"q": "C++ & Java", "lang": "en", "page": 1}
+urlencode(params)             # "q=C%2B%2B+%26+Java&lang=en&page=1"
+# Note: urlencode uses quote_plus (+ for spaces)
+
+# Full URL construction
+from urllib.parse import urlunparse, urlencode
+query = urlencode({"q": "C++ & Java"})
+url = urlunparse(("https", "api.example.com", "/search", "", query, ""))
+```
+
+### Go
+
+```go
+import (
+    "fmt"
+    "net/url"
+)
+
+// Encode a single value
+encoded := url.QueryEscape("C++ & Java")
+fmt.Println(encoded) // "C%2B%2B+%26+Java"
+
+// PathEscape for path segments (uses %20 for spaces, not +)
+pathEncoded := url.PathEscape("hello world/path")
+fmt.Println(pathEncoded) // "hello%20world%2Fpath"
+
+// Build a URL with query parameters
+u := &url.URL{
+    Scheme: "https",
+    Host:   "api.example.com",
+    Path:   "/search",
+}
+q := u.Query()
+q.Set("q", "C++ & Java")
+q.Set("lang", "en")
+u.RawQuery = q.Encode()
+fmt.Println(u.String())
+// "https://api.example.com/search?lang=en&q=C%2B%2B+%26+Java"
+```
+
+## Real-World Examples
+
+### Query Parameters in API Requests
+
+```javascript
+// Searching for a user by email with fetch()
+const email = "alice+test@example.com";
+const response = await fetch(`/api/users?email=${encodeURIComponent(email)}`);
+// URL: /api/users?email=alice%2Btest%40example.com
+// Without encoding: /api/users?email=alice+test@example.com
+// The + would be interpreted as a space!
+```
+
+### Path Segments with Special Characters
+
+```javascript
+// File name containing spaces and slashes
+const filename = "Q3 Report/Final Draft.pdf";
+const downloadUrl = `/files/${encodeURIComponent(filename)}`;
+// "/files/Q3%20Report%2FFinal%20Draft.pdf"
+```
+
+### OAuth and Redirect URIs
+
+OAuth flows encode the `redirect_uri` parameter, which is itself a full URL:
+
+```
+https://auth.example.com/oauth/authorize
+  ?client_id=abc123
+  &redirect_uri=https%3A%2F%2Fmyapp.com%2Fcallback
+  &scope=read%20write
+  &state=random_state_value
+```
+
+Use [our URL Encoder tool](/tools/url-encoder) to encode redirect URIs and other complex values instantly.
+
+## FAQ
+
+**What is the difference between URL encoding and HTML encoding?**
+
+URL encoding (percent encoding) converts characters to `%XX` hex sequences for safe inclusion in URLs. HTML encoding (HTML entities) converts characters to `&amp;`, `&lt;`, `&gt;`, `&#160;`, etc. for safe inclusion in HTML documents. They serve different purposes and must not be confused. A `&` in a URL query value needs `%26`; a `&` in HTML text needs `&amp;`.
+
+**Should I encode the entire URL or just the data parts?**
+
+Encode only the data parts — parameter values and dynamic path segments. Never encode structural characters like `://`, `/`, `?`, `&`, and `=` that you have deliberately placed in the URL. The safest approach is to use a URL-building library (`URLSearchParams` in JS, `urllib.parse` in Python, `net/url` in Go) which handles this automatically.
+
+**Why do some URLs use uppercase hex (`%2F`) and others lowercase (`%2f`)?**
+
+RFC 3986 specifies that percent-encoded characters should use uppercase hex digits, but decoders must accept both. In practice, both are valid and universally supported. Prefer uppercase for consistency with the spec.
+
+**Does URL encoding affect SEO?**
+
+Minimally. Search engine crawlers decode percent-encoded URLs correctly. However, using readable, non-encoded characters in URL slugs is a best practice for readability and click-through rates. Encode only what must be encoded — don't encode standard ASCII letters, digits, or hyphens in URL path slugs.
