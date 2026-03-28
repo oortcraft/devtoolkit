@@ -49,4 +49,18 @@ export const tools: Tool[] = [
     category: 'Generator',
     keywords: ['uuid generator', 'uuid v4', 'uuid v1', 'generate uuid online', 'guid generator'],
   },
+  {
+    slug: 'hash-generator',
+    name: 'Hash Generator',
+    description: 'Generate MD5, SHA-1, SHA-256, SHA-512 hashes from text.',
+    category: 'Security',
+    keywords: ['hash generator', 'md5 hash', 'sha256 hash', 'sha512 online', 'hash calculator'],
+  },
+  {
+    slug: 'lorem-ipsum',
+    name: 'Lorem Ipsum Generator',
+    description: 'Generate placeholder text for designs and mockups.',
+    category: 'Generator',
+    keywords: ['lorem ipsum generator', 'placeholder text', 'dummy text', 'lorem ipsum online'],
+  },
 ];

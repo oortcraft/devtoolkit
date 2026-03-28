@@ -1,0 +1,33 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import LoremIpsumGenerator from '../../components/tools/LoremIpsumGenerator';
+---
+
+<ToolLayout
+  title="Lorem Ipsum Generator - Free Placeholder Text | DevToolkit"
+  description="Generate lorem ipsum placeholder text for your designs, mockups, and prototypes. Choose 1 to 10 paragraphs."
+  toolName="Lorem Ipsum Generator"
+  toolUrl="https://oortcraft.dev/tools/lorem-ipsum"
+>
+  <div slot="tool">
+    <LoremIpsumGenerator client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the Lorem Ipsum Generator</h2>
+    <p>Select the number of paragraphs you need (1 to 10), then click <strong>Generate</strong>. The text starts with the classic "Lorem ipsum dolor sit amet..." and continues with realistic Latin-style placeholder text. Click <strong>Copy</strong> to copy the generated text to your clipboard.</p>
+    <h2>What is Lorem Ipsum?</h2>
+    <p>Lorem ipsum is dummy text used in the printing and typesetting industry since the 1500s. It's used as placeholder text to demonstrate the visual layout of a document or design without the distraction of meaningful content. The text is derived from sections of "De Finibus Bonorum et Malorum" by Cicero, written in 45 BC.</p>
+    <h2>Common Use Cases</h2>
+    <ul>
+      <li>Filling mockups and wireframes during design</li>
+      <li>Testing typography and layout in web development</li>
+      <li>Populating templates before real content is available</li>
+      <li>Demonstrating font styles and spacing</li>
+    </ul>
+    <h2>FAQ</h2>
+    <h3>Why not use real text?</h3>
+    <p>Real text can distract reviewers from evaluating the design itself. Lorem ipsum lets stakeholders focus on layout, typography, and visual hierarchy without reading the content.</p>
+    <h3>Is the generated text random?</h3>
+    <p>Each paragraph is composed of randomized sentences from a curated set of Latin-style text, so you get different output each time you click Generate.</p>
+  </Fragment>
+</ToolLayout>
