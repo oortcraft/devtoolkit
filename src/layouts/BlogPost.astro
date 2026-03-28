@@ -54,13 +54,13 @@ const structuredData = {
     </div>
     <AdSlot position="footer" />
     {relatedTools && relatedTools.length > 0 && (
-      <div class="mt-12 rounded-lg border border-slate-200 bg-slate-50 p-6">
-        <h2 class="mb-3 text-lg font-semibold text-slate-900">Related Tools</h2>
-        <div class="flex flex-wrap gap-3">
+      <div class="mt-12 rounded-lg border border-[var(--color-border)] bg-[var(--color-secondary)] p-4 sm:p-6">
+        <h2 class="mb-3 text-sm font-semibold text-[var(--color-foreground)] sm:text-lg">Related Tools</h2>
+        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
           {relatedTools.map((slug) => {
             const tool = toolLinks[slug];
             return tool ? (
-              <a href={tool.href} class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-primary hover:border-primary hover:bg-blue-50">
+              <a href={tool.href} class="rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-2 text-center text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-secondary)]">
                 {tool.name} →
               </a>
             ) : null;

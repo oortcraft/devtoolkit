@@ -48,10 +48,10 @@ function JsonFormatterInner() {
   return (
     <div className="flex flex-col gap-6">
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-[13px] text-[var(--color-muted-foreground)]">Indent:</span>
-          <div className="flex rounded-md bg-[var(--color-secondary)] p-1">
+          <span className="hidden text-[13px] text-[var(--color-muted-foreground)] sm:inline">Indent:</span>
+          <div className="flex flex-1 rounded-md bg-[var(--color-secondary)] p-1 sm:flex-none">
             {indentOptions.map((opt) => (
               <button
                 key={opt.value}
