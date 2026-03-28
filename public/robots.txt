@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://devtoolkit.dev/sitemap-index.xml
+Sitemap: https://oortcraft.dev/sitemap-index.xml

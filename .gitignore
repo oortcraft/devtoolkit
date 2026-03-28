@@ -36,3 +36,5 @@ design/
 .vscode/
 .omc/
 .claude/
+.vercel
+.env*.local
