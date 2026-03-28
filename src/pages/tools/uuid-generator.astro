@@ -1,0 +1,44 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import UuidGenerator from '../../components/tools/UuidGenerator';
+---
+
+<ToolLayout
+  title="UUID Generator - Free Online Tool | DevToolkit"
+  description="Generate random UUIDs (v4) or time-based UUIDs (v1) instantly in your browser."
+  toolName="UUID Generator"
+  toolUrl="https://oortcraft.dev/tools/uuid-generator"
+>
+  <div slot="tool">
+    <UuidGenerator client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the UUID Generator</h2>
+    <p>Select a UUID version (v4 for random, v1 for time-based), then click <strong>Generate</strong> to create a new UUID. Use the <strong>Copy</strong> button to copy the result to your clipboard. Your last 5 generated UUIDs are kept in the history section below.</p>
+
+    <h2>What is a UUID?</h2>
+    <p>A UUID (Universally Unique Identifier) is a 128-bit label used to uniquely identify information in computer systems. They are formatted as 32 hexadecimal digits displayed in five groups separated by hyphens: <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code>.</p>
+
+    <h2>UUID Versions</h2>
+    <ul>
+      <li><strong>v4 (Random)</strong>: Generated using random or pseudo-random numbers. Most commonly used when you just need a unique identifier with no special structure.</li>
+      <li><strong>v1 (Time-based)</strong>: Generated using the current timestamp and the machine's MAC address (or a random node ID in browser environments). Useful when you need sortable or traceable IDs.</li>
+    </ul>
+
+    <h2>Common Use Cases</h2>
+    <ul>
+      <li>Primary keys for database records</li>
+      <li>Session tokens and API keys</li>
+      <li>Idempotency keys for API requests</li>
+      <li>Unique file names to avoid collisions</li>
+      <li>Distributed systems where coordination is difficult</li>
+    </ul>
+
+    <h2>FAQ</h2>
+    <h3>Are UUIDs truly unique?</h3>
+    <p>UUID v4 has 122 bits of randomness, making collisions astronomically unlikely. For practical purposes, you can treat them as globally unique.</p>
+
+    <h3>Is my data safe?</h3>
+    <p>Yes. All UUID generation happens in your browser using the Web Crypto API. No data is sent to any server.</p>
+  </Fragment>
+</ToolLayout>

@@ -35,4 +35,18 @@ export const tools: Tool[] = [
     category: 'Encoding',
     keywords: ['base64 encode', 'base64 decode', 'base64 encoder online', 'base64 converter'],
   },
+  {
+    slug: 'url-encoder',
+    name: 'URL Encoder / Decoder',
+    description: 'Encode or decode URL components for safe transmission.',
+    category: 'Encoding',
+    keywords: ['url encode', 'url decode', 'percent encoding', 'url encoder online', 'urlencode'],
+  },
+  {
+    slug: 'uuid-generator',
+    name: 'UUID Generator',
+    description: 'Generate random UUIDs (v4) or time-based UUIDs (v1).',
+    category: 'Generator',
+    keywords: ['uuid generator', 'uuid v4', 'uuid v1', 'generate uuid online', 'guid generator'],
+  },
 ];
