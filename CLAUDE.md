@@ -1,3 +1,4 @@
+<!-- Keep this file under 200 lines. Merge related rules, remove outdated ones. -->
 # DevToolkit (oortcraft.dev) - Project Rules
 
 ## Purpose
