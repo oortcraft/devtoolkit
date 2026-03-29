@@ -152,4 +152,20 @@ export const tools: Tool[] = [
     category: 'Encoding',
     keywords: ['html entity encoder', 'html entities', 'html decode', 'html encode', 'entity converter'],
   },
+  {
+    slug: 'password-generator',
+    name: 'Password Generator',
+    icon: '🔑',
+    description: 'Generate strong, random passwords with customizable length and character options',
+    category: 'Generator',
+    keywords: ['password generator', 'random password', 'secure password', 'password creator'],
+  },
+  {
+    slug: 'case-converter',
+    name: 'String Case Converter',
+    icon: 'Aa',
+    description: 'Convert text between camelCase, PascalCase, snake_case, kebab-case, and more.',
+    category: 'Text',
+    keywords: ['case converter', 'camelcase', 'snake case', 'pascal case', 'kebab case', 'text transform'],
+  },
 ];

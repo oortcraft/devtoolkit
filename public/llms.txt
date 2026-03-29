@@ -24,6 +24,8 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 - [CSS Minifier](https://oortcraft.dev/tools/css-minifier): Minify CSS code to reduce file size and improve load times.
 - [JSON Schema Validator](https://oortcraft.dev/tools/json-schema-validator): Validate JSON data against JSON Schema with detailed error reporting.
 - [HTML Entity Encoder & Decoder](https://oortcraft.dev/tools/html-entity-encoder): Encode and decode HTML entities for safe web content.
+- [Password Generator](https://oortcraft.dev/tools/password-generator): Generate strong, random passwords with customizable length and character options.
+- [String Case Converter](https://oortcraft.dev/tools/case-converter): Convert text between camelCase, PascalCase, snake_case, kebab-case, and more.
 
 ## Blog
 

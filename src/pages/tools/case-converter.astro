@@ -1,0 +1,42 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import CaseConverter from '../../components/tools/CaseConverter';
+---
+
+<ToolLayout
+  title="String Case Converter — Free Online Tool"
+  description="Convert text between camelCase, PascalCase, snake_case, kebab-case, and more. All conversion happens in your browser."
+  toolName="String Case Converter"
+  toolUrl="https://oortcraft.dev/tools/case-converter"
+  faq={[
+    { question: 'What case formats are supported?', answer: 'camelCase, PascalCase, snake_case, SCREAMING_SNAKE_CASE, kebab-case, Title Case, UPPERCASE, and lowercase.' },
+    { question: 'Is my data safe?', answer: 'Yes. All conversion happens in your browser. No data is sent to any server.' },
+  ]}
+>
+  <div slot="tool">
+    <CaseConverter client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the String Case Converter</h2>
+    <p>Paste or type your text in the Input field, then select the target case format from the selector above. The conversion happens automatically as you type — no button click needed. Click <strong>Copy</strong> to copy the result.</p>
+
+    <h2>Supported Case Formats</h2>
+    <ul>
+      <li><strong>camelCase</strong> — Words joined, first word lowercase, subsequent words capitalized (e.g. <code>myVariableName</code>)</li>
+      <li><strong>PascalCase</strong> — All words capitalized and joined (e.g. <code>MyVariableName</code>)</li>
+      <li><strong>snake_case</strong> — Words joined with underscores, all lowercase (e.g. <code>my_variable_name</code>)</li>
+      <li><strong>SCREAMING_SNAKE</strong> — Words joined with underscores, all uppercase (e.g. <code>MY_VARIABLE_NAME</code>)</li>
+      <li><strong>kebab-case</strong> — Words joined with hyphens, all lowercase (e.g. <code>my-variable-name</code>)</li>
+      <li><strong>Title Case</strong> — Each word capitalized with spaces (e.g. <code>My Variable Name</code>)</li>
+      <li><strong>UPPERCASE</strong> — All characters uppercased</li>
+      <li><strong>lowercase</strong> — All characters lowercased</li>
+    </ul>
+
+    <h2>FAQ</h2>
+    <h3>What case formats are supported?</h3>
+    <p>camelCase, PascalCase, snake_case, SCREAMING_SNAKE_CASE, kebab-case, Title Case, UPPERCASE, and lowercase.</p>
+
+    <h3>Is my data safe?</h3>
+    <p>Yes. All conversion happens in your browser. No data is sent to any server.</p>
+  </Fragment>
+</ToolLayout>

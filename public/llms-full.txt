@@ -123,6 +123,18 @@ DevToolkit provides fast, private, open-source developer utilities that run enti
 **How to use**: Select Encode or Decode mode. Type or paste text and the output updates in real-time. Handles named entities (&amp;, &lt;, &gt;, &quot;, &apos;) and numeric entities (&#123;, &#x7B;).
 **Key facts**: Encoding converts special characters to HTML entities to prevent browsers from interpreting them as markup. Essential for displaying code snippets in HTML and preventing XSS.
 
+### 19. Password Generator
+**URL**: https://oortcraft.dev/tools/password-generator
+**Description**: Generate strong, random passwords with customizable length and character options.
+**How to use**: Adjust the length slider (1-128), toggle character types (uppercase, lowercase, numbers, symbols), and click Generate. Copy the result with one click.
+**Key facts**: Uses crypto.getRandomValues() for cryptographically secure randomness. All generation happens client-side — no passwords are ever sent to a server. Includes a strength indicator (Weak/Medium/Strong).
+
+### 20. String Case Converter
+**URL**: https://oortcraft.dev/tools/case-converter
+**Description**: Convert text between camelCase, PascalCase, snake_case, SCREAMING_SNAKE_CASE, kebab-case, Title Case, UPPERCASE, and lowercase.
+**How to use**: Type or paste text in the input area, select the target case format from the pill selector, and the output updates in real-time. Copy the result with one click.
+**Key facts**: Automatically detects word boundaries from camelCase, PascalCase, snake_case, kebab-case, and space-separated text. Supports 8 case formats commonly used in programming.
+
 ---
 
 ## Blog

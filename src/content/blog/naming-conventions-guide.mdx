@@ -1,0 +1,723 @@
+---
+title: "Naming Conventions in Programming: camelCase vs snake_case vs kebab-case"
+description: "A complete guide to naming conventions in programming. Learn when to use camelCase, PascalCase, snake_case, kebab-case, and more across different languages and frameworks."
+pubDate: "2026-03-30"
+tags: ["programming", "naming-conventions", "best-practices"]
+relatedTools: ["case-converter"]
+---
+
+Naming conventions are among the most debated topics in software development — and among the most consequential. A consistent, well-chosen naming scheme reduces cognitive load, makes code reviews faster, and prevents entire categories of bugs caused by confusion between identifiers. This guide covers every major convention, when each one is appropriate, and how to enforce them automatically.
+
+## Why Naming Conventions Matter
+
+Code is read far more often than it is written. Studies of professional developers consistently show that reading and understanding existing code accounts for 70–80% of development time. Naming conventions directly affect how quickly a reader can parse intent from a symbol.
+
+Consider these two function signatures:
+
+```python
+def process_user_data(user_id, include_deleted):
+    ...
+
+def ProcessUserData(UserId, IncludeDeleted):
+    ...
+```
+
+The first immediately signals "this is Python, this follows standard conventions." The second creates friction — it looks like Java or C# code, and a Python developer will pause to re-orient. That pause costs attention and breaks flow.
+
+Beyond readability, naming conventions carry semantic information. In Python, a leading underscore (`_private_method`) signals internal use. In Go, capitalization determines export visibility. In JavaScript, `SCREAMING_SNAKE_CASE` communicates immutability. These signals are language contracts that tools, linters, and developers rely on.
+
+## Overview of All Naming Conventions
+
+### camelCase
+
+Each word after the first begins with a capital letter. No separators.
+
+```
+firstName
+getUserById
+isAuthenticatedUser
+totalItemCount
+```
+
+Also called **lower camelCase** to distinguish it from PascalCase. The name comes from the visual resemblance to camel humps. It is the dominant convention in JavaScript, TypeScript, Java, Swift, and Kotlin.
+
+### PascalCase
+
+Every word begins with a capital letter, including the first. No separators.
+
+```
+UserProfile
+HttpRequestHandler
+DatabaseConnectionPool
+AuthenticationService
+```
+
+Also called **UpperCamelCase** or **StudlyCase**. Used universally for class and type names across most languages, and as the primary convention in C# and Pascal (the language that gave it its name).
+
+### snake_case
+
+Words are separated by underscores. All letters are lowercase.
+
+```
+user_profile
+get_user_by_id
+is_authenticated
+total_item_count
+```
+
+Dominant in Python, Ruby, Rust (for variables and functions), and SQL. Many developers find snake_case the most readable for long identifiers because word boundaries are visually unambiguous.
+
+### SCREAMING_SNAKE_CASE
+
+All uppercase letters with underscores as separators.
+
+```
+MAX_RETRY_COUNT
+API_BASE_URL
+DEFAULT_TIMEOUT_MS
+HTTP_STATUS_OK
+```
+
+Also called **UPPER_SNAKE_CASE** or **MACRO_CASE**. Reserved almost universally for constants and environment variables. When you see this pattern, the semantic implication is: this value does not change at runtime.
+
+### kebab-case
+
+Words are separated by hyphens. All letters are lowercase.
+
+```
+user-profile
+get-user-by-id
+primary-action-button
+background-color
+```
+
+Named after skewered meat — the hyphens look like a kebab skewer. Dominant in CSS property names, HTML attributes, URL slugs, and file names in web projects. Not valid as an identifier in most programming languages because the hyphen is the subtraction operator.
+
+### Title Case
+
+Every word begins with a capital letter. Spaces are used as separators (or sometimes removed).
+
+```
+User Profile
+HTTP Request Handler
+Background Color
+```
+
+Used for human-readable display text, headings, and documentation. Also appears in some configuration formats. Not typically used for code identifiers.
+
+### Hungarian Notation
+
+A prefix encodes the type or scope of a variable.
+
+```
+strFirstName
+nCount
+bIsActive
+arrItems
+```
+
+Invented at Microsoft in the 1970s and widely used in early C and Windows API code. Now largely discouraged in modern codebases — type information belongs in type annotations, not variable names. You may still encounter it in legacy codebases or embedded C.
+
+## Language-Specific Conventions
+
+### JavaScript and TypeScript
+
+JavaScript has the most varied naming landscape because it spans variables, classes, DOM APIs, CSS, and module systems.
+
+```javascript
+// Variables and functions: camelCase
+const userProfile = {};
+function getUserById(userId) {}
+const isAuthenticated = true;
+
+// Classes and interfaces: PascalCase
+class UserService {}
+interface AuthProvider {}
+type RequestHandler = (req: Request) => Response;
+
+// Constants: SCREAMING_SNAKE_CASE
+const MAX_RETRIES = 3;
+const API_BASE_URL = "https://api.example.com";
+
+// Private class members (convention, not enforced): leading underscore
+class Connection {
+  _socket = null; // private by convention
+  #handle = null;  // truly private (ES2022 class fields)
+}
+
+// React components: PascalCase (required by JSX parser)
+function UserCard({ user }) { return <div>{user.name}</div>; }
+
+// File names: kebab-case (common) or PascalCase for components
+// user-service.ts, UserCard.tsx
+```
+
+TypeScript adds generic type parameters, which conventionally use single uppercase letters (`T`, `K`, `V`) or descriptive PascalCase names for complex generics (`TRequest`, `TResponse`).
+
+### Python
+
+Python's conventions are codified in [PEP 8](https://peps.python.org/pep-0008/), which is both a style guide and the basis for linter rules.
+
+```python
+# Variables and functions: snake_case
+user_profile = {}
+def get_user_by_id(user_id): pass
+is_authenticated = True
+
+# Classes: PascalCase
+class UserService:
+    pass
+
+class HTTPRequestHandler:  # Acronyms stay uppercase in class names
+    pass
+
+# Constants: SCREAMING_SNAKE_CASE (module-level)
+MAX_RETRIES = 3
+API_BASE_URL = "https://api.example.com"
+
+# Private: single leading underscore (convention)
+_internal_cache = {}
+
+# Name mangling: double leading underscore (actual Python mechanism)
+class Base:
+    def __method(self):  # becomes _Base__method externally
+        pass
+
+# Dunder methods: double leading and trailing underscores
+class MyClass:
+    def __init__(self): pass
+    def __repr__(self): return "MyClass()"
+    def __len__(self): return 0
+
+# Type aliases: PascalCase (PEP 613)
+UserId = int
+UserMap = dict[str, "User"]
+```
+
+### Go
+
+Go has the most semantically significant naming convention in common languages: capitalization controls export visibility at the package level.
+
+```go
+package user
+
+// Exported (public): PascalCase
+type UserProfile struct {
+    FirstName string
+    LastName  string
+    Email     string
+}
+
+func GetUserByID(id int) (*UserProfile, error) {
+    return nil, nil
+}
+
+// Unexported (package-private): camelCase
+type userCache struct {
+    items map[int]*UserProfile
+}
+
+func buildCacheKey(id int) string {
+    return fmt.Sprintf("user:%d", id)
+}
+
+// Constants: PascalCase if exported, camelCase if not
+const MaxRetries = 3
+const defaultTimeout = 30 * time.Second
+
+// Interfaces: PascalCase, often named by their single method + "er"
+type Reader interface { Read(p []byte) (n int, err error) }
+type UserStorer interface { StoreUser(u *UserProfile) error }
+
+// Acronyms: keep them uppercase
+// Correct: HTTPClient, URLParser, JSONResponse
+// Wrong: HttpClient, UrlParser, JsonResponse
+```
+
+Go deliberately avoids getters named `GetX`. The idiomatic pattern is `user.Name()` not `user.GetName()`.
+
+### Rust
+
+Rust's naming conventions are enforced by the compiler itself — using the wrong case produces a warning by default.
+
+```rust
+// Variables and functions: snake_case
+let user_profile = UserProfile::new();
+fn get_user_by_id(user_id: u64) -> Option<User> { None }
+
+// Types, structs, enums, traits: PascalCase
+struct UserProfile { first_name: String }
+enum AuthError { InvalidToken, Expired, NotFound }
+trait UserStore { fn find(&self, id: u64) -> Option<User>; }
+
+// Constants and statics: SCREAMING_SNAKE_CASE
+const MAX_RETRIES: u32 = 3;
+static API_URL: &str = "https://api.example.com";
+
+// Lifetimes: short lowercase, single letters preferred
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str { x }
+
+// Modules and files: snake_case
+// src/user_service.rs
+mod user_service { }
+
+// Macros: snake_case
+macro_rules! log_error { ... }
+```
+
+### Java
+
+Java conventions are among the oldest and most rigidly followed in the industry.
+
+```java
+// Variables, methods: camelCase
+String firstName = "Alice";
+int getUserCount() { return 0; }
+boolean isAuthenticated() { return false; }
+
+// Classes, interfaces, enums, annotations: PascalCase
+class UserService {}
+interface AuthProvider {}
+enum UserRole { ADMIN, EDITOR, VIEWER }
+@interface RequestMapping {}
+
+// Constants (static final): SCREAMING_SNAKE_CASE
+static final int MAX_RETRIES = 3;
+static final String API_BASE_URL = "https://api.example.com";
+
+// Packages: all lowercase, reverse domain notation
+package com.example.userservice.auth;
+
+// Generic type parameters: single uppercase letters
+class Repository<T, ID> {}
+<T extends Comparable<T>> T findMax(List<T> items) { return null; }
+```
+
+### CSS
+
+CSS properties and class names use kebab-case. This is both the W3C specification standard and a hard requirement — CSS identifiers cannot contain hyphens that would be interpreted as subtraction.
+
+```css
+/* Properties: kebab-case (built into the language) */
+.card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  font-family: sans-serif;
+  margin-top: 16px;
+}
+
+/* BEM (Block Element Modifier): kebab-case with double hyphens/underscores */
+.user-card {}              /* Block */
+.user-card__avatar {}      /* Element */
+.user-card--featured {}    /* Modifier */
+
+/* Utility-first (Tailwind style): kebab-case */
+.bg-blue-500 {}
+.text-lg {}
+.hover:opacity-75 {}
+
+/* CSS custom properties: kebab-case with -- prefix */
+:root {
+  --color-primary: #3b82f6;
+  --spacing-unit: 8px;
+  --font-size-base: 16px;
+}
+```
+
+### SQL
+
+SQL naming is the most divided: different databases, ORMs, and style guides recommend different conventions. The two dominant camps are snake_case and PascalCase/camelCase.
+
+```sql
+-- snake_case (PostgreSQL community standard, widely preferred)
+CREATE TABLE user_profiles (
+    user_id         SERIAL PRIMARY KEY,
+    first_name      VARCHAR(100) NOT NULL,
+    email_address   VARCHAR(255) UNIQUE,
+    created_at      TIMESTAMP DEFAULT NOW(),
+    is_deleted      BOOLEAN DEFAULT FALSE
+);
+
+-- PascalCase (common in SQL Server environments)
+CREATE TABLE UserProfiles (
+    UserId      INT IDENTITY PRIMARY KEY,
+    FirstName   NVARCHAR(100) NOT NULL,
+    EmailAddress NVARCHAR(255)
+);
+
+-- Keywords: uppercase (conventional, not required)
+SELECT user_id, first_name
+FROM user_profiles
+WHERE is_deleted = FALSE
+ORDER BY created_at DESC;
+```
+
+### Ruby
+
+Ruby follows snake_case for most identifiers, with PascalCase for constants and module/class names.
+
+```ruby
+# Variables and methods: snake_case
+first_name = "Alice"
+def get_user_by_id(user_id) end
+is_authenticated = true
+
+# Classes and modules: PascalCase
+class UserService; end
+module AuthHelpers; end
+
+# Constants: SCREAMING_SNAKE_CASE
+MAX_RETRIES = 3
+API_BASE_URL = "https://api.example.com".freeze
+
+# Symbols: snake_case (they're just identifiers)
+user = { first_name: "Alice", role: :admin }
+
+# Predicates: trailing question mark
+def authenticated?; end
+def valid?; end
+
+# Mutating methods: trailing exclamation mark
+def save!; end
+def update_in_place!; end
+
+# Private: not enforced by naming, but marked explicitly
+private
+
+def internal_cache; end
+```
+
+## When to Use Each Convention
+
+### Variables
+
+| Language | Convention | Example |
+|---|---|---|
+| JavaScript / TypeScript | camelCase | `userCount`, `isLoading` |
+| Python | snake_case | `user_count`, `is_loading` |
+| Go | camelCase (unexported), PascalCase (exported) | `count`, `UserCount` |
+| Rust | snake_case | `user_count`, `is_loading` |
+| Java / Kotlin | camelCase | `userCount`, `isLoading` |
+| Ruby | snake_case | `user_count`, `is_loading` |
+| C / C++ | snake_case or camelCase | varies by project |
+
+### Functions and Methods
+
+The same rules as variables apply in most languages. Exceptions:
+
+- **Go**: exported functions are PascalCase, unexported are camelCase
+- **Ruby**: predicate methods end with `?`, mutating methods end with `!`
+- **Rust**: the compiler warns on non-snake_case function names
+
+### Classes and Types
+
+PascalCase is nearly universal for class and type names across all mainstream languages. The only common exception is Go, which uses PascalCase only for exported types.
+
+```typescript
+// TypeScript
+class UserRepository {}
+interface PaymentProvider {}
+type RequestHandler = (req: Request) => void;
+enum UserStatus { Active, Inactive, Suspended }
+```
+
+### Constants
+
+SCREAMING_SNAKE_CASE is the signal for "this value does not change." It crosses language boundaries more consistently than any other convention.
+
+```javascript
+// JavaScript
+const MAX_CONNECTIONS = 10;
+const DEFAULT_LOCALE = "en-US";
+
+// Python
+MAX_CONNECTIONS = 10
+DEFAULT_LOCALE = "en-US"
+
+// Go
+const MaxConnections = 10      // exported constant
+const defaultLocale = "en-US"  // unexported constant
+// Go avoids SCREAMING_SNAKE_CASE; PascalCase/camelCase for constants too
+```
+
+Note that Go is the exception: it uses the same case rules for constants as for other identifiers (PascalCase exported, camelCase unexported).
+
+### File Names
+
+| Context | Convention | Example |
+|---|---|---|
+| JavaScript / TypeScript modules | kebab-case | `user-service.ts`, `auth-middleware.ts` |
+| React components | PascalCase | `UserCard.tsx`, `AuthModal.tsx` |
+| Python modules | snake_case | `user_service.py`, `auth_helpers.py` |
+| Go source files | snake_case | `user_service.go`, `http_handler.go` |
+| Rust source files | snake_case | `user_service.rs` |
+| CSS / SCSS | kebab-case | `user-card.css`, `button-group.scss` |
+| URL slugs | kebab-case | `/blog/naming-conventions-guide` |
+
+### URLs and Routes
+
+kebab-case is the standard for URLs, for two reasons: hyphens are treated as word separators by search engines (Google treats `user-profile` as two words: "user" and "profile"), and underscores are not (Google treats `user_profile` as one word). This has direct SEO implications.
+
+```
+# Correct: hyphens in URLs
+/blog/naming-conventions-guide
+/api/user-profiles
+/docs/getting-started
+
+# Avoid: underscores in URLs
+/blog/naming_conventions_guide  # SEO disadvantage
+/api/userProfiles               # harder to read
+```
+
+### Database Column Names
+
+snake_case is the most portable choice for database column names. It works consistently across PostgreSQL, MySQL, SQLite, and major ORMs without requiring quoted identifiers.
+
+```sql
+-- Portable, no quoting required
+SELECT user_id, first_name, created_at FROM users;
+
+-- Requires quoting in most databases (avoid)
+SELECT "UserId", "FirstName", "CreatedAt" FROM "Users";
+```
+
+## Converting Between Conventions
+
+Conversion between naming conventions is a common need — transforming a database column (`created_at`) into a JavaScript property (`createdAt`), or a CSS class (`background-color`) into a JavaScript variable (`backgroundColor`).
+
+### Word Boundary Detection
+
+The core algorithm for any case converter must correctly identify word boundaries. Boundary rules:
+
+1. A transition from lowercase to uppercase: `camelCase` → boundary before `C`
+2. An underscore or hyphen: `snake_case`, `kebab-case`
+3. A sequence of uppercase letters followed by a lowercase letter: `HTTPSRequest` → `HTTPS` + `Request`
+4. A digit sequence (optional, language-dependent)
+
+```typescript
+function splitWords(input: string): string[] {
+  return input
+    // Insert separator before uppercase after lowercase: camelCase -> camel_Case
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    // Insert separator before uppercase run followed by lowercase: HTTPSRequest -> HTTPS_Request
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
+    // Split on non-alphanumeric separators
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean);
+}
+
+function toCamelCase(input: string): string {
+  const words = splitWords(input);
+  return words
+    .map((word, i) =>
+      i === 0
+        ? word.toLowerCase()
+        : word[0].toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join("");
+}
+
+function toSnakeCase(input: string): string {
+  return splitWords(input).map(w => w.toLowerCase()).join("_");
+}
+```
+
+Try this immediately with the [Case Converter tool](/tools/case-converter).
+
+### Common Pitfalls: Acronyms
+
+Acronyms are the hardest part of case conversion to get right. Different style guides disagree on how to handle them.
+
+**Option A: Keep acronyms uppercase**
+
+```
+// Used in: Go, older Java conventions
+HTTPSConnection
+URLParser
+JSONResponse
+```
+
+**Option B: Treat acronyms as words (only capitalize the first letter)**
+
+```
+// Used in: .NET, modern Java, JavaScript
+HttpsConnection
+UrlParser
+JsonResponse
+```
+
+**The problem:** "Option A" looks better in PascalCase (`HTTPSConnection` is clearly HTTPS + Connection) but becomes ambiguous in camelCase (`hTTPSConnection` looks wrong; most codebases write `httpsConnection` instead).
+
+The modern consensus in JavaScript/TypeScript and Python is to treat acronyms as words: `HttpsConnection`, `jsonResponse`, `apiEndpoint`. This produces more consistent results from automated tools. Go takes the opposite approach: the compiler and `golint` expect `HTTPSConnection` and will warn on `HttpsConnection`.
+
+**The `Id` vs `ID` debate:** Should it be `userId` or `userID`? Go's convention is `userID` (keep the acronym uppercase). JavaScript/TypeScript convention is `userId`. Pick one and enforce it with a linter rule.
+
+### Handling Numbers
+
+Numbers within identifiers create edge cases:
+
+```
+// Options for "user 2 factor auth":
+user2FactorAuth    // number attached to word before it (common)
+user_2_factor_auth // separate word (clearer)
+userTwoFactorAuth  // spelled out (uncommon)
+```
+
+Most converters treat digits as part of the preceding word, so `user2fa` → `user2fa` rather than splitting on `2`.
+
+## Team Convention Enforcement
+
+Agreeing on naming conventions is only half the work. The other half is ensuring the team actually follows them. Manual code review for style is expensive and inconsistent — automated linters handle this far more reliably.
+
+### JavaScript and TypeScript: ESLint
+
+ESLint's `@typescript-eslint/naming-convention` rule is the most powerful option for TypeScript projects. It lets you specify different conventions for different identifier types.
+
+```json
+// .eslintrc.json
+{
+  "rules": {
+    "@typescript-eslint/naming-convention": [
+      "error",
+      {
+        "selector": "variable",
+        "format": ["camelCase", "UPPER_CASE"],
+        "leadingUnderscore": "allow"
+      },
+      {
+        "selector": "function",
+        "format": ["camelCase", "PascalCase"]
+      },
+      {
+        "selector": "typeLike",
+        "format": ["PascalCase"]
+      },
+      {
+        "selector": "enumMember",
+        "format": ["UPPER_CASE", "PascalCase"]
+      }
+    ]
+  }
+}
+```
+
+For React projects, add the `react/display-name` and JSX naming rules from `eslint-plugin-react`.
+
+### Python: Pylint and Flake8
+
+Pylint checks PEP 8 compliance by default, including naming conventions:
+
+```ini
+# .pylintrc
+[BASIC]
+# Allow camelCase for methods that override third-party APIs
+method-rgx=[a-z_][a-z0-9_]{2,30}$|[a-z][a-zA-Z0-9]{2,30}
+
+# Variable names allowed to be short (loop counters, etc.)
+good-names=i,j,k,ex,Run,_,id,pk
+```
+
+For stricter PEP 8 enforcement, `flake8` with the `pep8-naming` plugin catches naming violations as part of a standard lint pass:
+
+```bash
+pip install flake8 pep8-naming
+flake8 --select=N src/
+```
+
+### Go: golint and staticcheck
+
+Go has the leanest setup: `golint` enforces idiomatic names out of the box, and the Go compiler itself warns on non-idiomatic casing.
+
+```bash
+go install golang.org/x/lint/golint@latest
+golint ./...
+
+# staticcheck is more comprehensive
+go install honnef.co/go/tools/cmd/staticcheck@latest
+staticcheck ./...
+```
+
+Common golint warnings you will encounter:
+- `should be HTTPClient, not HttpClient` (acronym casing)
+- `exported function Foo should have comment or be unexported` (documentation)
+- `don't use underscores in Go names` (snake_case in a Go identifier)
+
+### Rust: Clippy
+
+Rust's linter, Clippy, is built into the toolchain and checks naming conventions automatically:
+
+```bash
+cargo clippy
+```
+
+The compiler itself warns on non-snake_case variables and non-PascalCase types:
+
+```
+warning: variable `myVar` should have a snake_case name
+  --> src/main.rs:3:9
+   |
+3  |     let myVar = 5;
+   |         ^^^^^ help: convert the identifier to snake case: `my_var`
+```
+
+### Editor Integration
+
+The most effective enforcement happens in real time in the editor, not in CI. All major editors support ESLint, Pylint, and Clippy via LSP:
+
+- **VS Code**: ESLint extension, Pylint extension, rust-analyzer (includes Clippy)
+- **Neovim / Vim**: `nvim-lspconfig` with `eslint`, `pylsp`, `rust-analyzer`
+- **IntelliJ / WebStorm**: Built-in inspections cover most of these rules without plugins
+
+Combine editor integration with a pre-commit hook using [husky](https://typicode.com/husky/) (JavaScript) or [pre-commit](https://pre-commit.com/) (polyglot) to block commits that violate conventions:
+
+```bash
+# .pre-commit-config.yaml (Python example)
+repos:
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        additional_dependencies: [pep8-naming]
+```
+
+## FAQ
+
+**Does naming convention choice actually affect performance?**
+
+No. Naming conventions affect only source code readability. Compilers and interpreters discard identifier names (or mangle them into symbols) before execution. The only runtime impact is in reflection-heavy scenarios (serialization, ORMs that map column names to struct fields) where the naming scheme affects how much transformation code runs. Even then, the performance difference is negligible.
+
+**Should I follow the language convention or my team's existing convention?**
+
+Follow whichever is already established in the codebase — consistency within a project matters more than following the language standard. If the codebase uses a non-standard convention, the cost of mixing two conventions outweighs the benefit of being "more correct." Plan a migration if the deviation is causing real problems.
+
+**Why do some Python projects use camelCase for method names?**
+
+Two common reasons: Django REST Framework and some other libraries expose methods that match HTTP verbs or other external conventions. More commonly, Python code that wraps a Java or .NET API sometimes inherits camelCase method names to reduce the translation layer. PEP 8 explicitly permits this: "When in doubt, choose names that are consistent with what they wrap."
+
+**How should I name boolean variables?**
+
+Prefix with `is`, `has`, `can`, `should`, or `was` to make the true/false meaning unambiguous:
+
+```python
+# Unclear
+active = True
+deleted = False
+
+# Clear
+is_active = True
+is_deleted = False
+has_permission = True
+can_edit = False
+```
+
+This convention applies across all languages and prevents confusing negations like `if not deleted` (which reads ambiguously) versus `if not is_deleted` (clearly reads as "if not deleted").
+
+**What is the difference between PascalCase and TitleCase?**
+
+PascalCase removes all spaces and capitalizes the first letter of each word: `UserProfile`. Title Case keeps spaces and capitalizes each word: `User Profile`. They look the same in single-word identifiers but diverge for multi-word ones. PascalCase is for code identifiers; Title Case is for display text.
+
+**When should I break with the convention for clarity?**
+
+When the identifier's meaning is significantly clearer with a deviation — and this is rare. The most defensible case is mathematical notation: `dx`, `dy`, `r`, `theta` are universally understood in physics/math code and forcing them to `delta_x`, `delta_y`, `radius`, `angle_radians` would obscure the connection to the underlying formulas. In all other cases, the convention wins.
+
+Convert identifiers between any of these formats instantly with the [Case Converter tool](/tools/case-converter).
