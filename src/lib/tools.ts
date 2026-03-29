@@ -104,4 +104,20 @@ export const tools: Tool[] = [
     category: 'CSS',
     keywords: ['color converter', 'hex to rgb', 'rgb to hsl', 'color picker', 'css color'],
   },
+  {
+    slug: 'cron-builder',
+    name: 'Cron Expression Builder',
+    icon: '⏰',
+    description: 'Build, test, and understand cron expressions with a visual editor.',
+    category: 'DevOps',
+    keywords: ['cron expression', 'cron builder', 'crontab', 'cron schedule', 'cron generator'],
+  },
+  {
+    slug: 'timestamp-converter',
+    name: 'Timestamp Converter',
+    icon: '⏱',
+    description: 'Convert Unix timestamps to human-readable dates and vice versa.',
+    category: 'Date',
+    keywords: ['unix timestamp', 'epoch converter', 'timestamp to date', 'unix time converter'],
+  },
 ];

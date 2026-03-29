@@ -1,0 +1,94 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import CronBuilder from '../../components/tools/CronBuilder';
+---
+
+<ToolLayout
+  title="Cron Expression Builder & Tester | DevToolkit"
+  description="Build, validate, and understand cron expressions with live human-readable descriptions and next run previews. No sign-up required."
+  toolName="Cron Expression Builder"
+  toolUrl="https://oortcraft.dev/tools/cron-builder"
+  faq={[
+    {
+      question: 'What is a cron expression?',
+      answer: 'A cron expression is a string of five fields that defines a recurring schedule for automated tasks. The fields represent minute, hour, day of month, month, and day of week — for example, "0 9 * * 1" means every Monday at 9:00 AM.',
+    },
+    {
+      question: 'Is my cron expression validated in real time?',
+      answer: 'Yes. Every keystroke triggers instant validation and parsing entirely in your browser. No data is sent to any server.',
+    },
+    {
+      question: 'What do the special strings like @daily mean?',
+      answer: '@daily is shorthand for "0 0 * * *" (midnight every day). Other shortcuts include @hourly, @weekly, @monthly, and @yearly. This tool supports all of them.',
+    },
+  ]}
+>
+  <div slot="tool">
+    <CronBuilder client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the Cron Expression Builder</h2>
+    <p>
+      Type a cron expression in the input field or click one of the preset pills to load a common schedule. The tool instantly shows you a human-readable description of when the job will run and lists the next five scheduled run times. Use the copy button to grab the expression and paste it directly into your crontab or scheduler.
+    </p>
+
+    <h2>Cron Syntax Reference</h2>
+    <p>A standard cron expression has five space-separated fields:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Position</th>
+          <th>Allowed values</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Minute</td><td>1st</td><td>0–59</td></tr>
+        <tr><td>Hour</td><td>2nd</td><td>0–23</td></tr>
+        <tr><td>Day of month</td><td>3rd</td><td>1–31</td></tr>
+        <tr><td>Month</td><td>4th</td><td>1–12</td></tr>
+        <tr><td>Day of week</td><td>5th</td><td>0–7 (0 and 7 are Sunday)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Special Characters</h3>
+    <ul>
+      <li><code>*</code> — matches every value in the field</li>
+      <li><code>*/n</code> — every n units (e.g., <code>*/15</code> in the minute field = every 15 minutes)</li>
+      <li><code>n-m</code> — range from n to m inclusive</li>
+      <li><code>n,m,k</code> — list of specific values</li>
+    </ul>
+
+    <h3>Special Strings</h3>
+    <ul>
+      <li><code>@yearly</code> / <code>@annually</code> — <code>0 0 1 1 *</code></li>
+      <li><code>@monthly</code> — <code>0 0 1 * *</code></li>
+      <li><code>@weekly</code> — <code>0 0 * * 0</code></li>
+      <li><code>@daily</code> / <code>@midnight</code> — <code>0 0 * * *</code></li>
+      <li><code>@hourly</code> — <code>0 * * * *</code></li>
+    </ul>
+
+    <h2>Common Examples</h2>
+    <ul>
+      <li><code>* * * * *</code> — every minute</li>
+      <li><code>*/5 * * * *</code> — every 5 minutes</li>
+      <li><code>0 * * * *</code> — every hour on the hour</li>
+      <li><code>0 0 * * *</code> — every day at midnight</li>
+      <li><code>0 9 * * 1</code> — every Monday at 9:00 AM</li>
+      <li><code>0 0 1 * *</code> — first day of every month at midnight</li>
+      <li><code>30 18 * * 1-5</code> — weekdays at 6:30 PM</li>
+      <li><code>0 8,12,17 * * *</code> — daily at 8 AM, noon, and 5 PM</li>
+      <li><code>0 0 1 1 *</code> — once a year on January 1st</li>
+    </ul>
+
+    <h2>FAQ</h2>
+    <h3>What is a cron expression?</h3>
+    <p>A cron expression is a string of five fields that defines a recurring schedule for automated tasks. The fields represent minute, hour, day of month, month, and day of week.</p>
+
+    <h3>Is my cron expression validated in real time?</h3>
+    <p>Yes. Validation and parsing happen entirely in your browser with zero server requests.</p>
+
+    <h3>What do the special strings like @daily mean?</h3>
+    <p><code>@daily</code> is shorthand for <code>0 0 * * *</code> (midnight every day). Other shortcuts include <code>@hourly</code>, <code>@weekly</code>, <code>@monthly</code>, and <code>@yearly</code>.</p>
+  </Fragment>
+</ToolLayout>

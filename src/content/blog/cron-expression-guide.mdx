@@ -1,0 +1,308 @@
+---
+title: "Cron Expressions Explained: A Complete Guide"
+description: "Master cron syntax with this comprehensive guide. Learn the five-field format, special characters, common patterns, and best practices for scheduling tasks."
+pubDate: "2026-03-29"
+tags: ["cron", "devops", "scheduling"]
+relatedTools: ["cron-builder"]
+---
+
+Scheduling automated tasks is one of the most fundamental operations in software engineering. Whether you need to run a database backup every night, send a weekly report every Monday morning, or sweep a temp directory every hour, cron is the tool that makes it happen on Unix-like systems — and the cron expression format has been adopted far beyond the original Unix `cron` daemon into Kubernetes CronJobs, GitHub Actions schedules, AWS EventBridge, Cloud Scheduler, and virtually every modern task queue.
+
+Yet cron syntax trips up even experienced developers. The five-field format looks cryptic at first glance, and edge cases around day-of-month versus day-of-week semantics cause real production bugs. This guide demystifies cron completely — from the basics to advanced patterns and timezone pitfalls.
+
+Build and test cron expressions with our [Cron Expression Builder](/tools/cron-builder).
+
+## What Is Cron?
+
+Cron is a time-based job scheduler built into Unix and Linux operating systems. Its name comes from the Greek word for time, *chronos*. The `crond` daemon runs continuously in the background, reading a configuration file called a **crontab** (cron table) and executing commands at the scheduled times.
+
+Each user on a system can have their own crontab, managed with the `crontab` command:
+
+```bash
+# Edit your crontab
+crontab -e
+
+# List your crontab entries
+crontab -l
+
+# Remove your crontab
+crontab -r
+```
+
+A crontab file contains one job per line. Lines starting with `#` are comments. Each job line has a cron expression followed by the command to run:
+
+```
+*/5 * * * * /usr/bin/python3 /opt/scripts/health_check.py
+0 2 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1
+0 9 * * 1 /usr/bin/node /app/send_weekly_report.js
+```
+
+## The Five-Field Format
+
+A standard cron expression consists of five space-separated fields:
+
+```
+┌───────────── minute (0–59)
+│ ┌───────────── hour (0–23)
+│ │ ┌───────────── day of month (1–31)
+│ │ │ ┌───────────── month (1–12)
+│ │ │ │ ┌───────────── day of week (0–7, where 0 and 7 are Sunday)
+│ │ │ │ │
+* * * * *
+```
+
+The fields must appear in exactly this order. A mismatch — putting the hour before the minute, for example — is one of the most common cron mistakes.
+
+| Field | Position | Allowed Values |
+|---|---|---|
+| Minute | 1st | 0–59 |
+| Hour | 2nd | 0–23 |
+| Day of month | 3rd | 1–31 |
+| Month | 4th | 1–12 |
+| Day of week | 5th | 0–7 (0 and 7 both mean Sunday) |
+
+## Special Characters
+
+Four special characters give cron expressions their power:
+
+### Asterisk `*`
+
+The asterisk matches every possible value for a field. `* * * * *` runs every minute of every hour of every day.
+
+```
+* * * * *     → every minute
+0 * * * *     → every hour (at minute 0)
+0 0 * * *     → every day at midnight
+```
+
+### Slash `/` — Step Values
+
+The slash defines a step interval. `*/n` means "every n units starting from the minimum."
+
+```
+*/15 * * * *  → every 15 minutes (0, 15, 30, 45)
+0 */6 * * *   → every 6 hours (0:00, 6:00, 12:00, 18:00)
+*/2 * * * *   → every even minute (0, 2, 4 ... 58)
+```
+
+You can also use a step with a range: `10-50/10` in the minute field means minutes 10, 20, 30, 40, 50.
+
+### Hyphen `-` — Ranges
+
+The hyphen defines a range of values, inclusive on both ends.
+
+```
+0 9-17 * * *       → every hour from 9 AM to 5 PM
+0 0 * * 1-5        → midnight, Monday through Friday
+0 0 1-7 * *        → midnight on days 1 through 7 of each month
+```
+
+### Comma `,` — Lists
+
+Commas separate a list of specific values.
+
+```
+0 8,12,17 * * *    → daily at 8 AM, noon, and 5 PM
+0 0 1,15 * *       → midnight on the 1st and 15th of each month
+0 9 * * 1,3,5      → 9 AM on Monday, Wednesday, and Friday
+```
+
+You can combine all of these: `0,30 9-17 * * 1-5` means every hour and half-hour between 9 AM and 5 PM on weekdays.
+
+## Special String Shortcuts
+
+Most cron implementations support shorthand strings that replace the five-field expression:
+
+| String | Equivalent | Meaning |
+|---|---|---|
+| `@yearly` / `@annually` | `0 0 1 1 *` | Once a year at midnight on January 1st |
+| `@monthly` | `0 0 1 * *` | Once a month at midnight on the 1st |
+| `@weekly` | `0 0 * * 0` | Once a week at midnight on Sunday |
+| `@daily` / `@midnight` | `0 0 * * *` | Once a day at midnight |
+| `@hourly` | `0 * * * *` | Once an hour at minute 0 |
+
+These are readable and less error-prone than the full form, but they cover only fixed intervals. For anything more specific, you need the five-field form.
+
+## Common Patterns
+
+Here are the most frequently used cron schedules in production systems:
+
+```bash
+# Every minute
+* * * * *
+
+# Every 5 minutes
+*/5 * * * *
+
+# Every 15 minutes
+*/15 * * * *
+
+# Every hour
+0 * * * *
+
+# Every day at midnight
+0 0 * * *
+
+# Every day at 2 AM (common for backups)
+0 2 * * *
+
+# Every weekday at 9 AM
+0 9 * * 1-5
+
+# Every Monday at 9 AM
+0 9 * * 1
+
+# First day of every month at midnight
+0 0 1 * *
+
+# Every quarter (Jan, Apr, Jul, Oct) on the 1st at midnight
+0 0 1 1,4,7,10 *
+
+# Once a year on January 1st at midnight
+0 0 1 1 *
+
+# Weekdays at 8 AM, noon, and 6 PM
+0 8,12,18 * * 1-5
+
+# Every 30 minutes during business hours
+*/30 9-17 * * 1-5
+```
+
+## Day-of-Month vs. Day-of-Week: The OR Semantics Trap
+
+This is the most misunderstood part of cron. When you specify a non-wildcard value in **both** the day-of-month (field 3) and day-of-week (field 5), most cron implementations use **OR semantics**: the job runs when either condition is satisfied.
+
+```bash
+0 0 15 * 1   # Midnight on the 15th of each month OR every Monday
+```
+
+Many developers expect this to mean "midnight on the 15th if it falls on a Monday," but it actually means "midnight on every Monday, plus midnight on the 15th of every month." If you want the intersection, you need to handle it in your script:
+
+```bash
+0 0 15 * 1   /path/to/script.sh  # runs on 15th OR every Monday
+```
+
+```bash
+# To run only when the 15th is a Monday, check inside the script:
+0 0 15 * *  [ $(date +\%u) -eq 1 ] && /path/to/script.sh
+```
+
+This OR behavior is specified in POSIX but it surprises developers coming from other schedulers. Always double-check when both day fields are non-wildcard.
+
+## Crontab Management Best Practices
+
+### Always Use Full Paths
+
+Cron jobs run in a minimal environment without your shell's `PATH`. A command that works interactively may fail silently in a cron job:
+
+```bash
+# Bad — "python3" may not be found
+*/5 * * * * python3 /opt/script.py
+
+# Good — use the full path
+*/5 * * * * /usr/bin/python3 /opt/script.py
+```
+
+Find the full path with `which python3`.
+
+### Redirect Output
+
+By default, cron emails output to the local user. Redirect stdout and stderr to a log file instead:
+
+```bash
+0 2 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1
+```
+
+The `2>&1` redirects stderr to stdout so both go to the log file.
+
+### Use Locking to Prevent Overlap
+
+If a job takes longer than its interval, two instances can run simultaneously. Use `flock` to prevent this:
+
+```bash
+*/5 * * * * /usr/bin/flock -n /tmp/myjob.lock /path/to/script.sh
+```
+
+`flock -n` exits immediately if the lock is already held, skipping that run instead of queuing it.
+
+### Test Before Deploying
+
+Cron bugs are hard to debug because you have to wait for the scheduled time. Test the command manually first, then add it to cron:
+
+```bash
+# Test the exact command cron will run
+/usr/bin/python3 /opt/scripts/health_check.py
+
+# Then add to crontab
+*/5 * * * * /usr/bin/python3 /opt/scripts/health_check.py
+```
+
+## Timezone Considerations
+
+By default, cron uses the system timezone. This causes problems when:
+
+- Your server is in UTC but your stakeholders are in New York
+- Daylight saving time shifts schedules by an hour
+- Multiple servers in different regions run the same crontab
+
+### Setting the Timezone in Crontab
+
+Most modern cron implementations support a `CRON_TZ` environment variable at the top of the crontab:
+
+```bash
+CRON_TZ=America/New_York
+0 9 * * 1-5 /usr/bin/node /app/send_report.js
+```
+
+Now the job runs at 9 AM Eastern regardless of the server's system timezone.
+
+### Daylight Saving Time
+
+When clocks spring forward, the hour that's skipped (e.g., 2:30 AM) never runs. When clocks fall back, the repeated hour runs twice. Schedule critical jobs outside the 1–3 AM window to avoid DST surprises, or use UTC on your servers.
+
+### Cloud Schedulers
+
+Cloud services often handle timezones explicitly:
+
+- **AWS EventBridge**: uses cron with a 6-field format (adds year field) and UTC by default; set timezone in the rule
+- **Google Cloud Scheduler**: supports any IANA timezone per job
+- **Kubernetes CronJobs**: uses the controller's timezone (usually UTC); set `spec.timeZone` in Kubernetes 1.27+
+- **GitHub Actions**: `schedule` trigger uses UTC always
+
+## Alternatives to Cron
+
+Cron is battle-tested but has limitations: no retries, no dependency management, no distributed locking, limited observability. Consider these alternatives for complex needs:
+
+- **Systemd timers** — native Linux scheduler with better logging and dependency management
+- **Celery Beat** — Python task queue with cron-style scheduling and retry support
+- **APScheduler** — Python library for in-process scheduling
+- **node-cron / cron-node** — JavaScript/Node.js cron scheduling
+- **Airflow** — workflow orchestration with DAG dependencies and backfill
+- **Temporal** — durable workflow engine with cron schedule support
+- **GitHub Actions schedules** — CI/CD triggered on cron for repo-level automation
+- **AWS EventBridge** — serverless event scheduling at cloud scale
+
+For simple server-side automation, cron remains the right tool. For pipelines with dependencies, retries, and observability requirements, a purpose-built scheduler is worth the setup cost.
+
+## Debugging Cron Jobs
+
+When a cron job fails silently, work through this checklist:
+
+1. **Check the cron log** — `/var/log/cron`, `/var/log/syslog`, or `journalctl -u cron`
+2. **Verify the job ran** — look for `CMD` entries in the log matching your schedule
+3. **Run the command manually** — exactly as written in the crontab, as the same user
+4. **Check the environment** — add `env > /tmp/cron-env.log` as a test job to see what cron sees
+5. **Check permissions** — the cron user must have execute permission on the script
+6. **Check the exit code** — a non-zero exit code means the job failed; redirect stderr to capture the error
+
+## Summary
+
+Cron expressions are compact but powerful. The five-field format — minute, hour, day, month, weekday — combined with `*`, `/`, `-`, and `,` operators covers virtually every recurring schedule. The key things to remember:
+
+- Fields are in order: minute first, weekday last
+- `*` means "every value," `*/n` means "every n units"
+- Day-of-month and day-of-week use OR semantics when both are non-wildcard
+- Always use full paths in crontab
+- Mind the timezone, especially around DST transitions
+
+Build and test cron expressions interactively with our [Cron Expression Builder](/tools/cron-builder) — paste in an expression and instantly see the human-readable description and next five run times.

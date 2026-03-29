@@ -1,0 +1,219 @@
+---
+title: "Unix Timestamps Explained: Epoch Time for Developers"
+description: "Everything developers need to know about Unix timestamps: what epoch time is, how to work with it in JavaScript and Python, the Y2038 problem, and common pitfalls."
+pubDate: "2026-03-29"
+tags: ["timestamp", "unix", "tutorial"]
+relatedTools: ["timestamp-converter"]
+---
+
+Unix timestamps are one of the most fundamental primitives in computing, yet they are also one of the most misunderstood. Every time you call `Date.now()` in JavaScript, read a database `created_at` column, or parse an API response, you are almost certainly dealing with epoch time. This guide explains everything a working developer needs to know.
+
+## What is a Unix Timestamp?
+
+A **Unix timestamp** (also called **epoch time** or **POSIX time**) is an integer that represents the number of seconds that have elapsed since the **Unix epoch**: midnight on January 1, 1970, at 00:00:00 Coordinated Universal Time (UTC).
+
+```
+Unix epoch = 1970-01-01T00:00:00Z = 0
+```
+
+For example, the timestamp `1711670400` represents `2024-03-29T00:00:00.000Z`. You can verify this instantly with the [Timestamp Converter](/tools/timestamp-converter).
+
+The Unix timestamp was introduced alongside the Unix operating system in the early 1970s. Its designers chose a fixed reference point so that any two systems could agree on a moment in time without needing to agree on calendar systems, timezones, or locale conventions. That simple idea proved so robust that it remains the global standard half a century later.
+
+## Why Epoch Time Matters
+
+Unix timestamps solve several problems that human-readable date strings cannot.
+
+**Timezone independence.** A timestamp is always UTC. There is no ambiguity about whether `2024-03-29 02:00:00` is before or after a daylight saving transition. Two systems in different timezones that both store Unix timestamps will always agree on ordering.
+
+**Arithmetic is trivial.** Want to know if a token has expired? Compare two integers. Want to add 24 hours? Add `86400`. No date library required.
+
+**Universal support.** Every operating system, database, and programming language has native Unix timestamp support. You can pass a timestamp between a Python backend, a PostgreSQL database, a Redis cache, and a JavaScript frontend without any conversion layer.
+
+**Compact storage.** A 32-bit integer stores any date from 1901 to 2038. A 64-bit integer covers billions of years. A human-readable string like `"Friday, March 29, 2024 at 12:00:00 AM UTC"` takes 43 bytes.
+
+## Unix Timestamps in JavaScript
+
+JavaScript uses milliseconds, not seconds. This is the most common source of confusion when working with epoch time.
+
+```javascript
+// Current time in milliseconds (JavaScript native)
+const nowMs = Date.now();
+console.log(nowMs); // e.g. 1711670400000
+
+// Convert to seconds (standard Unix timestamp)
+const nowSec = Math.floor(Date.now() / 1000);
+console.log(nowSec); // e.g. 1711670400
+
+// Create a Date from a seconds timestamp
+const date = new Date(1711670400 * 1000);
+console.log(date.toISOString()); // "2024-03-29T00:00:00.000Z"
+
+// Create a Date from a milliseconds timestamp
+const date2 = new Date(1711670400000);
+console.log(date2.toISOString()); // "2024-03-29T00:00:00.000Z"
+
+// Get ISO 8601 string
+console.log(new Date(nowMs).toISOString()); // "2024-03-29T00:00:00.000Z"
+
+// Get UTC string (HTTP header format)
+console.log(new Date(nowMs).toUTCString()); // "Fri, 29 Mar 2024 00:00:00 GMT"
+
+// Format for local display
+console.log(new Date(nowMs).toLocaleString()); // Varies by locale
+```
+
+A common gotcha: if you pass a 10-digit seconds timestamp directly to `new Date()`, you get a date in January 1970 (because JavaScript interprets it as milliseconds). Always multiply by 1000 when converting seconds to a `Date`.
+
+```javascript
+// Wrong — treats seconds as milliseconds
+new Date(1711670400).toISOString(); // "1970-01-20T..." — incorrect!
+
+// Correct
+new Date(1711670400 * 1000).toISOString(); // "2024-03-29T..." — correct
+```
+
+### Detecting Seconds vs. Milliseconds
+
+A simple heuristic: 10-digit timestamps are in seconds, 13-digit timestamps are in milliseconds. You can use this to auto-detect the unit:
+
+```javascript
+function toDate(ts) {
+  // Timestamps before year 2001 in seconds are 9 digits
+  // Milliseconds timestamps for dates after 2001 are 13 digits
+  const isMillis = ts > 1e12;
+  return new Date(isMillis ? ts : ts * 1000);
+}
+
+console.log(toDate(1711670400).toISOString());    // seconds input
+console.log(toDate(1711670400000).toISOString()); // milliseconds input
+// Both output: "2024-03-29T00:00:00.000Z"
+```
+
+## Unix Timestamps in Python
+
+Python's `time` module works in seconds (floats), matching the standard Unix convention.
+
+```python
+import time
+from datetime import datetime, timezone
+
+# Current Unix timestamp in seconds (float)
+now_sec = time.time()
+print(now_sec)  # e.g. 1711670400.123456
+
+# Integer seconds
+now_int = int(time.time())
+print(now_int)  # e.g. 1711670400
+
+# Convert timestamp to datetime (UTC)
+dt_utc = datetime.fromtimestamp(1711670400, tz=timezone.utc)
+print(dt_utc.isoformat())  # "2024-03-29T00:00:00+00:00"
+
+# Convert timestamp to local datetime
+dt_local = datetime.fromtimestamp(1711670400)
+print(dt_local)  # Local timezone representation
+
+# Convert datetime back to Unix timestamp
+dt = datetime(2024, 3, 29, 0, 0, 0, tzinfo=timezone.utc)
+ts = int(dt.timestamp())
+print(ts)  # 1711670400
+
+# Python 3.3+ — explicit UTC timestamp
+ts_utc = int(datetime.now(timezone.utc).timestamp())
+print(ts_utc)
+```
+
+Always use timezone-aware datetimes (`tzinfo=timezone.utc`) when working with UTC timestamps. Naive datetimes use local system time, which can cause subtle bugs when your code runs in different timezones.
+
+## Unix Timestamps in SQL
+
+Most relational databases have native support for epoch time.
+
+```sql
+-- PostgreSQL
+SELECT EXTRACT(EPOCH FROM NOW())::INTEGER;         -- current Unix timestamp
+SELECT TO_TIMESTAMP(1711670400);                    -- timestamp → timestamptz
+SELECT EXTRACT(EPOCH FROM '2024-03-29'::TIMESTAMP); -- date → Unix timestamp
+
+-- MySQL
+SELECT UNIX_TIMESTAMP();                           -- current Unix timestamp
+SELECT FROM_UNIXTIME(1711670400);                  -- timestamp → datetime
+SELECT UNIX_TIMESTAMP('2024-03-29 00:00:00');      -- datetime → Unix timestamp
+
+-- SQLite (stores as INTEGER)
+SELECT strftime('%s', 'now');                      -- current Unix timestamp
+SELECT datetime(1711670400, 'unixepoch');          -- timestamp → datetime string
+```
+
+## ISO 8601: The Human-Readable Companion
+
+When you need to store or transmit a timestamp in a human-readable format, use **ISO 8601**. It is the international standard and unambiguous.
+
+```
+2024-03-29T00:00:00.000Z
+```
+
+The components are:
+- `2024-03-29` — date (year-month-day)
+- `T` — separator between date and time
+- `00:00:00.000` — time with milliseconds
+- `Z` — UTC timezone (equivalent to `+00:00`)
+
+ISO 8601 strings sort lexicographically in the correct chronological order, making them safe to use as sort keys in databases and file systems. Use them in API responses, JSON payloads, and log files where human readability matters. Use raw Unix timestamps in database columns and computation.
+
+## The Y2038 Problem
+
+The **Y2038 problem** (also called the Unix Millennium Bug or the Year 2038 problem) is the computing equivalent of Y2K — and it is still a live issue.
+
+Many legacy systems store Unix timestamps as a **signed 32-bit integer**. The maximum value of a signed 32-bit integer is `2,147,483,647`. This overflows at:
+
+```
+2147483647 seconds after epoch = 2038-01-19T03:14:07Z
+```
+
+On that date at that moment, systems using 32-bit timestamps will roll over to a large negative number, representing `1901-12-13T20:45:52Z`. This can cause crashes, incorrect date calculations, and security failures.
+
+**Who is affected?**
+
+- Legacy C code using `time_t` as a 32-bit type (common on 32-bit Linux systems)
+- Old embedded systems and IoT devices
+- Some database schemas that store timestamps as 32-bit integers
+- Legacy file systems (FAT32 timestamps are 32-bit)
+
+**Who is not affected?**
+
+- Modern 64-bit operating systems (Linux, macOS, Windows) — they use 64-bit `time_t`
+- JavaScript — uses 64-bit IEEE 754 floats, safe until year 275760
+- Python 3 — uses 64-bit time on all modern platforms
+- MySQL 8.0+ and PostgreSQL — use 64-bit timestamps internally
+
+**What to do:** Use `BIGINT` or `TIMESTAMP WITH TIME ZONE` in your database schemas. Avoid 32-bit integer types for timestamps in any new code. Audit legacy C/C++ code for `int32_t` or `int` typed timestamps.
+
+## Common Pitfalls
+
+**Forgetting timezone context.** A Unix timestamp is always UTC. When you display it to users, convert it to their local timezone. Never store local time as a Unix timestamp — local time is ambiguous during daylight saving transitions.
+
+**Mixing seconds and milliseconds.** A 10-digit number is seconds; a 13-digit number is milliseconds. Multiplying a seconds timestamp by 1000 when it is already in milliseconds produces a date in the year 56,000. Always be explicit about your unit.
+
+**Using floating-point for timestamps.** `time.time()` in Python returns a float. For most purposes, convert to `int` immediately. Floating-point arithmetic can introduce sub-millisecond rounding errors.
+
+**Storing timestamps as strings.** String timestamps require parsing before any arithmetic. Store as integers in the database; format as strings only at the display layer.
+
+**Ignoring leap seconds.** Unix time ignores leap seconds — it pretends every day has exactly 86,400 seconds. This means Unix time is not truly continuous, but for virtually all application-level work, this does not matter. Only precision timekeeping systems need to account for leap seconds.
+
+## Quick Reference
+
+| Use case | Format | Example |
+|---|---|---|
+| Database storage | Unix seconds (INT/BIGINT) | `1711670400` |
+| API responses | ISO 8601 string | `2024-03-29T00:00:00Z` |
+| JavaScript computation | Unix milliseconds | `1711670400000` |
+| HTTP headers | RFC 7231 (UTC string) | `Fri, 29 Mar 2024 00:00:00 GMT` |
+| Log files | ISO 8601 with ms | `2024-03-29T00:00:00.000Z` |
+
+## Wrapping Up
+
+Unix timestamps have been the foundation of computer timekeeping for over 50 years because they are simple, unambiguous, and universally supported. The key rules: always think in UTC, know whether your value is in seconds or milliseconds, and use 64-bit storage everywhere new code is written.
+
+Use the [Timestamp Converter](/tools/timestamp-converter) to instantly convert between Unix timestamps and human-readable dates directly in your browser — no server, no data sent anywhere.

@@ -1,0 +1,48 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import TimestampConverter from '../../components/tools/TimestampConverter';
+---
+
+<ToolLayout
+  title="Unix Timestamp Converter - Epoch Time | DevToolkit"
+  description="Convert Unix timestamps to human-readable dates (ISO 8601, UTC, local, relative) and convert dates back to Unix epoch time instantly in your browser."
+  toolName="Timestamp Converter"
+  toolUrl="https://oortcraft.dev/tools/timestamp-converter"
+  faq={[
+    { question: 'What is a Unix timestamp?', answer: 'A Unix timestamp (also called epoch time) is the number of seconds that have elapsed since January 1, 1970 at 00:00:00 UTC. It is a simple, timezone-independent way to represent a point in time used universally in programming and databases.' },
+    { question: 'What is the difference between seconds and milliseconds timestamps?', answer: 'Most Unix timestamps are in seconds (10 digits for dates around 2001–2286). JavaScript\'s Date.now() and many APIs return milliseconds (13 digits). This tool supports both — use the s/ms toggle to select the correct unit.' },
+    { question: 'Is the Y2038 problem real?', answer: 'Yes. Systems that store Unix timestamps as a signed 32-bit integer will overflow on January 19, 2038 at 03:14:07 UTC. Modern 64-bit systems and languages like JavaScript (which uses 64-bit floats) are not affected, but legacy embedded systems and old databases may still be at risk.' },
+  ]}
+>
+  <div slot="tool">
+    <TimestampConverter client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>What is a Unix Timestamp?</h2>
+    <p>A Unix timestamp is an integer representing the number of seconds elapsed since the <strong>Unix epoch</strong> — January 1, 1970 at 00:00:00 Coordinated Universal Time (UTC). It is also commonly called <em>epoch time</em> or <em>POSIX time</em>. Because it is timezone-agnostic, Unix timestamps are the universal currency of time in computing: databases store them, APIs return them, and log files record them.</p>
+
+    <h2>How to Use This Tool</h2>
+    <ul>
+      <li><strong>Timestamp to date:</strong> Enter a Unix timestamp (seconds or milliseconds) and the tool instantly shows the ISO 8601, UTC, local, and relative representations.</li>
+      <li><strong>Date to timestamp:</strong> Type any human-readable date string (e.g. <code>2024-03-29T00:00:00Z</code> or <code>March 29 2024</code>) to get the Unix timestamp in both seconds and milliseconds.</li>
+      <li><strong>Now:</strong> Click the "Now" button to load the current timestamp.</li>
+      <li><strong>s / ms toggle:</strong> Switch between seconds (10-digit) and milliseconds (13-digit) input.</li>
+    </ul>
+
+    <h2>Output Formats Explained</h2>
+    <ul>
+      <li><strong>ISO 8601</strong> — The international standard format: <code>2024-03-29T00:00:00.000Z</code>. Used in APIs, JSON payloads, and HTML datetime attributes.</li>
+      <li><strong>UTC</strong> — The long-form UTC date string: <code>Fri, 29 Mar 2024 00:00:00 GMT</code>. Used in HTTP headers (<code>Date</code>, <code>Last-Modified</code>).</li>
+      <li><strong>Local</strong> — The timestamp converted to your browser's local timezone.</li>
+      <li><strong>Relative</strong> — A human-friendly relative description: "2 hours ago", "in 3 days".</li>
+    </ul>
+
+    <h2>Unix Time in Programming</h2>
+    <p>Every major language has built-in support for Unix timestamps.</p>
+    <ul>
+      <li><strong>JavaScript:</strong> <code>Date.now()</code> returns milliseconds; <code>Math.floor(Date.now() / 1000)</code> gives seconds. Convert back with <code>new Date(ts * 1000)</code>.</li>
+      <li><strong>Python:</strong> <code>import time; time.time()</code> returns a float in seconds. Use <code>datetime.fromtimestamp(ts)</code> to convert.</li>
+      <li><strong>SQL:</strong> <code>UNIX_TIMESTAMP()</code> in MySQL, <code>EXTRACT(EPOCH FROM NOW())</code> in PostgreSQL.</li>
+    </ul>
+  </Fragment>
+</ToolLayout>
