@@ -1,0 +1,966 @@
+---
+title: "UUID v1 vs v4 vs v7: Which UUID Version Should You Use?"
+description: "Compare UUID versions 1, 4, and 7 — their structure, trade-offs, and best use cases for databases, distributed systems, and APIs."
+pubDate: "2026-03-29"
+tags: ["uuid", "comparison", "database"]
+relatedTools: ["uuid-generator"]
+---
+
+Choosing the wrong UUID version is one of those decisions that seems trivial until your database starts slowing down under load, your users' MAC addresses get leaked in an audit, or you realize your identifiers are impossible to sort by creation time. UUID v4 is by far the most popular choice, but it is not always the right one. UUID v7, standardized in RFC 9562 in 2024, exists precisely because developers kept reaching for v4 in situations where a time-ordered identifier would have served them far better. The proliferation of distributed systems, microservices, and multi-region databases over the past decade has made the choice of ID strategy a first-class engineering concern — not an afterthought. A UUID stored in a primary key column will be read millions of times over the lifetime of a system. Choosing the version that fits your access pattern costs nothing extra at design time and saves significant infrastructure cost later.
+
+This guide gives you the technical depth to make the right call — not just for today's project, but for the distributed systems, database schemas, and APIs you will build over the next decade. We cover all six active UUID versions, their internal bit layouts, real-world performance numbers, and a decision tree you can apply immediately.
+
+## Quick Comparison Table
+
+Before diving into structure and trade-offs, here is a bird's-eye view of all six UUID versions you are likely to encounter:
+
+| Version | Generation Method | Sortable? | Uniqueness Guarantee | Defined In |
+|---|---|---|---|---|
+| v1 | 100-ns timestamp + clock sequence + MAC address | Yes (but field-order dependent) | Extremely high (time + node) | RFC 4122 / RFC 9562 |
+| v3 | MD5 hash of namespace + name | No | Deterministic (not unique — same input = same output) | RFC 4122 / RFC 9562 |
+| v4 | 122 cryptographically random bits | No | Probabilistic (collision astronomically unlikely) | RFC 4122 / RFC 9562 |
+| v5 | SHA-1 hash of namespace + name | No | Deterministic (not unique — same input = same output) | RFC 4122 / RFC 9562 |
+| v6 | Reordered v1 timestamp + clock sequence + node | Yes (lexicographic) | Extremely high (time + node) | RFC 9562 |
+| v7 | Unix ms timestamp + random bits | Yes (lexicographic) | High (time + entropy) | RFC 9562 |
+
+A few clarifications on that table: "sortable" means lexicographic sort on the UUID string produces the same order as creation time. Versions 3 and 5 are deterministic — they do not generate unique IDs, they generate stable IDs for named resources. Version 2 (DCE Security) is omitted because it is not used in modern applications.
+
+## UUID Structure Refresher
+
+If you are new to UUIDs, a quick foundation before the deep dive. For a more thorough introduction, read [What is a UUID?](/blog/what-is-uuid).
+
+A UUID is 128 bits (16 bytes) of data, displayed as 32 hexadecimal digits split into five hyphen-separated groups in the pattern **8-4-4-4-12**:
+
+```
+xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx
+```
+
+Breaking this down:
+
+- **Total length:** 36 characters (32 hex digits + 4 hyphens)
+- **Total data:** 128 bits
+- **Group 1** (8 hex digits = 32 bits): varies by version
+- **Group 2** (4 hex digits = 16 bits): varies by version
+- **Group 3** (4 hex digits = 16 bits): first digit is **M**, the version number
+- **Group 4** (4 hex digits = 16 bits): first digit is **N**, encoding the variant
+- **Group 5** (12 hex digits = 48 bits): varies by version
+
+The **M** position holds the version: `1` through `8` for currently defined versions.
+
+The **N** position encodes the variant. RFC 4122/9562 UUIDs use the "Leach-Salz" variant, where the two most significant bits of the N octet are `10`. This means N is always `8`, `9`, `a`, or `b` in a valid RFC UUID. The variant field consumes 2 of the 4 bits in that nibble, leaving 2 bits plus the rest of the UUID for actual data.
+
+So the six version and variant bits are reserved, leaving **122 usable bits** for UUID v4, and various allocations of those bits for other versions.
+
+A concrete example to anchor the structure:
+
+```
+f47ac10b-58cc-4372-a567-0e02b2c3d479
+         ^^^^       ^
+         group2     variant N = 'a'
+               ^
+               version M = '4' (UUID v4)
+```
+
+### Bit Allocation Across Versions
+
+The 128 bits are not all equally available to the application generating the UUID. Six bits are consumed by reserved fields in every RFC-compliant UUID:
+
+- **4 bits** for the version field (the M nibble)
+- **2 bits** for the variant field (the top two bits of the N nibble)
+
+That leaves 122 bits for actual data. How those 122 bits are allocated differs dramatically across versions:
+
+| Version | Timestamp Bits | Random/Entropy Bits | Structured Bits (node, clock seq) |
+|---|---|---|---|
+| v1 | 60 (Gregorian, 100-ns) | 0 | 62 (14-bit clock seq + 48-bit node) |
+| v3 | 0 | 0 | 122 (fully determined by MD5 hash) |
+| v4 | 0 | 122 | 0 |
+| v5 | 0 | 0 | 122 (fully determined by SHA-1 hash) |
+| v6 | 60 (Gregorian, reordered) | 0 | 62 (14-bit clock seq + 48-bit node) |
+| v7 | 48 (Unix milliseconds) | 74 | 0 |
+
+UUID v4's 122 random bits give it the most entropy of any version. UUID v7 trades 48 of those bits for a timestamp, leaving 74 bits of randomness — still more than enough for collision resistance at any realistic scale.
+
+With this foundation, let's examine each major version in detail.
+
+## UUID v1: Time-Based
+
+UUID v1 was the original version defined in RFC 4122 (2005), though its roots go back to the Open Software Foundation's Distributed Computing Environment in the 1990s. It encodes when and where a UUID was generated.
+
+### Structure
+
+UUID v1 packs three pieces of information into 128 bits:
+
+```
+tttttttt-tttt-1ttt-csss-nnnnnnnnnnnn
+```
+
+- **t** — 60-bit timestamp: 100-nanosecond intervals since October 15, 1582 (the Gregorian calendar epoch)
+- **1** — version number
+- **c** — clock sequence (up to 14 bits): guards against duplicates when the clock is adjusted backwards
+- **s** — clock sequence continuation
+- **n** — 48-bit node identifier (MAC address of a network interface)
+
+The timestamp field is split across the first three groups: the 32 low-order bits of the timestamp go in group 1, the next 16 bits go in group 2, and the 12 high-order bits go in the lower 12 bits of group 3. This splitting is the root of v1's sortability problem — the most significant timestamp bits are stored last in the string representation, so lexicographic sort does not produce chronological order.
+
+A real UUID v1 looks like this:
+
+```
+6ba7b810-9dad-11d1-80b4-00c04fd430c8
+^       ^     ^    ^    ^
+timestamp     ver  clk  MAC address
+(split)             seq
+```
+
+### The MAC Address Privacy Problem
+
+The node field is intended to be the MAC address of the generating machine's network interface. MAC addresses are hardware identifiers assigned by manufacturers. Embedding a MAC address in every UUID v1 you generate means:
+
+1. Anyone with access to any UUID v1 you produced can extract your machine's MAC address
+2. The MAC address can be used to correlate UUIDs produced by the same machine, even across different databases or systems
+3. In shared hosting or containerized environments, the MAC address may identify the host machine
+
+This was identified as a significant privacy concern. RFC 4122 acknowledged this and permitted random node values as an alternative, and RFC 9562 explicitly recommends against using MAC addresses. Many UUID v1 implementations now use a random 48-bit value for the node field, but the damage to the version's reputation was done.
+
+### Monotonicity and Clock Issues
+
+UUID v1 is designed to be monotonically increasing within a single node, because the timestamp is always moving forward. But "moving forward" has exceptions:
+
+- **NTP corrections**: Network Time Protocol can step the clock backward
+- **Leap seconds**: System clocks handle these inconsistently
+- **Clock drift corrections**: Virtualized environments frequently adjust clocks
+- **System hibernation**: After waking, the clock may not have advanced as expected
+
+The clock sequence field (14 bits, values 0–16383) is meant to handle this. When the clock goes backward, the clock sequence is incremented, guaranteeing uniqueness. But this state must be persisted between UUID-generating process restarts, which many implementations do not do correctly.
+
+The practical result: UUID v1 is mostly monotonic but has edge cases that can cause ordering violations or, in the worst case, duplicate UUIDs if the clock sequence state is lost.
+
+### Real-World Behavior in Cassandra
+
+Apache Cassandra adopted UUID v1 as its native time-series ID type. Cassandra's `TimeUUID` column type is UUID v1 under the hood. Cassandra's `timeuuid` functions (`now()`, `minTimeuuid()`, `maxTimeuuid()`, `dateOf()`, `unixTimestampOf()`) all operate on the Gregorian epoch embedded in v1 UUIDs.
+
+The appeal: Cassandra partitions data by partition key and sorts within a partition by clustering key. Using UUID v1 as a clustering key gives you time-ordered rows within a partition without a separate timestamp column. This design is common in event sourcing and time-series workloads on Cassandra.
+
+The downside remains the MAC address exposure and the non-intuitive timestamp split. CQL (Cassandra Query Language) provides `toTimestamp(timeuuid)` and `toDate(timeuuid)` functions to work around the split timestamp field — you do not manipulate it directly. New Cassandra projects can use UUID v7 as a clustering key in most versions, and the time-ordering works correctly since v7's timestamp is in the most significant bits.
+
+### When to Use UUID v1
+
+UUID v1 is a legacy choice. You might encounter it in:
+
+- Older Cassandra deployments (Cassandra used v1 as its native UUID type)
+- Systems built before v7 was standardized
+- Applications that need an embedded timestamp and run in controlled environments
+- Legacy middleware and enterprise software from the early 2000s
+
+For new projects, prefer UUID v7. It solves the same problem — time-ordered, distributed UUIDs — without the MAC address exposure, with a cleaner bit layout, and with a Unix epoch that integrates naturally with modern tooling. The only reason to use UUID v1 today is compatibility with an existing system that expects it.
+
+## UUID v4: Random
+
+UUID v4 is the most widely deployed UUID version in existence. It is simple to implement, simple to understand, and available as a built-in in virtually every programming language and platform.
+
+### Structure
+
+UUID v4 is 122 bits of cryptographically random data. The remaining 6 bits are occupied by the version field (4 bits encoding `0100`) and the variant field (2 bits encoding `10`):
+
+```
+xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+```
+
+Where `x` is any random hex digit and `y` is `8`, `9`, `a`, or `b` (the variant constraint on the first two bits of that nibble).
+
+```
+f47ac10b-58cc-4372-a567-0e02b2c3d479
+              ^    ^
+              4    'a' (variant)
+```
+
+No timestamps. No node identifiers. No state. Just random bits.
+
+### Collision Probability
+
+The randomness of UUID v4 is both its greatest strength and its one theoretical weakness. Let's be precise about the numbers.
+
+The total space of UUID v4 values is 2^122 = 5,316,911,983,139,663,491,615,896,791,945,412,530,176 possible values.
+
+Using the birthday problem formula, the probability of at least one collision among `n` UUIDs is approximately:
+
+```
+P(collision) ≈ 1 - e^(-n²/(2 × 2^122))
+```
+
+Some concrete values:
+
+| Number of UUIDs Generated | Approximate Collision Probability |
+|---|---|
+| 1 million (10^6) | ~1 in 10^23 |
+| 1 billion (10^9) | ~1 in 10^17 |
+| 1 trillion (10^12) | ~1 in 10^11 |
+| 1 quadrillion (10^15) | ~1 in 10^5 |
+| 2.7 × 10^18 | ~50% |
+
+To put 2.7 × 10^18 in context: generating one million UUIDs per second continuously would take approximately 85,000 years to reach 50% collision probability. For every practical application ever built, UUID v4 collision probability is effectively zero.
+
+### The CSPRNG Requirement
+
+The collision probability math assumes a high-quality random number generator. UUID v4 relies entirely on the quality of its entropy source. There are two categories:
+
+**Cryptographically Secure Pseudo-Random Number Generators (CSPRNGs):** These are seeded from genuine entropy sources (hardware noise, OS entropy pools) and produce output that is computationally indistinguishable from true random. Examples: `crypto.randomUUID()` in browsers and Node.js, `os.urandom()` and `secrets` in Python, `crypto/rand` in Go, `SecureRandom` in Java.
+
+**Non-cryptographic PRNGs:** These include `Math.random()` in JavaScript, `random.random()` in Python, and similar functions. They are designed for statistical randomness in simulations, not for security or collision resistance. Their output is predictable if the seed is known or can be inferred.
+
+A UUID v4 generated with `Math.random()` instead of `crypto.randomUUID()` has dramatically higher collision probability because the output space is effectively reduced by the predictability of the generator. Never use non-cryptographic PRNGs for UUID generation.
+
+Modern platforms make this easy: `crypto.randomUUID()` is available in all modern browsers, Node.js 14.17+, and Deno. It uses the underlying OS CSPRNG and produces correctly formatted UUID v4 strings directly.
+
+### The Database Performance Problem
+
+UUID v4 has one significant operational weakness: it is completely random, which means sequential inserts into a UUID-indexed table insert at random positions in the B-tree index. This causes **index fragmentation** and **page splits**.
+
+This is not a problem with small tables. It becomes very significant at scale — tables with tens of millions of rows or more. The details are covered in the Database Performance Impact section below.
+
+### UUID v4 in Practice: Where It Works Well
+
+Despite the database performance concern, UUID v4 is entirely the right choice in a wide range of situations:
+
+**Client-generated IDs for sync systems.** Mobile applications that create records offline and sync to a server later need to generate IDs on the client before the server is involved. UUID v4 requires no coordination — any device can generate one, knowing with certainty it will not collide with IDs generated by other devices or by the server.
+
+**Idempotency keys.** Payment APIs, message queues, and RPC systems use idempotency keys to ensure an operation is processed exactly once even if the network retries the request. The key just needs to be unique per operation — it does not need to be sortable or embedded in a database index. UUID v4 is ideal.
+
+**Short-lived identifiers.** Cache keys, temporary file names, request trace IDs, and correlation IDs are generated frequently and discarded quickly. They rarely end up in a database B-tree that needs to stay efficient over millions of records. UUID v4 is perfectly suited.
+
+**Foreign keys and lookup tables.** Not every UUID in a database sits in a primary key column of a high-write table. A UUID that identifies a configuration type, a country code, a product category — something with hundreds of rows that changes infrequently — will never accumulate enough entries to cause meaningful index fragmentation regardless of which UUID version is used.
+
+### When to Use UUID v4
+
+UUID v4 is appropriate when:
+
+- You need a simple, unique identifier and ordering is not important
+- The ID will not be a database primary key for a high-write table
+- You are generating IDs in client-side code (mobile apps, browsers)
+- You want maximum library support and portability (v4 is universally supported)
+- You need an ID for a short-lived resource (session tokens, temporary files, cache keys)
+- You are using the ID as an idempotency key or correlation ID
+- The table receiving the ID has fewer than a few million rows
+
+UUID v4 remains an excellent default choice for many applications. Its problems only become apparent at scale or in specific database workloads. Do not switch to v7 out of premature optimization — measure first.
+
+## UUID v7: The Modern Standard
+
+UUID v7 was defined in RFC 9562, published in May 2024. It is the answer to a question that developers had been asking for years: why can't we have a UUID that is both random enough to be practically unique and ordered enough to be database-friendly?
+
+### Background: Why v7 Was Created
+
+The gap between UUID v1 and v4 left developers with a real problem. UUID v4 is clean and simple but causes database index fragmentation. UUID v1 is sortable but exposes MAC addresses and has a confusing bit layout where the timestamp is split across multiple fields in a non-chronological order.
+
+Before RFC 9562 was published, the community had developed ULID (Universally Unique Lexicographically Sortable Identifier) as an alternative. ULID uses a 48-bit millisecond timestamp in the most significant bits, followed by 80 bits of randomness, encoded as 26 characters in Crockford Base32. It solved the sortability problem neatly. UUID v7 learned from ULID's design and brought the same concept into the official UUID standard with full RFC backing.
+
+UUID v6 was also defined in RFC 9562 as a transitional format (covered below), but v7 is the one you should use for new projects.
+
+### Structure
+
+UUID v7 places a 48-bit Unix millisecond timestamp in the most significant bits — the leftmost part of the UUID — followed by version and variant bits, followed by random data:
+
+```
+01951234-5678-7abc-def0-123456789abc
+^            ^ ^
+48-bit ms    | variant
+timestamp    version 7
+```
+
+In binary detail:
+
+```
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                           unix_ts_ms                          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          unix_ts_ms           |  ver  |       rand_a          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|var|                        rand_b                             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                            rand_b                             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+- **unix_ts_ms** (48 bits): milliseconds since Unix epoch (January 1, 1970). The range extends to the year 10889 — not a practical concern.
+- **ver** (4 bits): `0111` (7 in hex)
+- **rand_a** (12 bits): random, or optionally used for sub-millisecond precision
+- **var** (2 bits): `10` (RFC 4122 variant)
+- **rand_b** (62 bits): random
+
+Total random/entropy bits: 74 (12 in rand_a + 62 in rand_b). This is less than UUID v4's 122 bits, but the trade-off is intentional — the timestamp occupies those 48 bits instead.
+
+### Lexicographic Sortability
+
+The key property that makes UUID v7 database-friendly: because the timestamp occupies the most significant 48 bits of the UUID, and because those bits are stored first in the string representation, a simple lexicographic sort of UUID v7 strings produces chronological order.
+
+```
+01951e2a-b3c4-7d5e-f6a7-8b9c0d1e2f3a  <- generated first
+01951e2a-c891-7f23-a456-789012345678  <- generated second
+01951e2b-0000-7abc-def0-123456789abc  <- generated 1ms later
+```
+
+Sort these strings alphabetically: you get them in creation order. No special parsing needed. This is the property that makes UUID v7 a drop-in improvement over UUID v4 for database primary keys.
+
+### Monotonicity Within the Same Millisecond
+
+RFC 9562 addresses a subtlety: what happens when multiple UUIDs are generated within the same millisecond? With 74 bits of random data, the probability of collision is still extremely low. But if you want guaranteed monotonicity (each UUID is strictly greater than the previous), RFC 9562 suggests two approaches:
+
+1. **Method 1:** Use the rand_a field (12 bits) as a monotonic counter that increments for each UUID generated within the same millisecond. This guarantees strict ordering but requires state.
+2. **Method 2:** Include sub-millisecond precision in rand_a. If your system clock provides microsecond or nanosecond resolution, encode those fractions in rand_a.
+3. **Method 3:** Pure random. Accept that within a single millisecond, relative order of UUIDs is not guaranteed. This is fine for most use cases.
+
+Most libraries implement Method 3 by default and offer Method 1 as an option. For database primary keys, Method 3 is usually sufficient — you rarely need strict ordering within a single millisecond.
+
+### Unix Timestamp Compatibility
+
+UUID v1 used the Gregorian epoch (October 15, 1582), which required conversion to get a human-readable timestamp. UUID v7 uses the Unix epoch (January 1, 1970), which every platform understands natively:
+
+```javascript
+// Extract timestamp from a UUID v7
+function uuidV7Timestamp(uuid) {
+  const hex = uuid.replace(/-/g, "").slice(0, 12);
+  return Number(BigInt("0x" + hex));
+}
+
+const uuid = "01951e2a-b3c4-7d5e-f6a7-8b9c0d1e2f3a";
+const ms = uuidV7Timestamp(uuid);
+console.log(new Date(ms).toISOString()); // "2026-03-29T..."
+```
+
+This is useful for debugging, log analysis, and anywhere you want to know when a record was created without a separate `created_at` column.
+
+### Security Considerations: No MAC Address Exposure
+
+UUID v7 uses cryptographically random data for all non-timestamp bits. There is no node field, no clock sequence tied to hardware state, and no embedded network interface information. Every UUID v7 generated on the same machine looks identical in structure to one generated on a completely different machine — only the timestamp and random fields differ, and neither leaks anything about the generating host.
+
+This is a meaningful improvement over UUID v1 in environments where UUIDs are logged, stored in third-party systems, or exposed in API responses. A security audit of a system using UUID v1 that logs UUIDs to an external service is a real concern: you are sending MAC addresses to that service. UUID v7 eliminates this class of privacy issue entirely.
+
+### RFC 9562 Compliance Details
+
+RFC 9562, published by the IETF in May 2024, is a full Standards Track document that obsoletes RFC 4122. It defines UUID versions 6, 7, and 8 in addition to retaining and clarifying versions 1 through 5. Key normative language from RFC 9562 relevant to v7:
+
+- The unix_ts_ms field MUST be a 48-bit big-endian unsigned integer representing Unix milliseconds
+- The ver field MUST be `0111` (7 hex)
+- The var field MUST be `10` (RFC 4122 variant)
+- Implementations SHOULD use a CSPRNG for the random fields
+- The spec explicitly recommends UUID v7 for use as database primary keys and notes the index performance benefits
+
+RFC 9562 also defines UUID v8 as a "custom" format for vendor-specific use cases — a way to encode application-specific data in UUID format while remaining technically RFC-compliant. UUID v8 has no fixed structure beyond the version and variant fields; everything else is application-defined.
+
+### When to Use UUID v7
+
+UUID v7 is the recommended default for new projects that need:
+
+- Database primary keys (especially in high-write tables)
+- IDs that need to be sortable by creation time
+- Distributed ID generation without MAC address exposure
+- Compatibility with UUID-expecting systems (unlike ULID, it is a valid UUID)
+- Event sourcing event IDs, message IDs, or any identifier where insertion order matters
+
+The only reason not to use v7 today is library availability. UUID v7 is new enough that some older language versions and frameworks do not have native support. The `uuid` npm package has supported v7 since version 9.0.0 (2023). Python's `uuid` standard library does not include v7 as of Python 3.12, requiring a third-party library like `uuid7`. Java, Go, and Rust have good third-party support. Check your stack's library versions before committing — in most cases you will find v7 is available.
+
+## Database Performance Impact
+
+This section matters most if you are using UUIDs as primary keys in a relational database. The version you choose has measurable performance implications at scale.
+
+### How B-Tree Indexes Work
+
+Nearly every relational database uses B-tree (balanced tree) indexes by default. A B-tree index maintains a sorted structure of your indexed values. When you insert a new row, the database finds the correct sorted position in the B-tree and inserts the key there.
+
+For sequential values (auto-increment integers, UUID v7), every new insert goes at the **end** of the index. The B-tree always appends to the rightmost leaf page. This is extremely efficient — the working set is small (just the last page), cache utilization is high, and pages fill up in order.
+
+For random values (UUID v4), every new insert goes at a **random position** in the B-tree. With a small table, the entire index fits in memory and this is fast. As the table grows:
+
+1. The working set becomes the entire index (random positions are accessed randomly)
+2. Most inserts require reading a cold page from disk, modifying it, and writing it back
+3. Pages fill unevenly — some are 100% full, some are 50% full
+4. When a full page receives an insert, a **page split** occurs: the page is divided into two half-full pages, and the parent page gets a new pointer
+5. Page splits cascade up the tree, fragmenting the index structure
+
+### The Page Split Cascade
+
+A page split is expensive: it requires allocating a new page, moving half the data, updating the parent, and potentially causing a cascade of parent splits. Worse, after many page splits, your index pages are only ~50% full on average. You are using twice the disk space and cache memory for the same number of keys.
+
+Over time, a large table using UUID v4 primary keys will have:
+- An index that is 50–70% page fill on average (versus ~90%+ for sequential IDs)
+- Significantly higher I/O for both reads and writes
+- Larger total index size on disk
+- Higher memory pressure (more pages needed in buffer pool to maintain performance)
+
+### PostgreSQL Behavior
+
+PostgreSQL uses heap storage with separate B-tree index files. Its behavior with random UUID primary keys is particularly impactful because PostgreSQL does not cluster the heap automatically — the heap is append-only regardless of ID type.
+
+With UUID v4 primary keys in PostgreSQL:
+
+- The `PRIMARY KEY` index (a B-tree) fragments as described above
+- `VACUUM` can reclaim dead tuples but cannot fix index fragmentation
+- `REINDEX` or `CLUSTER` can defragment the index but require table locks and significant I/O
+- `pg_bloat_check` extensions typically show 40–60% bloat in heavily-written UUID v4 indexed tables
+
+With UUID v7 primary keys in PostgreSQL:
+
+- The primary key index stays dense and sequential
+- VACUUM is less important for performance (still needed for dead tuple cleanup)
+- `fillfactor` tuning for the index is less critical
+
+A commonly cited benchmark: switching from UUID v4 to UUID v7 primary keys in a PostgreSQL table receiving 10,000 inserts per second reduced write latency by 30–50% after the table grew beyond 100M rows. The exact numbers vary by hardware, workload, and PostgreSQL version, but the directional improvement is consistent.
+
+### MySQL / InnoDB Behavior
+
+InnoDB (the default MySQL storage engine) uses a **clustered index** architecture: the primary key index is the table itself. Rows are stored on disk in primary key order. This makes the index fragmentation problem for UUID v4 even more severe:
+
+- Every insert that lands at a random position in the clustered index causes the database to locate the correct position in the data file, not just the index file
+- If the target page is full, a page split moves half the rows to a new page — a very expensive operation on a clustered index
+- The table's physical storage becomes fragmented, degrading full table scan performance as well as index lookups
+- Buffer pool efficiency drops because random access patterns thrash the cache
+
+MySQL 8.0 addressed this with `UUID_TO_BIN(uuid, 1)` — the second parameter swaps the time fields so the UUID sorts chronologically. This is effectively manual UUID v6 behavior. With UUID v7, you get this automatically.
+
+InnoDB's `innodb_fill_factor` setting (default 100%) means leaf pages are filled completely, maximizing density for sequential workloads. Random UUID inserts cause constant page splits from day one in a full-fill-factor configuration.
+
+### Practical Recommendation
+
+| Table Size | Write Volume | Recommendation |
+|---|---|---|
+| < 1M rows | Any | UUID v4 is fine |
+| 1M–10M rows | Low | UUID v4 is acceptable |
+| 1M–10M rows | High (>1k/s) | UUID v7 preferred |
+| > 10M rows | Any | UUID v7 strongly preferred |
+| Any size | Primary key | UUID v7 preferred |
+
+If you are migrating an existing system from UUID v4 to UUID v7, you do not need to change existing data. Generate UUID v7 for new records. The index will gradually become more sequential as new records arrive at the end, though you may need a periodic `REINDEX` to clean up historical fragmentation.
+
+### Measuring the Impact in Your System
+
+Before attributing slow write performance to UUID version, verify that UUID fragmentation is actually the bottleneck. PostgreSQL provides the `pgstattuple` extension for measuring index bloat:
+
+```sql
+-- Install the extension (requires superuser)
+CREATE EXTENSION IF NOT EXISTS pgstattuple;
+
+-- Check index bloat for a specific index
+SELECT
+  index_name,
+  avg_leaf_density,
+  leaf_fragmentation
+FROM pgstatindex('users_pkey');
+```
+
+A healthy `avg_leaf_density` is 80–95%. Values below 60% indicate significant fragmentation. `leaf_fragmentation` above 20% means the index pages are not contiguous on disk, increasing sequential scan cost.
+
+In MySQL, use the `information_schema`:
+
+```sql
+SELECT
+  table_name,
+  data_free,
+  data_length,
+  ROUND(data_free / (data_length + data_free) * 100, 2) AS fragmentation_pct
+FROM information_schema.tables
+WHERE table_schema = 'your_database'
+  AND table_name = 'users';
+```
+
+If you observe fragmentation above 30% and your table uses UUID v4 primary keys, migrating new inserts to UUID v7 is a well-justified optimization. Run `OPTIMIZE TABLE` (MySQL) or `CLUSTER` (PostgreSQL) on the existing data to compact the historical fragmentation after the migration.
+
+### Write Amplification
+
+Index fragmentation causes a secondary problem beyond read performance: write amplification. When a page split occurs, the database must:
+
+1. Allocate a new page
+2. Write half the current page's data to the new page
+3. Update the current page to contain only the remaining half
+4. Update the parent index page to add a pointer to the new page
+5. If the parent is also full, repeat the split up the tree (cascade)
+6. Write all modified pages to the WAL (write-ahead log) before acknowledging the commit
+
+Each of these steps is a disk write. A single INSERT that causes a cascading page split can result in ten or more actual disk write operations. At scale, this write amplification directly increases I/O cost and can saturate disk bandwidth even before reaching theoretical table or index size limits.
+
+## UUID v6: The Reordered v1
+
+UUID v6 is a transitional format defined in RFC 9562 alongside v7. It exists to solve exactly one problem: UUID v1's timestamp field ordering is not lexicographically sortable.
+
+### Why v6 Exists
+
+UUID v1 stores a 60-bit Gregorian timestamp split across three fields: the low 32 bits in group 1, the next 16 bits in group 2, and the high 12 bits in the lower 12 bits of group 3. When you sort UUID v1 strings, you are comparing the low-order bits first — the least significant part of the timestamp. This means lexicographic sort does not produce chronological order.
+
+UUID v6 takes all the same data as UUID v1 — same timestamp, same clock sequence, same node — and reorders the timestamp bits so the most significant bits come first:
+
+```
+UUID v1: timestamp-low|timestamp-mid|version-timestamp-high|clock-seq|node
+UUID v6: timestamp-high|timestamp-mid|timestamp-low-version|clock-seq|node
+```
+
+With v6, the 60-bit Gregorian timestamp is laid out with its most significant bits first, making the UUID lexicographically sortable.
+
+### v6 vs v7
+
+UUID v6 has the same limitations as v1 minus the sortability problem:
+
+- Still uses the Gregorian epoch (1582), not Unix epoch
+- Still includes a node identifier (typically MAC address or random)
+- Still requires clock sequence state management
+
+UUID v7 is strictly better for new projects. UUID v6 exists as a migration path for systems that were using UUID v1 and need sortability, because v6 and v1 contain the same information and can be mechanically converted between each other.
+
+Unless you are maintaining a system built on UUID v1, skip v6 and go directly to v7.
+
+## UUID v3 and v5: Name-Based
+
+UUID v3 and v5 are the odd members of the family. They are not used for uniqueness in the traditional sense — they are used to generate **stable, deterministic identifiers** for named resources.
+
+### The Core Concept
+
+A name-based UUID takes two inputs:
+
+1. A **namespace** UUID — a well-known UUID that identifies the domain
+2. A **name** string — the identifier within that domain
+
+It hashes them together and produces a UUID. Given the same namespace and name, you always get the same UUID. This is not a collision — it is the intended behavior.
+
+```
+hash(namespace || name) → UUID
+```
+
+RFC 4122 and RFC 9562 define four standard namespaces:
+
+| Namespace | UUID | Purpose |
+|---|---|---|
+| `NAMESPACE_DNS` | `6ba7b810-9dad-11d1-80b4-00c04fd430c8` | Fully qualified domain names |
+| `NAMESPACE_URL` | `6ba7b811-9dad-11d1-80b4-00c04fd430c8` | URLs |
+| `NAMESPACE_OID` | `6ba7b812-9dad-11d1-80b4-00c04fd430c8` | ISO OIDs |
+| `NAMESPACE_X500` | `6ba7b814-9dad-11d1-80b4-00c04fd430c8` | X.500 distinguished names |
+
+You can also use any UUID as a namespace, including one you generate yourself for your application's domain.
+
+### v3 vs v5: MD5 vs SHA-1
+
+The only difference between v3 and v5 is the hash function:
+
+- **UUID v3**: MD5 hash, truncated to 128 bits (with version/variant bits overwritten)
+- **UUID v5**: SHA-1 hash, truncated to 128 bits (with version/variant bits overwritten)
+
+MD5 is considered cryptographically broken — it is vulnerable to collision attacks. This does not mean UUID v3 is unsafe for its intended purpose (generating deterministic IDs, not cryptographic security), but SHA-1 is the better choice for no cost. **Always prefer UUID v5 over UUID v3.**
+
+Neither MD5 nor SHA-1 is being used for security here. The hash is just a deterministic mixing function that maps two inputs to a UUID-sized output. Even with SHA-1's known collision vulnerabilities, finding two different (namespace, name) inputs that produce the same UUID v5 would require significant computational effort and has no practical implications for ID generation.
+
+### Use Cases
+
+**Content deduplication:** If you store articles, and each article has a canonical URL, you can use UUID v5 to generate a stable ID:
+
+```python
+import uuid
+
+article_id = uuid.uuid5(uuid.NAMESPACE_URL, "https://example.com/articles/hello-world")
+# Always: UUID('c5b9c5de-4bd9-5e6b-9bb6-3e6e5b27f7f4')
+```
+
+If the article is submitted twice, you get the same ID without needing to check the database first.
+
+**Idempotent external references:** When integrating with a system that uses non-UUID identifiers (user IDs from a legacy system, product SKUs), UUID v5 lets you generate a stable UUID for each external ID:
+
+```python
+MY_SYSTEM_NAMESPACE = uuid.UUID("your-application-namespace-uuid-here")
+legacy_user_id = "user_12345"
+stable_uuid = uuid.uuid5(MY_SYSTEM_NAMESPACE, legacy_user_id)
+```
+
+**DNS-style hierarchical IDs:** If you want IDs for hierarchically named resources (organization/project/resource), you can chain namespace UUIDs:
+
+```python
+org_id = uuid.uuid5(uuid.NAMESPACE_DNS, "mycompany.com")
+project_id = uuid.uuid5(org_id, "my-project")
+resource_id = uuid.uuid5(project_id, "resource-name")
+```
+
+Each level uses the previous level's UUID as the namespace, creating a stable hierarchy.
+
+**Use UUID v5 when** you need deterministic, reproducible identifiers for named resources. Do not use it when you need unique identifiers for new records — use v4 or v7 for that.
+
+## UUIDs vs Other ID Formats
+
+UUIDs are not the only option for distributed unique identifiers. Here is how they compare to the other formats you are likely to encounter:
+
+| Format | Length | Sortable? | URL-Safe? | Standard? | Unique Guarantee | Notes |
+|---|---|---|---|---|---|---|
+| UUID v4 | 36 chars (string) / 16 bytes | No | No (contains hyphens) | RFC 9562 | Probabilistic (122 bits) | Most compatible |
+| UUID v7 | 36 chars (string) / 16 bytes | Yes | No (contains hyphens) | RFC 9562 | Time + 74 bits entropy | Best for DB PKs |
+| ULID | 26 chars | Yes | Yes | Community spec | Time + 80 bits entropy | No RFC, predates UUID v7 |
+| Snowflake ID | 18–19 chars (decimal) | Yes | Yes | Twitter internal | Time + worker ID + sequence | Requires coordination |
+| nanoid | Configurable (~21 chars default) | No | Yes | npm library | Configurable entropy | Not UUID-compatible |
+| KSUID | 27 chars | Yes | Yes | Segment internal | Time + 128-bit random | No RFC |
+| Auto-increment | 1–20 chars (decimal) | Yes | Yes | N/A | Guaranteed sequential | Requires central authority |
+| NanoID (short) | 8–12 chars typical | No | Yes | Custom | Low (depends on size) | High collision risk |
+
+### Snowflake IDs
+
+Snowflake IDs (originated at Twitter, also used by Discord, Instagram) pack a millisecond timestamp, a worker/datacenter ID, and a sequence number into a 64-bit integer. They are sortable, compact, and extremely high-throughput (up to 4096 IDs per millisecond per worker). The trade-off: they require a coordination layer to assign unique worker IDs. In a cloud environment, each instance needs a distinct worker ID, which requires configuration management or a service discovery system. Snowflake IDs also embed the epoch start date of the system that issued them — an ID from Twitter's system cannot be compared chronologically with one from Discord's system.
+
+### ULID
+
+ULID (Universally Unique Lexicographically Sortable Identifier) was the community's answer to the UUID v4 sortability problem before RFC 9562 standardized v7. A ULID uses a 48-bit millisecond timestamp followed by 80 bits of random data, encoded in Crockford Base32 for a 26-character, URL-safe, case-insensitive string.
+
+ULID and UUID v7 solve the same problem. UUID v7 is now the RFC-standardized answer. Choose UUID v7 for new projects unless you have a specific reason to prefer ULID (for example, an existing codebase heavily invested in ULID tooling).
+
+### nanoid
+
+nanoid is a JavaScript library (with ports to other languages) that generates short, URL-safe unique IDs. The default is 21 characters using an alphabet of 64 characters, providing ~126 bits of entropy — comparable to UUID v4. nanoid IDs are not UUIDs and are not compatible with UUID-typed database columns. Use nanoid when you want short, URL-friendly IDs and do not need UUID compatibility. Use UUID v7 when you need database-friendly, standard-compliant identifiers.
+
+### Auto-Increment
+
+Auto-increment integers remain the right choice when:
+- You have a single database instance
+- You will never merge data from multiple sources
+- You don't mind exposing record counts in URLs
+- Maximum index performance is required and your IDs must be as small as possible
+
+They are not a choice for distributed systems, offline-first applications, or multi-region databases.
+
+## Choosing the Right Version
+
+The decision tree:
+
+**Do you need a deterministic ID from a name?**
+- Yes → UUID v5 (or v3 if legacy compatibility requires it)
+- No → continue
+
+**Do you need database-friendly, time-ordered IDs?**
+- Yes → UUID v7
+- Unsure → read the next question
+
+**Is this ID going into a primary key column in a relational database that will have more than 1 million rows?**
+- Yes → UUID v7
+- No → UUID v4 is fine
+
+**Do you need to be compatible with systems built on UUID v1?**
+- Yes, and you need sortability → UUID v6
+- Yes, no sortability needed → UUID v1 (or v7 for new data)
+- No → UUID v7
+
+**Is library support for v7 unavailable in your stack?**
+- Yes → UUID v4 now, migrate to v7 when available
+- No → UUID v7
+
+### By Use Case
+
+| Use Case | Recommended Version | Reason |
+|---|---|---|
+| Database primary key (new project) | v7 | Sortable, no fragmentation |
+| Database primary key (high-write, >10M rows) | v7 | Critical for index performance |
+| API resource IDs (public-facing) | v4 or v7 | v4 if no sortability needed, v7 if yes |
+| Session tokens / API keys | Neither — use a dedicated token generator | UUIDs are for identity, not secrets |
+| Distributed ID generation | v7 | Time-ordered, no coordination needed |
+| Idempotency keys | v4 | Random, stateless, universal support |
+| Content deduplication | v5 | Deterministic |
+| Legacy system integration | v5 (with custom namespace) | Stable IDs for external references |
+| Short-lived temp files / cache keys | v4 | Simple, no ordering needed |
+| Message queue message IDs | v7 | Ordering useful for processing |
+| Cassandra time-series data | v7 | Better v1 replacement |
+| URL shortener codes | nanoid or v4 (store as binary) | v4 if UUID type needed |
+| Event sourcing event IDs | v7 | Natural ordering |
+
+### A Note on v4 vs v7 for APIs
+
+If you are exposing IDs in an API, the choice between v4 and v7 often comes down to whether clients benefit from being able to sort by ID. For most resource types (users, products, orders), clients who care about creation order should use a `created_at` timestamp field, not rely on ID ordering. In that case, v4 is fine.
+
+The stronger argument for v7 in APIs is the database performance benefit on the server side — your clients do not need to know or care which UUID version you use, but your database will thank you.
+
+## Code Examples
+
+### JavaScript and TypeScript
+
+The `uuid` npm package is the standard library for all UUID versions in JavaScript:
+
+```bash
+npm install uuid
+```
+
+```typescript
+import { v1, v3, v4, v5, v6, v7, validate, version } from "uuid";
+
+// UUID v4 — random, most common
+const randomId: string = v4();
+console.log(randomId); // "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+// UUID v7 — time-ordered, recommended for database PKs
+const sortableId: string = v7();
+console.log(sortableId); // "01951234-5678-7abc-def0-123456789abc"
+
+// UUID v1 — timestamp + MAC address (legacy)
+const timeId: string = v1();
+console.log(timeId); // "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+// UUID v5 — deterministic from namespace + name
+const NAMESPACE_DNS = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
+const stableId: string = v5("example.com", NAMESPACE_DNS);
+console.log(stableId); // same value every time for same inputs
+
+// UUID v3 — same concept as v5, uses MD5 (prefer v5)
+const stableIdMD5: string = v3("example.com", NAMESPACE_DNS);
+
+// UUID v6 — reordered v1 (sortable v1 replacement)
+const reorderedId: string = v6();
+
+// Validate and detect version
+const isValid: boolean = validate("f47ac10b-58cc-4372-a567-0e02b2c3d479"); // true
+const ver: number = version("f47ac10b-58cc-4372-a567-0e02b2c3d479"); // 4
+```
+
+For UUID v4 specifically, modern JavaScript environments provide a built-in that requires no dependencies:
+
+```javascript
+// Works in all modern browsers, Node.js 14.17+, Deno, Bun
+const id = crypto.randomUUID();
+console.log(id); // "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+```
+
+Extracting the timestamp from a UUID v7:
+
+```javascript
+import { v7 } from "uuid";
+
+function extractTimestamp(uuidV7) {
+  // Take first 12 hex characters (48 bits = 6 bytes = the timestamp field)
+  const hex = uuidV7.replace(/-/g, "").slice(0, 12);
+  const ms = parseInt(hex, 16);
+  return new Date(ms);
+}
+
+const id = v7();
+const createdAt = extractTimestamp(id);
+console.log(createdAt.toISOString()); // "2026-03-29T..."
+```
+
+Sorting UUID v7s chronologically:
+
+```javascript
+import { v7 } from "uuid";
+
+const ids = Array.from({ length: 5 }, () => v7());
+// They are already in insertion order, but demonstrate that sort works:
+const sorted = [...ids].sort(); // lexicographic sort = chronological order
+console.log(ids.join("\n") === sorted.join("\n")); // true
+```
+
+### Python
+
+Python's standard library `uuid` module covers v1, v3, v4, and v5. UUID v7 requires a third-party library:
+
+```bash
+pip install uuid7
+```
+
+```python
+import uuid
+
+# UUID v4 — random
+random_id = uuid.uuid4()
+print(random_id)         # UUID('f47ac10b-58cc-4372-a567-0e02b2c3d479')
+print(str(random_id))    # 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+print(random_id.hex)     # 'f47ac10b58cc4372a5670e02b2c3d479' (no hyphens)
+print(random_id.int)     # integer representation
+print(random_id.version) # 4
+
+# UUID v1 — timestamp + node (legacy)
+time_id = uuid.uuid1()
+# Access components:
+print(time_id.time)      # 100-ns intervals since 1582-10-15
+print(time_id.node)      # node field (typically MAC address)
+print(time_id.clock_seq) # clock sequence
+
+# UUID v5 — deterministic (SHA-1)
+article_id = uuid.uuid5(uuid.NAMESPACE_URL, "https://example.com/articles/hello")
+print(article_id)  # always the same for the same inputs
+
+# UUID v3 — deterministic (MD5) — prefer v5 instead
+old_style_id = uuid.uuid3(uuid.NAMESPACE_URL, "https://example.com/articles/hello")
+
+# Standard namespaces
+print(uuid.NAMESPACE_DNS)  # UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
+print(uuid.NAMESPACE_URL)  # UUID('6ba7b811-9dad-11d1-80b4-00c04fd430c8')
+print(uuid.NAMESPACE_OID)  # UUID('6ba7b812-9dad-11d1-80b4-00c04fd430c8')
+
+# Parse and validate
+try:
+    parsed = uuid.UUID("f47ac10b-58cc-4372-a567-0e02b2c3d479")
+    print(parsed.version)  # 4
+except ValueError:
+    print("Invalid UUID")
+
+# UUID v7 — requires third-party library
+from uuid7 import uuid7
+
+sortable_id = uuid7()
+print(sortable_id)  # time-ordered UUID v7
+```
+
+Extracting the timestamp from a UUID v7 in Python:
+
+```python
+from uuid7 import uuid7
+import datetime
+
+def extract_v7_timestamp(uuid_str: str) -> datetime.datetime:
+    # Remove hyphens, take first 12 hex characters (48-bit timestamp)
+    hex_str = uuid_str.replace("-", "")[:12]
+    ms = int(hex_str, 16)
+    return datetime.datetime.fromtimestamp(ms / 1000, tz=datetime.timezone.utc)
+
+uid = str(uuid7())
+created_at = extract_v7_timestamp(uid)
+print(created_at.isoformat())  # "2026-03-29T12:34:56.789000+00:00"
+```
+
+Generating UUID v5 for a custom namespace hierarchy:
+
+```python
+import uuid
+
+# Define your application's root namespace
+APP_NAMESPACE = uuid.UUID("your-app-namespace-uuid-here")
+
+def stable_id_for(entity_type: str, identifier: str) -> uuid.UUID:
+    """Generate a stable UUID for a named entity in this application."""
+    type_namespace = uuid.uuid5(APP_NAMESPACE, entity_type)
+    return uuid.uuid5(type_namespace, identifier)
+
+user_id = stable_id_for("user", "alice@example.com")
+product_id = stable_id_for("product", "SKU-98765")
+
+# These are always the same for the same inputs:
+print(user_id)    # UUID('...')
+print(product_id) # UUID('...')
+```
+
+### Storing UUIDs Efficiently
+
+Both PostgreSQL and MySQL support binary storage of UUIDs. Here is how to handle the conversion:
+
+```javascript
+// Node.js: UUID string <-> binary (for MySQL BINARY(16) columns)
+import { parse, stringify } from "uuid";
+
+// UUID string to 16-byte Buffer (for database insert)
+function uuidToBuffer(uuidStr) {
+  return Buffer.from(parse(uuidStr));
+}
+
+// 16-byte Buffer to UUID string (for database read)
+function bufferToUuid(buffer) {
+  return stringify(new Uint8Array(buffer));
+}
+
+// Usage with a database driver:
+const id = v7();
+await db.query("INSERT INTO users (id, name) VALUES (?, ?)", [
+  uuidToBuffer(id),
+  "Alice",
+]);
+```
+
+```python
+import uuid
+
+# UUID to bytes (for BINARY(16) storage)
+uid = uuid.uuid4()
+as_bytes = uid.bytes  # 16-byte bytes object
+
+# Bytes back to UUID
+restored = uuid.UUID(bytes=as_bytes)
+print(str(restored) == str(uid))  # True
+
+# For MySQL BINARY(16) with a DB driver:
+# cursor.execute("INSERT INTO users (id) VALUES (%s)", (uid.bytes,))
+```
+
+Try generating all these UUID versions instantly with our [UUID Generator tool](/tools/uuid-generator).
+
+## FAQ
+
+### What is the difference between UUID v4 and UUID v7?
+
+UUID v4 is 122 bits of cryptographically random data with no embedded timestamp. It generates IDs in random order, which causes B-tree index fragmentation in databases over time. UUID v7 includes a 48-bit Unix millisecond timestamp in the most significant bits, followed by 74 bits of random data. The timestamp-first layout makes UUID v7 strings lexicographically sortable by creation time, which keeps database indexes efficient. Both are practically collision-free. For new projects, prefer UUID v7 for database primary keys and UUID v4 when ordering does not matter.
+
+### Is UUID v7 stable enough to use in production?
+
+Yes. RFC 9562 was published in May 2024 and is a full IETF standards track document, not experimental. Major UUID libraries (the `uuid` npm package since v9.0.0, Rust's `uuid` crate, Java's popular `uuid-creator` library) have supported v7 for over a year. PostgreSQL extensions and several ORMs have added v7 support. The format itself is simple and stable — a 48-bit Unix timestamp followed by version bits and random data. Production adoption is growing rapidly.
+
+### Can I mix UUID versions in the same database column?
+
+Yes. Any UUID version produces a valid 128-bit UUID in the standard 8-4-4-4-12 format, and databases store them identically. If your column uses a UUID type (PostgreSQL `uuid`) or `BINARY(16)` (MySQL), it accepts any version. Mixing v4 and v7 in the same primary key column will work — the v4 UUIDs will sort randomly among themselves, while the v7 UUIDs will sort chronologically among themselves, and the two groups will be interleaved based on their values.
+
+### How do I check which UUID version a string is?
+
+The version is encoded in the 13th character (the first character of the third group):
+
+```javascript
+function getUUIDVersion(uuid) {
+  return parseInt(uuid.charAt(14), 16);
+}
+
+getUUIDVersion("f47ac10b-58cc-4372-a567-0e02b2c3d479"); // 4
+getUUIDVersion("01951234-5678-7abc-def0-123456789abc"); // 7
+getUUIDVersion("6ba7b810-9dad-11d1-80b4-00c04fd430c8"); // 1
+```
+
+The variant (always `8`, `9`, `a`, or `b` for RFC 4122/9562 UUIDs) is the first character of the fourth group (index 19 in the string).
+
+### Should I store UUIDs as strings or binary?
+
+Binary (16 bytes) is more efficient. The string representation is 36 characters (288 bits) — more than twice the size of the raw 16-byte UUID. For a table with 100 million rows, the difference in primary key storage is roughly 2 GB versus 1.6 GB. More importantly, binary UUIDs result in a smaller index, which fits more keys per page and improves cache efficiency.
+
+PostgreSQL's native `uuid` type handles this automatically — it stores 16 bytes internally and handles string conversion transparently. In MySQL, use `BINARY(16)` and convert with `UUID_TO_BIN()` / `BIN_TO_UUID()` or handle conversion in your application.
+
+### Is UUID v4 collision-safe for generating IDs in client-side code (browsers, mobile apps)?
+
+Yes, assuming you use `crypto.randomUUID()` or a library that wraps the platform CSPRNG. Modern browsers and mobile OSes provide cryptographically secure random number generators. The collision probability is astronomically low even for large-scale applications. The concern would be if a platform's CSPRNG were broken or if you were using `Math.random()` — but neither is a real-world concern with modern platforms and properly implemented libraries.
+
+### What happened to UUID v2?
+
+UUID v2 is the "DCE Security" version. It embeds a POSIX UID or GID (user/group ID from the operating system) and a domain identifier. It was defined for use in the DCE distributed computing environment and is effectively unused in modern software. It is not recommended for any new development, and most UUID libraries do not implement it. RFC 9562 retains it for compatibility but does not recommend its use.
+
+### Can UUID v5 be used as a hash function?
+
+Not for security purposes. UUID v5 uses SHA-1 truncated to 128 bits with version and variant bits overwritten. SHA-1 is considered cryptographically broken (collision attacks are known). UUID v5 should only be used for its intended purpose: generating stable, deterministic IDs for named resources. Do not use it as a cryptographic hash, MAC, or anywhere you need collision resistance against an adversary.
+
+### Why does PostgreSQL have a uuid type but MySQL doesn't?
+
+PostgreSQL has a native `uuid` data type that stores the value as a 16-byte binary internally, provides efficient indexing, and handles string parsing and formatting automatically. MySQL lacks a native UUID type. The standard workaround is `BINARY(16)` with `UUID_TO_BIN()` / `BIN_TO_UUID()` functions (available since MySQL 8.0). The `UUID_TO_BIN(uuid, 1)` variant (with `swap_flag=1`) reorders the time fields of a UUID v1 for better index locality — effectively converting v1 to something like v6. For UUID v7, pass `swap_flag=0` since v7 is already properly ordered.
+
+### How does UUID v7 compare to ULID?
+
+Both solve the same problem: a time-ordered, random, distributed unique identifier. ULID uses a 48-bit millisecond timestamp and 80 bits of random data, encoded in 26 Crockford Base32 characters. UUID v7 uses a 48-bit millisecond timestamp and 74 bits of random data, encoded in the standard UUID format.
+
+Key differences: UUID v7 is RFC-standardized (RFC 9562), making it the official standard. ULID is a community specification without an RFC. UUID v7 is compatible with UUID-typed database columns and UUID-expecting APIs. ULID is URL-safe by default (Base32, no hyphens). ULID has slightly more random bits (80 vs 74). For new projects, UUID v7 is the better choice for its standardization. If you have an existing ULID-based system, there is no urgent reason to migrate — both are valid solutions.
+
+### Is it safe to expose UUIDs in URLs?
+
+Yes, with an important caveat. UUIDs are opaque enough that they prevent the most common enumeration attack (guessing sequential IDs), but you should not rely on UUID opacity as your sole access control mechanism. A UUID in a URL like `/invoices/f47ac10b-58cc-4372-a567-0e02b2c3d479` does prevent an attacker from guessing `/invoices/1`, `/invoices/2`, but if someone obtains a valid UUID (for example, through a leaked log or a shared link), they can use it. Always enforce authorization checks server-side regardless of ID type.
+
+UUID v7 UUIDs in URLs also reveal creation time to anyone who decodes the timestamp field. If creation time is sensitive information, use UUID v4 for public-facing IDs. In most applications, knowing that a record was created at a given millisecond is not sensitive, but it is worth being aware of.
+
+### What is UUID v8?
+
+UUID v8 is defined in RFC 9562 as a "custom" or "experimental" format. The specification defines only the version field (`1000` = 8) and the variant field — all other 122 bits are application-defined. UUID v8 exists so that organizations can embed proprietary data in UUID format while technically remaining RFC-compliant. You might use UUID v8 to create a UUID that encodes application-specific metadata (a shard ID, a tenant ID, a region code) in a well-defined bit layout. UUID v8 is not interoperable — two systems using UUID v8 may have completely different internal layouts. Unless you have a specific need to embed custom structured data in UUID format, use v4 or v7.
+
+### Does using UUID v7 reveal when my service launched?
+
+Technically, yes — the first UUID v7 your service ever generated contains the Unix millisecond timestamp of that moment. However, this is generally not sensitive information, and any public API endpoint that returns timestamps in responses already reveals this. If you are concerned, you can add a random offset to your UUID v7 timestamps (RFC 9562 permits this as long as the offset is consistent), though this trades away the timestamp accuracy that makes v7 useful in the first place.
+
+### How do I migrate an existing table from UUID v4 to UUID v7?
+
+You do not need to change existing rows. The migration strategy is:
+
+1. Update your application to generate UUID v7 for all new records.
+2. Leave existing UUID v4 values unchanged in the database.
+3. New records will land at the end of the index (since v7 timestamps are recent), restoring sequential insert behavior going forward.
+4. Optionally, schedule a `REINDEX` (PostgreSQL) or `OPTIMIZE TABLE` (MySQL) during a maintenance window to compact the historical fragmentation from the v4 era.
+
+The mixed index (some v4, some v7 entries) will have old fragmented entries at lower values and new sequential entries at higher values. Read performance on the old data may remain slightly degraded until a reindex, but write performance improves immediately once v7 generation begins.
+
+---
+
+For hands-on practice with UUID generation, try [our UUID Generator tool](/tools/uuid-generator) to generate v4 and v7 UUIDs in bulk, and read [What is a UUID?](/blog/what-is-uuid) for a foundational overview of the UUID format and its common use cases.

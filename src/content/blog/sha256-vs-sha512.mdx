@@ -1,0 +1,785 @@
+---
+title: "SHA-256 vs SHA-512: Which Hash Algorithm Should You Use?"
+description: "A detailed comparison of SHA-256 and SHA-512 hash algorithms — performance, security, and real-world use cases to help you choose the right one."
+pubDate: "2026-03-29"
+tags: ["hashing", "security", "comparison"]
+relatedTools: ["hash-generator"]
+---
+
+When you reach for a cryptographic hash function today, the choice almost always comes down to two algorithms: SHA-256 and SHA-512. Both come from the same family, both are NIST-approved, and both are considered secure for general use. Yet they differ in ways that matter enormously depending on your platform, your performance requirements, and the threat model you are designing against. Choosing the wrong one wastes CPU cycles, introduces unnecessary security margins you cannot use, or — in rare but real edge cases — leaves you vulnerable on hardware you did not account for. This guide gives you everything you need to make the right call.
+
+## Quick Comparison Table
+
+Before diving into the internals, here is a side-by-side reference for the properties that matter most in practice.
+
+| Property | SHA-256 | SHA-512 |
+|---|---|---|
+| Output size | 256 bits (32 bytes) | 512 bits (64 bytes) |
+| Internal state size | 256 bits | 512 bits |
+| Block size | 512 bits (64 bytes) | 1024 bits (128 bytes) |
+| Word size | 32 bits | 64 bits |
+| Number of rounds | 64 | 80 |
+| Message schedule entries | 64 | 80 |
+| Initial hash values | 8 x 32-bit | 8 x 64-bit |
+| Round constants | 64 x 32-bit | 80 x 64-bit |
+| Max message length | 2^64 - 1 bits | 2^128 - 1 bits |
+| Collision resistance | 128 bits | 256 bits |
+| Preimage resistance | 256 bits | 512 bits |
+| Performance on 32-bit CPUs | Faster | Slower (64-bit ops emulated) |
+| Performance on 64-bit CPUs | Good | Often faster per byte |
+| Hardware acceleration (x86) | SHA-NI instructions | No dedicated x86 instructions |
+| Output hex string length | 64 characters | 128 characters |
+| FIPS 180-4 approved | Yes | Yes |
+
+You can experiment with both algorithms directly using [our Hash Generator tool](/tools/hash-generator) to see the output differences with your own inputs.
+
+## Understanding the SHA-2 Family
+
+### From SHA-0 to SHA-2: A Brief History
+
+The Secure Hash Algorithm family has a lineage that traces back to 1993. Understanding where SHA-256 and SHA-512 come from explains why they are designed the way they are, and why they have survived decades of cryptanalytic scrutiny.
+
+**SHA-0 (1993):** NIST published the original Secure Hash Standard (SHS) in FIPS PUB 180. It produced a 160-bit digest. Within two years, NSA quietly withdrew it and released a revised version, citing an unspecified flaw. The flaw was later identified as a weakness in the message schedule that made the algorithm more susceptible to differential attacks.
+
+**SHA-1 (1995):** FIPS PUB 180-1 introduced SHA-1, which fixed the SHA-0 message schedule with a single-bit rotation. SHA-1 dominated cryptographic applications through the 1990s and 2000s, appearing in TLS, SSH, PGP, and Git. Theoretical attacks began emerging in 2004 when Xiaoyun Wang's team found collision attacks requiring far fewer operations than brute force. By 2017, the SHAttered attack produced the first practical SHA-1 collision — two distinct PDF files with identical SHA-1 hashes. SHA-1 is now deprecated across all major platforms.
+
+**SHA-2 (2001):** FIPS PUB 180-2 introduced the SHA-2 family: SHA-256, SHA-384, and SHA-512. SHA-224 was added in a 2004 change notice, and SHA-512/224 and SHA-512/256 were added in FIPS 180-4 (2012). The SHA-2 family uses the same general Merkle-Damgard construction as SHA-1 but with a significantly larger state, more rounds, and different nonlinear functions — none of the attacks that broke SHA-1 apply.
+
+**SHA-3 (2015):** NIST standardized SHA-3 (Keccak) as a backup to SHA-2, using a completely different sponge construction rather than Merkle-Damgard. SHA-3 exists not because SHA-2 is broken, but because NIST wanted a structurally distinct alternative in case weaknesses were found in the Merkle-Damgard construction. SHA-2 remains fully recommended and in widespread use.
+
+### The FIPS 180-4 Standard
+
+All SHA-2 variants are defined in FIPS PUB 180-4, "Secure Hash Standard," published by NIST in 2012 and revised in 2015. This is the authoritative specification — everything in this article derives from that document. FIPS 140-2 and FIPS 140-3 approved cryptographic modules must use FIPS-approved algorithms, and SHA-256 and SHA-512 both qualify.
+
+The SHA-2 family currently includes six hash functions:
+
+| Algorithm | Output | Internal State | Based On |
+|---|---|---|---|
+| SHA-224 | 224 bits | 256 bits | SHA-256 with different IV and truncation |
+| SHA-256 | 256 bits | 256 bits | 32-bit word operations |
+| SHA-384 | 384 bits | 512 bits | SHA-512 with different IV and truncation |
+| SHA-512 | 512 bits | 512 bits | 64-bit word operations |
+| SHA-512/224 | 224 bits | 512 bits | SHA-512 with different IV and truncation |
+| SHA-512/256 | 256 bits | 512 bits | SHA-512 with different IV and truncation |
+
+SHA-224 and SHA-384 are simply SHA-256 and SHA-512 respectively, initialized with different constants and with the output truncated. SHA-512/224 and SHA-512/256 are more interesting — they use SHA-512 internals but produce shorter digests, a design discussed in detail in the SHA-512/256 section below.
+
+## How SHA-256 Works
+
+SHA-256 is built on the **Merkle-Damgard construction**, which takes an arbitrary-length message and produces a fixed-size digest through iterated compression of fixed-size blocks. Understanding this construction is essential for understanding both the power and the limitations of SHA-256.
+
+### Message Preprocessing
+
+Before any compression happens, the input message undergoes preprocessing:
+
+**Step 1 — Append a 1 bit.** A single `1` bit is appended to the message regardless of its length.
+
+**Step 2 — Append zero bits.** Enough `0` bits are appended so that the message length, in bits, is congruent to 448 modulo 512. In other words, the padded message ends 64 bits short of a 512-bit block boundary.
+
+**Step 3 — Append the original length.** The original message length (before padding) is encoded as a 64-bit big-endian integer and appended. Now the total message length is an exact multiple of 512 bits, producing complete 512-bit (64-byte) blocks for compression.
+
+This padding scheme ensures the algorithm is well-defined for messages of any length, including zero-length messages. It is why SHA-256("") is a specific, deterministic value (`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`) rather than an error.
+
+### Initial Hash Values
+
+SHA-256 initializes eight 32-bit state variables, traditionally labeled H0 through H7. These values are not arbitrary — they are the first 32 bits of the fractional parts of the square roots of the first eight prime numbers (2, 3, 5, 7, 11, 13, 17, 19). Using irrational numbers derived from a simple formula ensures there is no hidden backdoor in the constants (a "nothing up my sleeve" property).
+
+```
+H0 = 0x6a09e667
+H1 = 0xbb67ae85
+H2 = 0x3c6ef372
+H3 = 0xa54ff53a
+H4 = 0x510e527f
+H5 = 0x9b05688c
+H6 = 0x1f83d9ab
+H7 = 0x5be0cd19
+```
+
+### The 64 Round Constants
+
+SHA-256 uses 64 round constants, K[0] through K[63], each 32 bits wide. They are derived from the first 32 bits of the fractional parts of the cube roots of the first 64 prime numbers:
+
+```
+K[0]  = 0x428a2f98   K[1]  = 0x71374491   K[2]  = 0xb5c0fbcf
+K[3]  = 0xe9b5dba5   K[4]  = 0x3956c25b   K[5]  = 0x59f111f1
+... (64 constants total)
+```
+
+### The Message Schedule
+
+For each 512-bit block, SHA-256 expands the 16 original 32-bit words (W[0] through W[15]) into 64 words (W[0] through W[63]) using the message schedule:
+
+```
+For i from 0 to 15:
+    W[i] = block[i]  (the 16 original 32-bit words)
+
+For i from 16 to 63:
+    s0 = ROTR(W[i-15], 7) XOR ROTR(W[i-15], 18) XOR SHR(W[i-15], 3)
+    s1 = ROTR(W[i-2], 17) XOR ROTR(W[i-2], 19)  XOR SHR(W[i-2], 10)
+    W[i] = W[i-16] + s0 + W[i-7] + s1  (addition mod 2^32)
+```
+
+Where `ROTR(x, n)` is a right rotation of the 32-bit value `x` by `n` positions, and `SHR(x, n)` is a right shift. The mix of rotations and shifts at different offsets is carefully chosen to provide thorough diffusion — changing any single input bit will eventually affect all output bits.
+
+### The 64 Compression Rounds
+
+Each block is processed through 64 rounds. The working variables a, b, c, d, e, f, g, h are initialized to the current hash values H0–H7. Then for each round i:
+
+```
+S1    = ROTR(e, 6) XOR ROTR(e, 11) XOR ROTR(e, 25)
+ch    = (e AND f) XOR ((NOT e) AND g)
+temp1 = h + S1 + ch + K[i] + W[i]
+S0    = ROTR(a, 2) XOR ROTR(a, 13) XOR ROTR(a, 22)
+maj   = (a AND b) XOR (a AND c) XOR (b AND c)
+temp2 = S0 + maj
+
+h = g
+g = f
+f = e
+e = d + temp1
+d = c
+c = b
+b = a
+a = temp1 + temp2
+```
+
+After all 64 rounds, the block's contribution is added (mod 2^32) to the running hash values:
+
+```
+H0 += a,  H1 += b,  H2 += c,  H3 += d
+H4 += e,  H5 += f,  H6 += g,  H7 += h
+```
+
+The final digest is the concatenation of H0 through H7 (32 bytes total).
+
+### Why 32-Bit Operations Matter
+
+Every operation in SHA-256 — the additions, rotations, shifts, XORs — operates on 32-bit words. On a 32-bit CPU, each operation maps to a single machine instruction. On a 64-bit CPU, the CPU executes 32-bit operations natively without any overhead, but it cannot process two SHA-256 words in parallel in a single instruction without SIMD. This is why SHA-256 is the more natural choice for 32-bit environments and why hardware acceleration targets it specifically.
+
+## How SHA-512 Works
+
+SHA-512 is structurally identical to SHA-256 but with every dimension scaled up to 64-bit words. The design philosophy, the Merkle-Damgard construction, the message schedule formula, and the round function structure are all the same. The differences are in the word size, block size, number of rounds, and constants.
+
+### Scaled-Up Architecture
+
+| Component | SHA-256 | SHA-512 |
+|---|---|---|
+| Word size | 32 bits | 64 bits |
+| Block size | 512 bits (16 x 32-bit words) | 1024 bits (16 x 64-bit words) |
+| Number of rounds | 64 | 80 |
+| Message schedule size | 64 words | 80 words |
+| State variables | 8 x 32-bit | 8 x 64-bit |
+| Output | 256 bits | 512 bits |
+
+The initial hash values for SHA-512 are the first 64 bits of the fractional parts of the square roots of the first eight primes:
+
+```
+H0 = 0x6a09e667f3bcc908
+H1 = 0xbb67ae8584caa73b
+H2 = 0x3c6ef372fe94f82b
+H3 = 0xa54ff53a5f1d36f1
+H4 = 0x510e527fade682d1
+H5 = 0x9b05688c2b3e6c1f
+H6 = 0x1f83d9abfb41bd6b
+H7 = 0x5be0cd19137e2179
+```
+
+### The 80-Round Message Schedule
+
+SHA-512's message schedule expands 16 input words into 80 words using the same structural formula as SHA-256, but with different rotation amounts:
+
+```
+For i from 16 to 79:
+    s0 = ROTR(W[i-15], 1) XOR ROTR(W[i-15], 8) XOR SHR(W[i-15], 7)
+    s1 = ROTR(W[i-2], 19) XOR ROTR(W[i-2], 61)  XOR SHR(W[i-2], 6)
+    W[i] = W[i-16] + s0 + W[i-7] + s1  (mod 2^64)
+```
+
+Note the rotation amounts differ from SHA-256 (1, 8, 7 and 19, 61, 6 versus 7, 18, 3 and 17, 19, 10). These values were chosen to optimize diffusion within 64-bit words.
+
+### The 80 Compression Rounds
+
+The round function is structurally identical to SHA-256, with the same ch, maj, S0, S1 formulas but applied to 64-bit values with different rotation amounts:
+
+```
+S1 = ROTR(e, 14) XOR ROTR(e, 18) XOR ROTR(e, 41)
+S0 = ROTR(a, 28) XOR ROTR(a, 34) XOR ROTR(a, 39)
+```
+
+The 80 round constants are derived from the cube roots of the first 80 primes, each 64 bits wide.
+
+### Why SHA-512 Can Be Faster on 64-Bit Systems
+
+This surprises many developers: on 64-bit hardware, SHA-512 often matches or exceeds SHA-256's throughput per byte, despite doing more rounds. The reason is data efficiency:
+
+**SHA-512 processes twice the data per block.** Each compression call handles 1024 bits of input vs. 512 bits for SHA-256. While SHA-512 requires 80 rounds vs. 64, the 25% more rounds process 100% more data per block. The ratio of rounds to bytes processed is lower for SHA-512.
+
+**64-bit operations are native.** On a 64-bit CPU, 64-bit additions, XORs, and rotations are single instructions, just like 32-bit operations. SHA-512 does not pay any penalty for using wider words.
+
+**Memory access patterns are similar.** Both algorithms maintain 8 working variables and access a message schedule array. The memory footprint is larger for SHA-512, but on modern CPUs with large caches, this makes little practical difference.
+
+The performance advantage of SHA-512 on 64-bit hardware is real but context-dependent — measured benchmarks are in the next section.
+
+## Performance Benchmarks
+
+Performance of SHA-256 vs. SHA-512 depends heavily on the CPU architecture, available instruction set extensions, and message length. Here is a structured breakdown.
+
+### 64-Bit x86 (Intel/AMD Desktop and Server)
+
+On modern 64-bit x86 processors without SHA-NI:
+
+| Algorithm | Approximate throughput |
+|---|---|
+| SHA-256 (software) | 200–400 MB/s |
+| SHA-512 (software) | 250–450 MB/s |
+
+SHA-512 typically achieves 10–30% higher throughput on 64-bit x86 because of the 2x block size advantage described above. Exact numbers vary by CPU microarchitecture, memory bandwidth, and message size (short messages have higher relative overhead from padding).
+
+### SHA-NI Hardware Acceleration (Intel since Ice Lake, AMD since Zen)
+
+Intel and AMD processors supporting the SHA-NI extension include dedicated instructions for SHA-256: `SHA256RNDS2`, `SHA256MSG1`, `SHA256MSG2`. These instructions implement multiple compression rounds per clock cycle, dramatically accelerating SHA-256:
+
+| Algorithm | Approximate throughput with SHA-NI |
+|---|---|
+| SHA-256 (SHA-NI) | 2,000–4,000 MB/s |
+| SHA-512 (software) | 250–450 MB/s |
+
+**There are no SHA-NI instructions for SHA-512.** SHA-NI only accelerates SHA-256 (and SHA-1 for legacy compatibility). On CPUs with SHA-NI support, SHA-256 is typically 5–10x faster than SHA-512.
+
+This is a decisive factor for high-throughput applications on modern x86 hardware: if you need maximum hashing speed and control the deployment environment, SHA-256 with SHA-NI is the clear winner.
+
+### 32-Bit Processors and Embedded Systems
+
+On 32-bit CPUs (ARM Cortex-M, older embedded processors, 32-bit x86):
+
+| Algorithm | Relative performance |
+|---|---|
+| SHA-256 | Fast — all operations are native 32-bit |
+| SHA-512 | Slow — 64-bit words emulated with two 32-bit registers |
+
+SHA-512 on a 32-bit system requires software emulation of 64-bit operations. Each 64-bit addition, rotation, and XOR expands into multiple 32-bit instructions. Benchmarks typically show SHA-512 running at 30–50% of SHA-256's speed on 32-bit hardware. For microcontrollers and embedded targets, SHA-256 is almost always the right choice.
+
+### ARM 64-Bit (Mobile and Apple Silicon)
+
+ARMv8-A (AArch64) includes optional SHA-2 instructions for both SHA-256 and SHA-512:
+
+- `SHA256H`, `SHA256H2`, `SHA256SU0`, `SHA256SU1` for SHA-256
+- `SHA512H`, `SHA512H2`, `SHA512SU0`, `SHA512SU1` for SHA-512
+
+Apple Silicon (M1, M2, M3, M4) implements both sets. On Apple Silicon:
+
+| Algorithm | Throughput (approximate) |
+|---|---|
+| SHA-256 (hardware) | 3,000–5,000 MB/s |
+| SHA-512 (hardware) | 4,000–7,000 MB/s |
+
+SHA-512 is faster on Apple Silicon because the hardware SHA-512 unit processes 1024-bit blocks while the throughput advantage of 64-bit words applies fully. If you are targeting Apple platforms, SHA-512 is the faster choice.
+
+### Short vs. Long Messages
+
+For very short messages (under 64 bytes for SHA-256, under 128 bytes for SHA-512), both algorithms process exactly one block regardless of message length. The overhead of a single compression call is fixed. For such short inputs, the throughput difference matters less than the per-call latency, which is similar for both algorithms.
+
+For large files (database dumps, backup streams, video files), the per-byte throughput numbers above apply directly. On x86 with SHA-NI, SHA-256 wins. On AArch64 with hardware acceleration, SHA-512 is faster.
+
+### Message Length and Latency vs. Throughput
+
+The throughput numbers above assume you are hashing large, continuous streams of data. For applications that hash many small, independent messages — authentication tokens, API request bodies, short strings — latency per call matters more than raw throughput.
+
+For a single 32-byte input (a typical token or identifier):
+
+- Both SHA-256 and SHA-512 process exactly one block (since 32 bytes is well under both the 64-byte SHA-256 block size and the 128-byte SHA-512 block size).
+- SHA-256 processes a 64-byte block with 64 rounds.
+- SHA-512 processes a 128-byte block with 80 rounds, but the block contains mostly padding.
+- Per-call latency favors SHA-256 slightly for very short inputs because fewer total operations are executed.
+
+For a 100-byte input:
+
+- SHA-256 requires two compression calls (two 64-byte blocks).
+- SHA-512 requires one compression call (one 128-byte block, with 28 bytes of data and 100 bytes of padding in the second 64 bytes).
+- SHA-512 wins here — one compression call vs. two.
+
+This crossover point (around 64–128 bytes of input) is where SHA-512 starts pulling ahead of SHA-256 in throughput on 64-bit hardware, even for per-call latency. For web applications making thousands of short hash calls per second (request signing, session token validation), the difference is usually negligible, but for tightly-optimized hot paths, it is worth measuring.
+
+### Detecting SHA-NI Support at Runtime
+
+In production environments, you often need to know at runtime whether SHA-NI is available rather than assuming it. Both OpenSSL and BoringSSL detect and use SHA-NI automatically when available — most high-level libraries inherit this benefit without any developer action. In Node.js, if OpenSSL is compiled with SHA-NI support (as it is in official Node.js binaries), `crypto.createHash("sha256")` automatically uses hardware acceleration on capable CPUs.
+
+To check whether your Linux server has SHA-NI:
+
+```bash
+# Look for "sha_ni" in CPU flags
+grep -o "sha_ni" /proc/cpuinfo | head -1
+
+# Or use cpuid
+cpuid | grep -i sha
+```
+
+On macOS with Apple Silicon, SHA hardware extensions are always present and used automatically by CommonCrypto and the Security framework.
+
+### Summary Decision Matrix for Performance
+
+| Deployment target | Recommended algorithm for performance |
+|---|---|
+| x86-64 with SHA-NI (modern Intel/AMD) | SHA-256 |
+| x86-64 without SHA-NI | SHA-512 |
+| AArch64 with SHA extensions (Apple Silicon, AWS Graviton) | SHA-512 |
+| 32-bit ARM / embedded | SHA-256 |
+| Unknown / mixed environments | SHA-256 (safer default) |
+
+## Security Analysis
+
+### Collision Resistance
+
+A hash function is collision resistant if it is computationally infeasible to find two distinct inputs that produce the same hash output. The security level for collision resistance is measured in bits — a security level of n bits means an attacker needs approximately 2^n operations to find a collision.
+
+For a hash function with an n-bit output, the birthday paradox gives an expected collision after approximately 2^(n/2) evaluations. Therefore:
+
+- SHA-256: 128-bit collision resistance (2^128 operations)
+- SHA-512: 256-bit collision resistance (2^256 operations)
+
+128 bits of collision resistance is extraordinarily strong by current standards. The fastest classical computers today cannot come close to 2^128 operations in any reasonable timeframe. 256-bit collision resistance is almost incomprehensibly stronger — relevant only in the most extreme long-term security planning.
+
+### Preimage Resistance
+
+Preimage resistance means that given a hash output h, it is computationally infeasible to find any input m such that hash(m) = h. This is a different property from collision resistance and is important when the hash acts as a one-way commitment.
+
+- SHA-256: 256-bit preimage resistance
+- SHA-512: 512-bit preimage resistance
+
+Both are far beyond attack by any foreseeable classical computer.
+
+### Second Preimage Resistance
+
+Second preimage resistance means that given an input m1 and its hash h, it is computationally infeasible to find a different input m2 such that hash(m2) = h. This property protects against specific forgery attacks where an attacker knows the original message.
+
+Both SHA-256 and SHA-512 provide full second preimage resistance equivalent to their output size.
+
+### Known Cryptanalytic Results
+
+As of 2025, there are no practical attacks against either SHA-256 or SHA-512. The best known theoretical results:
+
+**SHA-256:** Reduced-round attacks exist for up to 46 of the 64 rounds (Mendel et al., various). No attack approaches the full 64-round version. The security margin is comfortable.
+
+**SHA-512:** Reduced-round attacks cover up to about 57 of the 80 rounds theoretically. Again, no practical attack on the full algorithm exists.
+
+These results are typical for well-designed hash functions — cryptanalysts work on reduced-round versions to probe the design, and the full-round algorithms maintain a healthy margin above the best known attacks.
+
+### Length Extension Attacks
+
+Both SHA-256 and SHA-512 are vulnerable to **length extension attacks** due to the Merkle-Damgard construction. If you know SHA-256(secret || message) but not the secret, you can compute SHA-256(secret || message || padding || extension) without knowing the secret.
+
+This matters if you are using raw SHA-256 or SHA-512 as a MAC (message authentication code). The correct solutions:
+
+1. Use HMAC-SHA-256 or HMAC-SHA-512 instead of raw SHA for MAC purposes.
+2. Use SHA-3, which uses a sponge construction immune to length extension.
+3. Use the SHA-512/256 or SHA-512/224 truncated variants, which are also immune.
+
+**Never use raw SHA-256(secret || message) as an authentication mechanism.**
+
+### Quantum Resistance
+
+Grover's algorithm provides a quadratic speedup for preimage attacks on hash functions using a quantum computer. For a hash function with n-bit output:
+
+- Classical preimage resistance: 2^n operations
+- Quantum preimage resistance: 2^(n/2) operations (Grover)
+
+Applying this to SHA-256 and SHA-512:
+
+| Algorithm | Classical preimage | Quantum preimage (Grover) |
+|---|---|---|
+| SHA-256 | 2^256 | 2^128 |
+| SHA-512 | 2^512 | 2^256 |
+
+SHA-256 still provides 128 bits of quantum security for preimage attacks. NIST's post-quantum standardization process considers 128-bit quantum security sufficient for most applications through at least 2030–2035 and likely well beyond.
+
+For collision resistance, Brassard-Hoyer-Tapp (BHT) algorithm gives a cube-root speedup in the quantum setting:
+
+| Algorithm | Classical collision | Quantum collision (BHT) |
+|---|---|---|
+| SHA-256 | 2^128 | ~2^85 |
+| SHA-512 | 2^256 | ~2^170 |
+
+This is where SHA-256's quantum margin becomes more modest. An 85-bit security level for quantum collision attacks, while still astronomically large by today's practical computing standards, is tighter than many security architects would like for long-lived data (20+ year security requirements). For such use cases, SHA-512 — or more specifically SHA-384 or SHA-512/256 — provides a more comfortable margin.
+
+**Practical guidance:** For the vast majority of applications with a 10–15 year security horizon, SHA-256 provides adequate quantum resistance. For long-lived signatures, root certificates, or data requiring 30+ year confidentiality, SHA-512 or SHA-384 is the conservative choice.
+
+### HMAC Security: Does the Underlying Hash Choice Matter?
+
+HMAC (Hash-based Message Authentication Code) wraps a hash function to produce a MAC. The security of HMAC-SHA-256 and HMAC-SHA-512 depends on both the hash function's collision resistance and a separate HMAC-specific security property.
+
+HMAC's security proof requires the hash function to be a pseudorandom function (PRF). Both SHA-256 and SHA-512 satisfy this requirement. The security of HMAC-SHA-256 is bounded by approximately 128 bits, matching SHA-256's collision resistance. HMAC-SHA-512 is bounded by approximately 256 bits.
+
+In practice, HMAC-SHA-256 is the standard choice for JWT (HS256), AWS SigV4, and most API authentication schemes. HMAC-SHA-512 is used where a larger MAC output is desired — it produces a 64-byte tag instead of 32 bytes, which is redundant in most contexts but provides a more conservative margin.
+
+One important note: HMAC is immune to length extension attacks by construction, even when built on SHA-256 or SHA-512. The HMAC construction applies the hash function twice with different key derivations, which prevents the internal state from being continued by an attacker. This is why HMAC-SHA-256 is always correct for authentication, while raw SHA-256(key || message) is never correct.
+
+### Multi-Target Attack Considerations
+
+When a single entity holds many hashed values — for example, a database of hashed API keys — an attacker does not need to break any individual hash. They can mount a multi-target attack: find any one input that collides with any one of the N stored hashes.
+
+For SHA-256 with a database of 2^32 stored hashes, the effective collision security drops from 128 bits to 96 bits (128 - 32). This remains far beyond practical attack, but it illustrates why extremely large-scale deployments may have reason to prefer SHA-512: even with 2^32 targets, SHA-512's 256-bit collision resistance degrades to only 224 bits — still completely unassailable.
+
+### The Security Margin Nobody Uses
+
+There is a practical nuance worth stating plainly: both algorithms are so far beyond attack that the security difference between them is currently theoretical, not practical. If your threat model involves an attacker who can perform 2^128 operations, SHA-256 is broken and SHA-512 is your salvation. In reality, no attacker in 2025 can perform anywhere near 2^80 operations. The difference in security level between SHA-256 and SHA-512 does not translate into any meaningful practical difference today.
+
+Choose SHA-512 for security reasons only if you have a compelling reason to believe that (a) quantum computers capable of Grover-scale attacks will exist within your data's required confidentiality period, or (b) you have specific regulatory or compliance requirements mandating 256-bit collision resistance.
+
+## Real-World Usage
+
+Examining where each algorithm is actually deployed reveals the practical reasoning practitioners have applied.
+
+### SHA-256 in the Wild
+
+**Bitcoin and cryptocurrency.** Bitcoin uses SHA-256 in two critical roles: proof-of-work mining (double SHA-256 of block headers) and address derivation. The choice was made in 2008-2009 when SHA-256 was already widely reviewed and trusted. SHA-256's hardware acceleration via ASICs (application-specific integrated circuits) has driven the development of specialized mining hardware — this is entirely about raw throughput of SHA-256.
+
+**TLS certificates and HTTPS.** The CA/Browser Forum mandated SHA-256 as the minimum for code signing and TLS certificates around 2015-2016, retiring SHA-1. All modern HTTPS connections use SHA-256 in their certificate signatures. SHA-256 was chosen over SHA-512 for compatibility reasons — SHA-256 was sufficient and supported everywhere.
+
+**Git.** Git has used SHA-1 since its inception for object naming (commits, trees, blobs). The migration to SHA-256 is underway (git's "sha256" object format, available since Git 2.29). The choice of SHA-256 over SHA-512 is pragmatic — SHA-256 produces shorter identifiers with sufficient collision resistance for a version control system.
+
+**S3 and AWS.** AWS Signature Version 4 (SigV4), used to authenticate requests to all AWS services, uses HMAC-SHA-256. The AWS SDK computes a SHA-256 hash of the request body, then an HMAC-SHA-256 of the canonical request string.
+
+**Code signing.** macOS, Windows Authenticode, and most package managers (npm, PyPI, Debian, Fedora) use SHA-256 for package signatures and manifest integrity. The 256-bit output is well-matched to the security requirements of software distribution.
+
+**JWT (JSON Web Tokens).** The most common JWT algorithms are RS256 (RSA + SHA-256) and HS256 (HMAC + SHA-256). The "256" refers to SHA-256 as the underlying hash function.
+
+### SHA-512 in the Wild
+
+**Linux password hashing.** The `sha512crypt` scheme, used as the default password hashing algorithm in many Linux distributions (glibc's `crypt()` with `$6$` prefix), uses SHA-512. This is a KDF (key derivation function) built on top of SHA-512 with a configurable iteration count and random salt. SHA-512 was chosen for its larger output and because password hashing benefits from algorithms that are harder to parallelize on 32-bit hardware — the 64-bit word requirement makes FPGA and 32-bit GPU attacks less efficient.
+
+**Ed25519 (EdDSA).** The Ed25519 signature scheme, defined in RFC 8032, uses SHA-512 internally as part of key generation and signing. Ed25519 is the preferred signature algorithm in modern SSH (OpenSSH's `ssh-keygen -t ed25519`), TLS 1.3, and many other protocols. The SHA-512 requirement is built into the standard.
+
+**DNSSEC.** Many DNSSEC deployments use RSASHA512 (algorithm 10) for zone signing. The larger digest size provides a conservative security margin for DNS infrastructure, which underpins essentially all internet name resolution.
+
+**Archive integrity and forensics.** Digital forensics tools and long-term archive integrity verification often prefer SHA-512 for the additional collision resistance margin. When preserving evidence or archival data for decades, the quantum-resistance consideration becomes relevant.
+
+**SSH host keys and authentication.** OpenSSH defaults to SHA-256 for fingerprints but supports SHA-512 in many internal operations. The `ssh-keygen -t rsa -b 4096` generates RSA keys that can use SHA-512 for signatures.
+
+**TLS 1.3.** While SHA-256 is the baseline, TLS 1.3 cipher suites include options using SHA-384 and SHA-512 for the HMAC in AEAD constructions and the PRF in key derivation.
+
+### Container and Cloud Infrastructure
+
+Modern cloud and container infrastructure leans heavily on SHA-256 for content addressing. Docker image layers are identified by SHA-256 digests of their compressed tar archives. The OCI (Open Container Initiative) image specification mandates SHA-256 as the baseline content digest algorithm, with SHA-512 as an optional stronger alternative. When you pull `nginx:latest`, Docker is verifying SHA-256 digests at every layer — and the manifest itself is identified by a SHA-256 digest.
+
+Kubernetes uses SHA-256 for image verification in admission controllers and image policy webhooks. The `imagePullPolicy` and image pinning workflows rely on `@sha256:` digest references for reproducible, tamper-evident deployments.
+
+AWS's S3 uses SHA-256 checksums for object integrity verification (the `x-amz-checksum-sha256` header). S3 now also supports SHA-1, SHA-256, SHA-384, and SHA-512 as selectable checksum algorithms when uploading objects, with SHA-256 as the most widely used.
+
+### Package Managers and Supply Chain Integrity
+
+Every major package manager uses SHA-256 or SHA-512 for dependency verification:
+
+| Package Manager | Algorithm Used |
+|---|---|
+| npm / yarn / pnpm | SHA-512 (in lockfiles: `sha512-` prefix) |
+| pip / PyPI | SHA-256 and SHA-512 (both supported) |
+| Cargo (Rust) | SHA-256 |
+| Gradle / Maven | SHA-256 and SHA-512 (both in `.sha256`/`.sha512` sidecar files) |
+| apt / dpkg (Debian/Ubuntu) | SHA-256 and SHA-512 in Release files |
+| Homebrew | SHA-256 for formula resource verification |
+
+npm's lockfile format (`package-lock.json`, `yarn.lock`) stores SHA-512 hashes for each installed package — a deliberate choice for the larger collision resistance margin in the software supply chain context. Compromising a package by hash collision, even theoretically, is more alarming in a supply chain scenario than in a standalone application, hence the preference for SHA-512.
+
+### Pattern: Platform Dictates More Than Security
+
+Looking at these deployments, a pattern emerges: the choice between SHA-256 and SHA-512 is rarely made purely on security grounds. Instead:
+
+- **Bitcoin chose SHA-256** because it was widely trusted, hardware-friendly, and had sufficient security for the threat model.
+- **Linux password hashing chose SHA-512** because the 64-bit word size impedes certain hardware attacks.
+- **Ed25519 uses SHA-512** because the protocol designers wanted the largest margin for a signature algorithm designed to last decades.
+- **TLS certificates use SHA-256** because it was the safe minimum needed to replace SHA-1, and universal compatibility mattered.
+- **npm chose SHA-512** for lockfiles because supply chain integrity benefits from the more conservative collision margin.
+- **Docker chose SHA-256** because it was already the universal standard for content addressing and is well-supported by hardware acceleration.
+
+The lesson: follow the relevant standard or protocol specification first. Choose independently only when building something new. When building something new, weigh your deployment platform's hardware characteristics alongside the security requirements — they often matter more than the theoretical security difference.
+
+## SHA-512/256 — The Best of Both Worlds
+
+SHA-512/256 is a truncated variant of SHA-512 that produces a 256-bit (32-byte) digest — the same output size as SHA-256 — but using SHA-512 internals throughout. It was standardized in FIPS 180-4.
+
+### How It Differs from SHA-256
+
+SHA-512/256 is not SHA-512 with the output cut in half. It is a fully separate algorithm with its own initialization vector. The IV is generated by running SHA-512 on a specific configuration string, producing constants distinct from both SHA-256 and SHA-512. The full 80 rounds of SHA-512 are executed, and then only the first 256 bits of the 512-bit state are output.
+
+```
+SHA-512/256 IV (first 64 bits of each):
+H0 = 0x22312194fc2bf72c
+H1 = 0x9f555fa3c84c64c2
+H2 = 0x2393b86b6f53b151
+H3 = 0x963877195940eabd
+... (all 8 values differ from SHA-256 and SHA-512)
+```
+
+### Why SHA-512/256 Exists
+
+**Length extension immunity.** Because the 256-bit output is a truncation of the 512-bit internal state, an attacker cannot perform a length extension attack — they do not have the full state needed to continue the computation.
+
+**64-bit performance with 256-bit output.** On 64-bit platforms without SHA-NI, SHA-512/256 processes data faster than SHA-256 (same block-size advantage as SHA-512) while producing the same 256-bit output size. This is compelling for applications that want short digests but run on 64-bit servers.
+
+**Security margin above SHA-256.** SHA-512/256 inherits SHA-512's more conservative design (80 rounds, 64-bit state operations) while matching SHA-256's output size. The preimage resistance is 256 bits; collision resistance is 128 bits — same as SHA-256 in the output, but with a larger internal state making certain structural attacks harder.
+
+### When to Use SHA-512/256
+
+SHA-512/256 is a strong candidate when:
+
+- You are running on 64-bit servers and want throughput comparable to or better than SHA-256
+- You need SHA-256-sized outputs (for compatibility, storage, or display)
+- You want length-extension immunity without switching to SHA-3
+- You are building a new system without legacy compatibility constraints
+
+The main drawback is ecosystem support: SHA-512/256 is less widely supported in libraries and is unfamiliar to many developers. Always check that your specific libraries, hardware security modules, and any required integrations support it before adopting it.
+
+## Which Should You Choose?
+
+The right algorithm depends on your deployment context, performance requirements, and whether you are constrained by a protocol or standard.
+
+### Decision Guide by Use Case
+
+**Follow the spec, not this article:** If you are implementing a defined protocol (TLS, JWT, SSH, Bitcoin, DNSSEC, Ed25519), use whatever the spec mandates. Do not substitute.
+
+**For new applications with no protocol constraint:**
+
+| Situation | Recommendation | Reason |
+|---|---|---|
+| General-purpose hashing, unknown deployment target | SHA-256 | Widest support, hardware acceleration available, sufficient security |
+| 64-bit Linux/macOS servers, no SHA-NI required | SHA-512 or SHA-512/256 | Better throughput per byte on 64-bit hardware |
+| x86-64 with SHA-NI (Intel 11th gen+, AMD Zen) | SHA-256 | SHA-NI provides 5-10x speedup; SHA-512 has no equivalent |
+| Apple Silicon (M1–M4) | SHA-512 | ARM SHA-512 instructions; faster than SHA-256 |
+| 32-bit or embedded systems | SHA-256 | SHA-512's 64-bit words are expensive to emulate |
+| Mobile (iOS/Android mixed fleet) | SHA-256 | SHA-NI on x86 Android; consistent choice across platforms |
+| Password hashing KDF (e.g., PBKDF2) | SHA-512 | Harder to attack with 32-bit hardware; larger state |
+| Long-term data integrity (20+ years) | SHA-512 or SHA-384 | Conservative quantum resistance margin |
+| Length extension attack immunity needed | SHA-512/256 or HMAC-SHA-256 | Avoids Merkle-Damgard length extension property |
+| FIPS 140-3 compliance | Either (both approved) | Check specific module requirements |
+| Blockchain / proof of work | SHA-256 | ASIC hardware acceleration exists; industry standard |
+| Digital signatures (RSA) | SHA-256 (RS256) or SHA-512 (RS512) | RS256 is standard for JWT; RS512 for higher assurance |
+
+### The Default Case
+
+If you are uncertain and have no specific constraints, **SHA-256 is the safer default** for most developers. The reasons:
+
+1. SHA-256 has wider library and platform support than SHA-512.
+2. Hardware acceleration (SHA-NI) exists for SHA-256 on x86 and is present on many production servers.
+3. 256-bit preimage resistance and 128-bit collision resistance are sufficient for every current use case outside long-term archival.
+4. SHA-256 outputs are half the size of SHA-512, which matters for storage, bandwidth, and display.
+5. More documentation, examples, and developer familiarity exist for SHA-256.
+
+Use SHA-512 when you have a clear reason: your platform benefits from it, your protocol requires it, or your security requirements extend beyond SHA-256's quantum security margin.
+
+## Code Examples
+
+### JavaScript
+
+```javascript
+// Using the Web Crypto API (browser and Node.js 15+)
+
+async function sha256(message) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function sha512(message) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-512", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Example usage
+const message = "The quick brown fox jumps over the lazy dog";
+
+const hash256 = await sha256(message);
+console.log("SHA-256:", hash256);
+// d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592
+
+const hash512 = await sha512(message);
+console.log("SHA-512:", hash512);
+// 07e547d9586f6a73f73fbac0435ed76951218fb7d0c8d788a309d785436bbb642e93a252a954f23912547d1e8a3b5ed6e1bfd7097821233fa0538f3db854fee6
+
+// Node.js: using the built-in crypto module (synchronous, no async needed)
+import { createHash } from "crypto";
+
+function sha256Sync(message) {
+  return createHash("sha256").update(message).digest("hex");
+}
+
+function sha512Sync(message) {
+  return createHash("sha512").update(message).digest("hex");
+}
+
+console.log("SHA-256 (sync):", sha256Sync("hello world"));
+// b94d27b9934d3e08a52e52d7da7dabfac484efe04294e576e2f2f4e4f3a8d5b1
+
+// Hashing a file stream (Node.js)
+import { createReadStream } from "fs";
+
+function hashFile(filePath, algorithm = "sha256") {
+  return new Promise((resolve, reject) => {
+    const hash = createHash(algorithm);
+    const stream = createReadStream(filePath);
+    stream.on("data", chunk => hash.update(chunk));
+    stream.on("end", () => resolve(hash.digest("hex")));
+    stream.on("error", reject);
+  });
+}
+
+const fileHash256 = await hashFile("./large-file.bin", "sha256");
+const fileHash512 = await hashFile("./large-file.bin", "sha512");
+
+// HMAC (message authentication) — always prefer HMAC over raw hash for MACs
+import { createHmac } from "crypto";
+
+const key = "super-secret-key";
+const hmac256 = createHmac("sha256", key).update("message").digest("hex");
+const hmac512 = createHmac("sha512", key).update("message").digest("hex");
+
+// Comparing hashes securely (timing-safe)
+import { timingSafeEqual } from "crypto";
+
+function verifyHash(computed, expected) {
+  const a = Buffer.from(computed, "hex");
+  const b = Buffer.from(expected, "hex");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+```
+
+### Python
+
+```python
+import hashlib
+import hmac
+
+# Basic hashing
+message = "The quick brown fox jumps over the lazy dog"
+data = message.encode("utf-8")
+
+# SHA-256
+hash_256 = hashlib.sha256(data).hexdigest()
+print("SHA-256:", hash_256)
+# d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592
+
+# SHA-512
+hash_512 = hashlib.sha512(data).hexdigest()
+print("SHA-512:", hash_512)
+# 07e547d9586f6a73f73fbac0435ed76951218fb7d0c8d788a309d785436bbb6...
+
+# SHA-512/256 (not SHA-256 — different IV)
+hash_512_256 = hashlib.new("sha512_256", data).hexdigest()
+print("SHA-512/256:", hash_512_256)
+
+# Hashing a large file incrementally (avoids loading entire file into memory)
+def hash_file(path: str, algorithm: str = "sha256") -> str:
+    h = hashlib.new(algorithm)
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+file_hash_256 = hash_file("large-file.bin", "sha256")
+file_hash_512 = hash_file("large-file.bin", "sha512")
+print("File SHA-256:", file_hash_256)
+print("File SHA-512:", file_hash_512)
+
+# HMAC-SHA-256 and HMAC-SHA-512
+key = b"super-secret-key"
+message_bytes = b"important message"
+
+mac_256 = hmac.new(key, message_bytes, hashlib.sha256).hexdigest()
+mac_512 = hmac.new(key, message_bytes, hashlib.sha512).hexdigest()
+print("HMAC-SHA-256:", mac_256)
+print("HMAC-SHA-512:", mac_512)
+
+# Timing-safe comparison (prevents timing attacks)
+received_mac = "..."
+expected_mac = mac_256
+is_valid = hmac.compare_digest(received_mac, expected_mac)
+
+# PBKDF2 key derivation (password hashing)
+import os
+
+password = b"user_password"
+salt = os.urandom(16)
+
+# PBKDF2 with SHA-256, 480,000 iterations (NIST 2023 recommendation)
+dk_256 = hashlib.pbkdf2_hmac("sha256", password, salt, 480_000)
+
+# PBKDF2 with SHA-512, 210,000 iterations (equivalent work factor)
+dk_512 = hashlib.pbkdf2_hmac("sha512", password, salt, 210_000)
+
+# Check which algorithms your Python installation supports
+print("Available hash algorithms:", hashlib.algorithms_available)
+# On most systems this includes sha256, sha512, sha512_256, sha384, sha224
+
+# Comparing performance (rough benchmark)
+import time
+
+iterations = 100_000
+data = b"benchmark" * 1000  # ~9 KB
+
+start = time.perf_counter()
+for _ in range(1000):
+    hashlib.sha256(data).digest()
+elapsed_256 = time.perf_counter() - start
+
+start = time.perf_counter()
+for _ in range(1000):
+    hashlib.sha512(data).digest()
+elapsed_512 = time.perf_counter() - start
+
+print(f"SHA-256: {elapsed_256 * 1000:.1f} ms for 1000 hashes of 9 KB")
+print(f"SHA-512: {elapsed_512 * 1000:.1f} ms for 1000 hashes of 9 KB")
+# On 64-bit systems, SHA-512 often equals or beats SHA-256 here
+```
+
+You can verify your hash outputs immediately with [our Hash Generator tool](/tools/hash-generator), which supports both SHA-256 and SHA-512.
+
+## FAQ
+
+### What is the main difference between SHA-256 and SHA-512?
+
+The core difference is word size: SHA-256 operates on 32-bit words while SHA-512 operates on 64-bit words. This propagates into every aspect of the algorithm — SHA-512 has a larger block size (1024 bits vs. 512 bits), more rounds (80 vs. 64), larger constants, and a larger output (512 bits vs. 256 bits). On 64-bit hardware, SHA-512 processes twice as much data per compression call, which can make it faster despite doing more rounds. On 32-bit hardware, SHA-512's 64-bit words must be emulated, making it significantly slower than SHA-256.
+
+### Is SHA-512 more secure than SHA-256?
+
+SHA-512 provides a larger security margin: 256-bit collision resistance vs. 128-bit for SHA-256, and 512-bit preimage resistance vs. 256-bit. In practical terms, both are considered secure for all current applications — no one can mount a meaningful attack against either. The difference becomes relevant in quantum computing scenarios: Grover's algorithm reduces preimage resistance to 128 bits for SHA-256 and 256 bits for SHA-512. For most applications with a 10–15 year security horizon, SHA-256's security margin is entirely adequate.
+
+### Can SHA-256 be cracked?
+
+No practical attack exists against SHA-256. The best known attacks are on reduced-round variants (up to 46 of 64 rounds) and remain theoretical — they cannot be executed with any foreseeable computing resources. Breaking SHA-256 in the preimage sense requires on the order of 2^256 operations; the observable universe contains roughly 10^80 atoms. You would sooner run out of universe than break SHA-256 by brute force.
+
+### Which is faster, SHA-256 or SHA-512?
+
+It depends on the hardware. On x86-64 CPUs with SHA-NI (Intel 11th generation and newer, AMD Zen 2 and newer), SHA-256 is dramatically faster — typically 5–10x — because dedicated hardware instructions exist for SHA-256 but not SHA-512. On 64-bit systems without SHA-NI, SHA-512 often edges out SHA-256 in throughput because it processes twice the data per block. On Apple Silicon (M1 and later), hardware SHA-512 instructions make SHA-512 the faster choice. On 32-bit CPUs, SHA-256 is always faster because SHA-512's 64-bit operations must be emulated.
+
+### Should I use SHA-256 or SHA-512 for password hashing?
+
+Neither should be used as a direct password hash — you need a purpose-built password hashing function: bcrypt, scrypt, or Argon2. These are intentionally slow (tunable work factor) and memory-hard, which defeats GPU and ASIC attacks. SHA-256 and SHA-512 are fast by design, which is exactly the wrong property for password hashing. If you must use a SHA-based approach (e.g., PBKDF2 for compliance reasons), SHA-512 is preferred in the KDF because its 64-bit word operations are less efficiently parallelized on 32-bit GPU hardware, making dictionary attacks slightly more expensive.
+
+### What does "SHA-2" mean, and how does it relate to SHA-256 and SHA-512?
+
+SHA-2 is the family name for a set of hash functions defined in FIPS 180-4. SHA-256 and SHA-512 are the two primary members of this family, differing in word size. SHA-224 and SHA-384 are derived from SHA-256 and SHA-512 respectively (same algorithm, different initialization and output truncation). SHA-512/256 and SHA-512/224 are also SHA-512 variants with truncated output. All six are collectively called SHA-2. SHA-1 is a separate, older, now-deprecated algorithm from a different era.
+
+### Why does Bitcoin use double SHA-256 (SHA256d)?
+
+Bitcoin's proof-of-work and transaction ID calculations apply SHA-256 twice: SHA-256(SHA-256(data)). This was specified by Satoshi Nakamoto. The stated rationale was protection against a theoretical weakness in Merkle-Damgard constructions involving length extension attacks. By applying SHA-256 twice, the final hash is not directly continuable by a length extension, since you would need to know the intermediate hash (the output of the first SHA-256) rather than just the final output. In practice, the double application likely adds negligible security benefit over HMAC, but it has become a deeply embedded property of the Bitcoin protocol.
+
+### Is SHA-512 overkill for most applications?
+
+Practically speaking, yes — for today's threat landscape. SHA-256 provides more security than any known or anticipated attack requires. The 128-bit collision resistance of SHA-256 is so far above current attack capabilities that increasing it to 256-bit (SHA-512) provides no observable benefit. The exception is quantum computing: if quantum computers capable of running Grover's algorithm at scale become available, SHA-256's effective preimage resistance drops to 128 bits. This is still considered adequate by NIST, but SHA-512's 256-bit quantum preimage resistance provides a more comfortable margin for data requiring long-term protection.
+
+### What is the relationship between SHA-384 and SHA-512?
+
+SHA-384 is SHA-512 with a different initialization vector and the output truncated to the first 384 bits. Every internal operation — the 80 rounds, the 64-bit word arithmetic, the 1024-bit block size — is identical to SHA-512. SHA-384 exists as a drop-in for users who want shorter digests than SHA-512 but want to use SHA-512's 64-bit arithmetic (useful on 64-bit servers). SHA-384 has 192-bit collision resistance (vs. SHA-256's 128-bit), putting it between the two main algorithms. TLS 1.3's `TLS_AES_256_GCM_SHA384` cipher suite uses SHA-384.
+
+### Can I use SHA-256 and SHA-512 outputs interchangeably in my application?
+
+Not directly — they produce different output lengths (32 bytes vs. 64 bytes). If you are storing hashes in a database, switching algorithms requires migrating all existing hashes. Design your schema to record which algorithm produced each hash if you may need to support multiple algorithms or migrate in the future. A common pattern is to prefix the stored value with the algorithm identifier: `sha256:d7a8fbb3...` vs. `sha512:07e547d9...`. This avoids future pain if you need to upgrade your hash algorithm without invalidating all existing stored values.
+
+### Does SHA-256 or SHA-512 comply with FIPS 140-3?
+
+Both SHA-256 and SHA-512 are NIST-approved algorithms listed in FIPS 180-4, and both are approved for use in FIPS 140-3 validated cryptographic modules. If your use case requires FIPS 140-3 compliance, either algorithm satisfies the hash function requirement. The specific cipher suites, key lengths, and overall system design must also comply with relevant NIST guidelines (SP 800-57, SP 800-131A), which may impose additional constraints on key sizes and algorithm combinations.

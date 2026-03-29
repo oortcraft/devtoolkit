@@ -1,0 +1,1533 @@
+---
+title: "Base64 Encoding in JavaScript, Python & Go: Practical Examples"
+description: "Learn how to encode and decode Base64 in JavaScript (browser & Node.js), Python, and Go with practical, copy-paste-ready code examples."
+pubDate: "2026-03-29"
+tags: ["base64", "encoding", "code-examples"]
+relatedTools: ["base64"]
+---
+
+If you have ever sent a file through an email attachment, embedded an image directly in CSS, or seen a long string of letters and slashes stuffed into an HTTP Authorization header, you have already encountered Base64. It is one of those encoding schemes that quietly powers a surprising portion of the web — and yet the specifics of how to actually use it in code tend to scatter across Stack Overflow answers, language docs, and tribal knowledge. This guide collects all of that into one place: complete, runnable examples for JavaScript (browser and Node.js), Python, and Go, plus the edge cases and performance traps that most tutorials skip.
+
+---
+
+## Quick Refresher: What Is Base64?
+
+Base64 is a binary-to-text encoding scheme that represents arbitrary binary data using only 64 printable ASCII characters: the uppercase and lowercase letters A–Z, the digits 0–9, and two additional characters — by default `+` and `/` — with `=` used as padding. Every three bytes of binary input become four Base64 characters, expanding the data size by roughly 33 percent.
+
+The scheme exists because many protocols and formats were designed to handle text, not arbitrary bytes. Email (MIME), HTML data URIs, JSON payloads, and HTTP headers all work cleanly with printable ASCII; raw binary data in those contexts causes corruption or parse failures.
+
+For a deeper look at the algorithm itself — how the 6-bit grouping works, why padding matters, and the full history — see the complete guide: [What is Base64?](/blog/what-is-base64)
+
+To encode or decode values interactively right now, use the [Base64 tool](/tools/base64) without writing any code.
+
+---
+
+## JavaScript — Browser: btoa and atob
+
+Browsers have shipped two globals for Base64 since the early days of the web: `btoa` (binary to ASCII, i.e., encode) and `atob` (ASCII to binary, i.e., decode). Their names come from Unix conventions, not from "b64" — a source of confusion for many developers.
+
+### Basic Usage
+
+```javascript
+// Encoding a plain ASCII string
+const encoded = btoa("Hello, World!");
+console.log(encoded); // SGVsbG8sIFdvcmxkIQ==
+
+// Decoding back
+const decoded = atob("SGVsbG8sIFdvcmxkIQ==");
+console.log(decoded); // Hello, World!
+```
+
+`btoa` accepts a string and treats each character as a single byte. `atob` reverses that process, returning a string where each character's code point corresponds to one byte.
+
+### Encoding Raw Binary Data (Uint8Array)
+
+When you are working with actual binary data — a File object from an input, a response from `fetch`, a canvas image — you have a `Uint8Array` or `ArrayBuffer`, not a string. The path to Base64 goes through a string conversion step:
+
+```javascript
+// Convert a Uint8Array to a Base64 string
+function uint8ArrayToBase64(bytes) {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+// Example: encoding raw bytes
+const bytes = new Uint8Array([72, 101, 108, 108, 111]); // "Hello"
+const encoded = uint8ArrayToBase64(bytes);
+console.log(encoded); // SGVsbG8=
+
+// Decoding a Base64 string back to a Uint8Array
+function base64ToUint8Array(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+const decoded = base64ToUint8Array("SGVsbG8=");
+console.log(decoded); // Uint8Array [72, 101, 108, 108, 111]
+```
+
+### Encoding a File from an Input Element
+
+A common real-world need is reading a file chosen by the user and converting it to a Base64 data URI for preview or upload:
+
+```javascript
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result); // result is a data URI
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+// Usage with an <input type="file"> element
+document.getElementById("fileInput").addEventListener("change", async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    const dataUri = await fileToBase64(file);
+    console.log("Data URI:", dataUri.substring(0, 80) + "...");
+
+    // The dataUri looks like:
+    // data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...
+  } catch (error) {
+    console.error("Failed to read file:", error);
+  }
+});
+```
+
+`FileReader.readAsDataURL` handles the encoding internally and returns a complete data URI including the MIME type prefix.
+
+### Limitations of btoa
+
+`btoa` has one critical limitation: it only handles strings where every character has a code point in the range 0–255. Any character outside that range — including most emoji and many non-Latin scripts — throws a `DOMException`:
+
+```javascript
+// This throws: "InvalidCharacterError: The string contains invalid characters"
+btoa("Hello, 世界");
+```
+
+The next section covers the correct way to handle Unicode with `TextEncoder`.
+
+---
+
+## JavaScript — Node.js: Buffer
+
+Node.js does not have `btoa` or `atob` in its original design (they were added as globals in Node.js 16 for browser compatibility, but they carry the same limitations). The idiomatic Node.js approach uses the `Buffer` class, which is purpose-built for binary data.
+
+### Encoding and Decoding Strings
+
+```javascript
+// Encoding a UTF-8 string to Base64
+const input = "Hello, World!";
+const encoded = Buffer.from(input, "utf8").toString("base64");
+console.log(encoded); // SGVsbG8sIFdvcmxkIQ==
+
+// Decoding Base64 back to a UTF-8 string
+const decoded = Buffer.from(encoded, "base64").toString("utf8");
+console.log(decoded); // Hello, World!
+```
+
+`Buffer.from(string, encoding)` creates a Buffer from a string using the specified encoding. `Buffer.toString(encoding)` converts the buffer contents to a string in the specified encoding. The `"base64"` encoding is first-class in both directions.
+
+### Encoding and Decoding Binary Files
+
+```javascript
+const fs = require("fs");
+const path = require("path");
+
+// Encode a file to Base64
+function encodeFileToBase64(filePath) {
+  const fileBuffer = fs.readFileSync(filePath);
+  return fileBuffer.toString("base64");
+}
+
+// Decode Base64 back to a file
+function decodeBase64ToFile(base64String, outputPath) {
+  const buffer = Buffer.from(base64String, "base64");
+  fs.writeFileSync(outputPath, buffer);
+}
+
+// Example usage
+const encoded = encodeFileToBase64("./image.png");
+console.log(`Encoded ${encoded.length} characters`);
+
+decodeBase64ToFile(encoded, "./image-copy.png");
+console.log("File decoded and written");
+```
+
+### URL-Safe Base64 with Buffer
+
+Node.js `Buffer` does not natively output URL-safe Base64 (with `-` and `_` instead of `+` and `/`, and without padding). You can apply the substitution manually:
+
+```javascript
+function toBase64Url(input) {
+  return Buffer.from(input, "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function fromBase64Url(base64url) {
+  // Restore standard Base64 characters
+  const base64 = base64url
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+
+  // Add padding if needed
+  const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, "=");
+
+  return Buffer.from(padded, "base64").toString("utf8");
+}
+
+const encoded = toBase64Url("Hello, World!");
+console.log(encoded); // SGVsbG8sIFdvcmxkIQ
+
+const decoded = fromBase64Url(encoded);
+console.log(decoded); // Hello, World!
+```
+
+### Streaming Base64 Encoding with Transform Streams
+
+For large files, reading everything into memory before encoding is wasteful. Node.js streams let you encode on the fly. The `stream` module's `Transform` class is the right tool:
+
+```javascript
+const { Transform } = require("stream");
+const fs = require("fs");
+
+class Base64EncodeStream extends Transform {
+  constructor(options) {
+    super(options);
+    this._remainder = null;
+  }
+
+  _transform(chunk, encoding, callback) {
+    // Combine any leftover bytes from the previous chunk with the new chunk
+    let data = this._remainder
+      ? Buffer.concat([this._remainder, chunk])
+      : chunk;
+
+    // Process in multiples of 3 bytes (Base64 encodes 3 bytes at a time)
+    const remainder = data.length % 3;
+    if (remainder !== 0) {
+      this._remainder = data.slice(data.length - remainder);
+      data = data.slice(0, data.length - remainder);
+    } else {
+      this._remainder = null;
+    }
+
+    if (data.length > 0) {
+      this.push(data.toString("base64"));
+    }
+
+    callback();
+  }
+
+  _flush(callback) {
+    // Encode any remaining bytes (will include padding)
+    if (this._remainder) {
+      this.push(this._remainder.toString("base64"));
+    }
+    callback();
+  }
+}
+
+// Example: encode a large file to Base64 without loading it all into memory
+const inputPath = "./large-file.bin";
+const outputPath = "./large-file.b64";
+
+const readStream = fs.createReadStream(inputPath);
+const writeStream = fs.createWriteStream(outputPath);
+const encoder = new Base64EncodeStream();
+
+readStream
+  .pipe(encoder)
+  .pipe(writeStream)
+  .on("finish", () => {
+    console.log("Streaming encode complete");
+  })
+  .on("error", (err) => {
+    console.error("Stream error:", err);
+  });
+```
+
+For decoding, Node.js also ships a built-in approach via `Buffer` in a pipeline:
+
+```javascript
+const { pipeline } = require("stream/promises");
+const fs = require("fs");
+
+// A simpler approach for moderate-size files: read chunks and decode
+async function streamDecodeBase64(inputPath, outputPath) {
+  const input = fs.readFileSync(inputPath, "utf8").replace(/\s/g, "");
+  const buffer = Buffer.from(input, "base64");
+  fs.writeFileSync(outputPath, buffer);
+  console.log(`Decoded ${buffer.length} bytes`);
+}
+
+streamDecodeBase64("./large-file.b64", "./large-file-decoded.bin");
+```
+
+For very large Base64-encoded files, a proper chunk-based decode stream follows the same pattern as the encode stream, processing four Base64 characters at a time.
+
+---
+
+## Handling Unicode in JavaScript
+
+This is one of the most common sources of bugs in JavaScript Base64 code. `btoa` treats each character as a single byte, but JavaScript strings are UTF-16. A character like `世` has a code point of U+4E16, which is outside the 0–255 range that `btoa` can handle.
+
+### Why btoa Fails with Non-ASCII Characters
+
+```javascript
+// This throws: DOMException: Failed to execute 'btoa' on 'Window':
+// The string to be encoded contains characters outside of the Latin1 range.
+try {
+  btoa("Héllo, 世界!");
+} catch (e) {
+  console.error(e.message);
+}
+```
+
+The solution is to encode the string to UTF-8 bytes first using `TextEncoder`, then Base64 encode the resulting bytes.
+
+### The TextEncoder / TextDecoder Pattern
+
+`TextEncoder` converts a JavaScript string to a `Uint8Array` of UTF-8 bytes. `TextDecoder` reverses this. Together with the `Uint8Array`-to-Base64 helpers shown earlier, you get correct Unicode handling:
+
+```javascript
+// Encode a Unicode string to Base64
+function encodeUnicode(str) {
+  const bytes = new TextEncoder().encode(str); // UTF-8 bytes
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+// Decode a Base64 string back to a Unicode string
+function decodeUnicode(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+// Works with any Unicode content
+console.log(encodeUnicode("Héllo, 世界!"));
+// 2KliZmxsbywg5LiW55WM4oCZ (example — actual output depends on exact chars)
+
+console.log(decodeUnicode(encodeUnicode("Héllo, 世界!")));
+// Héllo, 世界!
+```
+
+### A Cleaner Version Using Array.from
+
+Modern JavaScript offers a slightly cleaner formulation using `Array.from` and spread syntax:
+
+```javascript
+function encodeUnicode(str) {
+  const bytes = new TextEncoder().encode(str);
+  return btoa(String.fromCharCode(...bytes));
+}
+
+function decodeUnicode(base64) {
+  const binary = atob(base64);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+// Test with multilingual content
+const strings = [
+  "Hello, World!",        // ASCII
+  "Héllo, Wörld!",       // Latin extended
+  "привет мир",           // Cyrillic
+  "こんにちは世界",         // Japanese
+  "مرحبا بالعالم",       // Arabic
+  "Hello World",          // Emoji (if supported in your context)
+];
+
+strings.forEach((str) => {
+  const encoded = encodeUnicode(str);
+  const decoded = decodeUnicode(encoded);
+  console.log(`"${str}" => "${encoded}" => "${decoded}"`);
+  console.log(`Round-trip correct: ${str === decoded}`);
+});
+```
+
+### The fromCharCode Spread Limitation
+
+One caution: spreading a large `Uint8Array` into `String.fromCharCode(...bytes)` can cause a "Maximum call stack size exceeded" error for large inputs because spread operators expand array elements as function arguments. For large data, use the loop approach or chunk the array:
+
+```javascript
+function uint8ArrayToBinaryString(bytes) {
+  const CHUNK_SIZE = 0x8000; // 32768
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    const chunk = bytes.subarray(i, i + CHUNK_SIZE);
+    binary += String.fromCharCode(...chunk);
+  }
+  return binary;
+}
+
+function encodeUnicodeLarge(str) {
+  const bytes = new TextEncoder().encode(str);
+  return btoa(uint8ArrayToBinaryString(bytes));
+}
+```
+
+In Node.js, all of this complexity disappears: `Buffer.from(str, "utf8").toString("base64")` handles Unicode correctly by definition, because `Buffer.from` with the `"utf8"` encoding converts the string to UTF-8 bytes before encoding.
+
+---
+
+## Python: The base64 Module
+
+Python's standard library includes the `base64` module, which provides functions for Base64 encoding and decoding along with several variants. All functions operate on `bytes` objects, not strings — an important distinction in Python 3.
+
+### Basic Encoding and Decoding
+
+```python
+import base64
+
+# Encode a string (must convert to bytes first)
+original = "Hello, World!"
+encoded = base64.b64encode(original.encode("utf-8"))
+print(encoded)          # b'SGVsbG8sIFdvcmxkIQ=='
+print(type(encoded))    # <class 'bytes'>
+
+# Convert encoded bytes to a string if needed
+encoded_str = encoded.decode("ascii")
+print(encoded_str)      # SGVsbG8sIFdvcmxkIQ==
+
+# Decode Base64 back to bytes, then to string
+decoded_bytes = base64.b64decode(encoded)
+decoded_str = decoded_bytes.decode("utf-8")
+print(decoded_str)      # Hello, World!
+```
+
+Key points:
+- `b64encode` takes `bytes` and returns `bytes`
+- `b64decode` takes `bytes` or `str` and returns `bytes`
+- String inputs must be encoded to bytes first (`.encode("utf-8")`)
+- The decoded bytes must be decoded to a string if you need one (`.decode("utf-8")`)
+
+### Encoding and Decoding Binary Files
+
+```python
+import base64
+
+def encode_file_to_base64(file_path: str) -> str:
+    """Read a binary file and return its Base64-encoded string."""
+    with open(file_path, "rb") as f:
+        file_bytes = f.read()
+    return base64.b64encode(file_bytes).decode("ascii")
+
+def decode_base64_to_file(base64_string: str, output_path: str) -> None:
+    """Decode a Base64 string and write the result to a file."""
+    file_bytes = base64.b64decode(base64_string)
+    with open(output_path, "wb") as f:
+        f.write(file_bytes)
+
+# Example usage
+encoded = encode_file_to_base64("image.png")
+print(f"Encoded length: {len(encoded)} characters")
+
+decode_base64_to_file(encoded, "image-copy.png")
+print("File decoded and saved")
+```
+
+### URL-Safe Base64 Variants
+
+The standard Base64 alphabet uses `+` and `/`, which are special characters in URLs. The `base64` module provides `urlsafe_b64encode` and `urlsafe_b64decode`, which use `-` and `_` instead:
+
+```python
+import base64
+
+data = b"Hello, World! This has +/= friendly content"
+
+# Standard encoding (contains + and / which need URL encoding)
+standard = base64.b64encode(data)
+print("Standard:", standard)
+# b'SGVsbG8sIFdvcmxkISBUaGlzIGhhcyArLz0gZnJpZW5kbHkgY29udGVudA=='
+
+# URL-safe encoding (uses - and _ instead of + and /)
+urlsafe = base64.urlsafe_b64encode(data)
+print("URL-safe:", urlsafe)
+# b'SGVsbG8sIFdvcmxkISBUaGlzIGhhcyArLz0gZnJpZW5kbHkgY29udGVudA=='
+# (same here, but with - and _ where + and / appear)
+
+# Decoding
+decoded_standard = base64.b64decode(standard)
+decoded_urlsafe = base64.urlsafe_b64decode(urlsafe)
+
+assert decoded_standard == decoded_urlsafe == data
+print("Both decode to the same bytes:", decoded_standard)
+```
+
+### Stripping and Validating Padding
+
+A common source of errors is malformed Base64 strings with incorrect or missing padding. Python's decoder is strict by default. Use `validate=False` (the default) which is lenient about padding, or explicitly add padding when needed:
+
+```python
+import base64
+
+def safe_b64decode(s: str | bytes) -> bytes:
+    """Decode Base64 with automatic padding correction."""
+    if isinstance(s, str):
+        s = s.encode("ascii")
+
+    # Add padding if the string length is not a multiple of 4
+    padding_needed = len(s) % 4
+    if padding_needed:
+        s += b"=" * (4 - padding_needed)
+
+    return base64.b64decode(s)
+
+# Works even with stripped padding
+print(safe_b64decode("SGVsbG8"))    # b'Hello'
+print(safe_b64decode("SGVsbG8="))   # b'Hello' (correct padding)
+print(safe_b64decode("SGVsbG8=="))  # b'Hello' (over-padded, Python ignores extra)
+```
+
+### Encoding Large Files in Chunks
+
+For large files, encoding the entire content at once uses significant memory. Python's `base64.encodebytes` processes data in chunks internally and adds line breaks, which is useful for MIME:
+
+```python
+import base64
+
+# encodebytes adds newlines every 76 characters (MIME-standard)
+data = b"A" * 200
+mime_encoded = base64.encodebytes(data)
+print(mime_encoded)
+# b'QQQQ...QQQQ\nQQQQ...\n'
+
+# Decode MIME-encoded Base64 (ignores whitespace)
+decoded = base64.decodebytes(mime_encoded)
+assert decoded == data
+
+# For custom chunked encoding without MIME newlines:
+def encode_large_file_chunked(input_path: str, output_path: str, chunk_size: int = 3 * 1024) -> None:
+    """Encode a large file to Base64 in chunks, writing to an output file."""
+    # chunk_size must be a multiple of 3 for correct encoding at boundaries
+    with open(input_path, "rb") as infile, open(output_path, "w") as outfile:
+        while True:
+            chunk = infile.read(chunk_size)
+            if not chunk:
+                break
+            outfile.write(base64.b64encode(chunk).decode("ascii"))
+
+def decode_large_file_chunked(input_path: str, output_path: str, chunk_size: int = 4 * 1024) -> None:
+    """Decode a large Base64 file in chunks."""
+    # chunk_size must be a multiple of 4 for correct decoding at boundaries
+    with open(input_path, "r") as infile, open(output_path, "wb") as outfile:
+        while True:
+            chunk = infile.read(chunk_size)
+            if not chunk:
+                break
+            outfile.write(base64.b64decode(chunk))
+
+encode_large_file_chunked("large-input.bin", "large-input.b64")
+decode_large_file_chunked("large-input.b64", "large-output.bin")
+print("Large file encoding and decoding complete")
+```
+
+### Creating a Data URI in Python
+
+```python
+import base64
+import mimetypes
+
+def file_to_data_uri(file_path: str) -> str:
+    """Convert a file to a Base64 data URI."""
+    mime_type, _ = mimetypes.guess_type(file_path)
+    if mime_type is None:
+        mime_type = "application/octet-stream"
+
+    with open(file_path, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode("ascii")
+
+    return f"data:{mime_type};base64,{encoded}"
+
+# Example
+uri = file_to_data_uri("logo.png")
+print(uri[:80] + "...")  # data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...
+```
+
+---
+
+## Go: The encoding/base64 Package
+
+Go's standard library `encoding/base64` package provides four encoding variants and a clean interface for both string and stream encoding. Understanding which encoding to use — and why — is the first step.
+
+### The Four Encodings
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"fmt"
+)
+
+func main() {
+	data := []byte("Hello, World!")
+
+	// StdEncoding: standard Base64 (uses +, /, with = padding)
+	stdEncoded := base64.StdEncoding.EncodeToString(data)
+	fmt.Println("StdEncoding:    ", stdEncoded)
+	// SGVsbG8sIFdvcmxkIQ==
+
+	// URLEncoding: URL-safe (uses -, _ instead of +, /, with = padding)
+	urlEncoded := base64.URLEncoding.EncodeToString(data)
+	fmt.Println("URLEncoding:    ", urlEncoded)
+	// SGVsbG8sIFdvcmxkIQ==
+
+	// RawStdEncoding: standard alphabet without = padding
+	rawStdEncoded := base64.RawStdEncoding.EncodeToString(data)
+	fmt.Println("RawStdEncoding: ", rawStdEncoded)
+	// SGVsbG8sIFdvcmxkIQ
+
+	// RawURLEncoding: URL-safe without = padding (used in JWTs)
+	rawURLEncoded := base64.RawURLEncoding.EncodeToString(data)
+	fmt.Println("RawURLEncoding: ", rawURLEncoded)
+	// SGVsbG8sIFdvcmxkIQ
+}
+```
+
+### Basic Encoding and Decoding
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"fmt"
+	"log"
+)
+
+func main() {
+	// Encoding
+	input := "Hello, World! Unicode works fine: 世界"
+	encoded := base64.StdEncoding.EncodeToString([]byte(input))
+	fmt.Println("Encoded:", encoded)
+
+	// Decoding
+	decoded, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		log.Fatalf("Decode error: %v", err)
+	}
+	fmt.Println("Decoded:", string(decoded))
+
+	// Round-trip check
+	if string(decoded) == input {
+		fmt.Println("Round-trip successful")
+	}
+}
+```
+
+Go strings are UTF-8 natively, so there is no Unicode issue: `[]byte(str)` gives you the UTF-8 bytes directly.
+
+### Encoding and Decoding Files
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"fmt"
+	"log"
+	"os"
+)
+
+func encodeFileToBase64(inputPath string) (string, error) {
+	data, err := os.ReadFile(inputPath)
+	if err != nil {
+		return "", fmt.Errorf("reading file: %w", err)
+	}
+	return base64.StdEncoding.EncodeToString(data), nil
+}
+
+func decodeBase64ToFile(encoded, outputPath string) error {
+	data, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return fmt.Errorf("decoding: %w", err)
+	}
+	return os.WriteFile(outputPath, data, 0644)
+}
+
+func main() {
+	encoded, err := encodeFileToBase64("image.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Encoded %d characters\n", len(encoded))
+
+	if err := decodeBase64ToFile(encoded, "image-copy.png"); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("File decoded and written")
+}
+```
+
+### Streaming with io.Reader and io.Writer
+
+For large files, Go's `base64.NewEncoder` and `base64.NewDecoder` wrap any `io.Writer` and `io.Reader` respectively, enabling streaming encoding and decoding:
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"fmt"
+	"io"
+	"log"
+	"os"
+)
+
+func encodeFileStreaming(inputPath, outputPath string) error {
+	inFile, err := os.Open(inputPath)
+	if err != nil {
+		return fmt.Errorf("opening input: %w", err)
+	}
+	defer inFile.Close()
+
+	outFile, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("creating output: %w", err)
+	}
+	defer outFile.Close()
+
+	// NewEncoder wraps the writer; all writes are Base64-encoded
+	encoder := base64.NewEncoder(base64.StdEncoding, outFile)
+	defer encoder.Close() // IMPORTANT: must close to flush final padding
+
+	if _, err := io.Copy(encoder, inFile); err != nil {
+		return fmt.Errorf("encoding: %w", err)
+	}
+
+	return nil
+}
+
+func decodeFileStreaming(inputPath, outputPath string) error {
+	inFile, err := os.Open(inputPath)
+	if err != nil {
+		return fmt.Errorf("opening input: %w", err)
+	}
+	defer inFile.Close()
+
+	outFile, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("creating output: %w", err)
+	}
+	defer outFile.Close()
+
+	// NewDecoder wraps the reader; all reads are Base64-decoded
+	decoder := base64.NewDecoder(base64.StdEncoding, inFile)
+
+	if _, err := io.Copy(outFile, decoder); err != nil {
+		return fmt.Errorf("decoding: %w", err)
+	}
+
+	return nil
+}
+
+func main() {
+	if err := encodeFileStreaming("large-file.bin", "large-file.b64"); err != nil {
+		log.Fatal("Encode error:", err)
+	}
+	fmt.Println("Streaming encode complete")
+
+	if err := decodeFileStreaming("large-file.b64", "large-file-decoded.bin"); err != nil {
+		log.Fatal("Decode error:", err)
+	}
+	fmt.Println("Streaming decode complete")
+}
+```
+
+One critical detail: `base64.NewEncoder` returns an `io.WriteCloser`. You must call `Close()` on it after writing all data, or the final block (which may require padding) will not be flushed to the underlying writer. Using `defer encoder.Close()` is the idiomatic approach.
+
+### Encoding to a Byte Slice Directly
+
+When you need the encoded output as a byte slice rather than a string:
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"fmt"
+)
+
+func main() {
+	src := []byte("Hello, World!")
+
+	// Calculate the exact encoded length
+	encodedLen := base64.StdEncoding.EncodedLen(len(src))
+	dst := make([]byte, encodedLen)
+
+	base64.StdEncoding.Encode(dst, src)
+	fmt.Printf("Encoded: %s\n", dst) // SGVsbG8sIFdvcmxkIQ==
+
+	// Decode back
+	decodedLen, err := base64.StdEncoding.Decode(dst, dst)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Printf("Decoded: %s\n", dst[:decodedLen]) // Hello, World!
+}
+```
+
+---
+
+## Data URIs: Embedding Data Directly in HTML and CSS
+
+A data URI is a string that encodes file content directly into a URL, eliminating a network request. The format is:
+
+```
+data:[<mediatype>][;base64],<data>
+```
+
+For example: `data:image/png;base64,iVBORw0KGgo...`
+
+### Creating Data URIs in JavaScript (Browser)
+
+```javascript
+// From a File object (e.g., from <input type="file">)
+async function fileToDataUri(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+// From a Uint8Array with a known MIME type
+function bytesToDataUri(bytes, mimeType) {
+  const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("");
+  const base64 = btoa(binary);
+  return `data:${mimeType};base64,${base64}`;
+}
+
+// From a fetch response (e.g., a remote image)
+async function urlToDataUri(imageUrl) {
+  const response = await fetch(imageUrl);
+  const blob = await response.blob();
+  return fileToDataUri(blob);
+}
+
+// Using a data URI in an <img> element
+async function embedImage(file) {
+  const dataUri = await fileToDataUri(file);
+  const img = document.createElement("img");
+  img.src = dataUri;
+  document.body.appendChild(img);
+}
+```
+
+### Creating Data URIs in Node.js
+
+```javascript
+const fs = require("fs");
+const path = require("path");
+
+const MIME_TYPES = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+  ".pdf": "application/pdf",
+};
+
+function fileToDataUri(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeType = MIME_TYPES[ext] || "application/octet-stream";
+  const data = fs.readFileSync(filePath);
+  const base64 = data.toString("base64");
+  return `data:${mimeType};base64,${base64}`;
+}
+
+const uri = fileToDataUri("./logo.png");
+// Embed directly in HTML template literals:
+const html = `<img src="${uri}" alt="Logo" />`;
+```
+
+### Creating Data URIs in Python
+
+```python
+import base64
+import mimetypes
+from pathlib import Path
+
+def file_to_data_uri(file_path: str) -> str:
+    """Create a Base64 data URI from a file."""
+    path = Path(file_path)
+    mime_type, _ = mimetypes.guess_type(str(path))
+    if mime_type is None:
+        mime_type = "application/octet-stream"
+
+    with open(path, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode("ascii")
+
+    return f"data:{mime_type};base64,{encoded}"
+
+def bytes_to_data_uri(data: bytes, mime_type: str) -> str:
+    """Create a Base64 data URI from bytes and a MIME type."""
+    encoded = base64.b64encode(data).decode("ascii")
+    return f"data:{mime_type};base64,{encoded}"
+
+# Generate an HTML img tag with embedded image
+uri = file_to_data_uri("logo.png")
+html = f'<img src="{uri}" alt="Logo" />'
+print(f"Generated HTML img tag ({len(html)} characters)")
+```
+
+### Creating Data URIs in Go
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"fmt"
+	"mime"
+	"os"
+	"path/filepath"
+)
+
+func fileToDataURI(filePath string) (string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("reading file: %w", err)
+	}
+
+	ext := filepath.Ext(filePath)
+	mimeType := mime.TypeByExtension(ext)
+	if mimeType == "" {
+		mimeType = "application/octet-stream"
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(data)
+	return fmt.Sprintf("data:%s;base64,%s", mimeType, encoded), nil
+}
+
+func bytesToDataURI(data []byte, mimeType string) string {
+	encoded := base64.StdEncoding.EncodeToString(data)
+	return fmt.Sprintf("data:%s;base64,%s", mimeType, encoded)
+}
+
+func main() {
+	uri, err := fileToDataURI("logo.png")
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Printf("Data URI (first 80 chars): %s...\n", uri[:min(80, len(uri))])
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+```
+
+---
+
+## Base64 in APIs
+
+Base64 appears throughout HTTP-based APIs in several distinct contexts. Understanding where it shows up — and what encoding variant is expected — prevents a class of subtle bugs.
+
+### HTTP Basic Authentication
+
+The HTTP `Authorization: Basic` header encodes credentials as `Base64(username:password)`. This is standard Base64 (not URL-safe), and the colon is part of the encoded value:
+
+```javascript
+// JavaScript (browser or Node.js)
+function makeBasicAuthHeader(username, password) {
+  const credentials = `${username}:${password}`;
+  const encoded = btoa(credentials); // or Buffer.from(credentials).toString("base64") in Node
+  return `Basic ${encoded}`;
+}
+
+const headers = {
+  Authorization: makeBasicAuthHeader("myuser", "mypassword"),
+  "Content-Type": "application/json",
+};
+
+// fetch("https://api.example.com/endpoint", { headers });
+```
+
+```python
+import base64
+
+def make_basic_auth_header(username: str, password: str) -> str:
+    credentials = f"{username}:{password}"
+    encoded = base64.b64encode(credentials.encode("utf-8")).decode("ascii")
+    return f"Basic {encoded}"
+
+headers = {
+    "Authorization": make_basic_auth_header("myuser", "mypassword"),
+    "Content-Type": "application/json",
+}
+```
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"fmt"
+	"net/http"
+)
+
+func makeBasicAuthHeader(username, password string) string {
+	credentials := username + ":" + password
+	encoded := base64.StdEncoding.EncodeToString([]byte(credentials))
+	return "Basic " + encoded
+}
+
+func main() {
+	req, _ := http.NewRequest("GET", "https://api.example.com/endpoint", nil)
+	req.Header.Set("Authorization", makeBasicAuthHeader("myuser", "mypassword"))
+	req.Header.Set("Content-Type", "application/json")
+	fmt.Println("Authorization:", req.Header.Get("Authorization"))
+}
+```
+
+Go's `net/http` package also has a convenience method: `req.SetBasicAuth(username, password)` does the encoding automatically.
+
+### JWT Structure
+
+JSON Web Tokens (JWTs) consist of three Base64URL-encoded (no padding) segments joined by dots:
+
+```
+header.payload.signature
+```
+
+Each segment uses `RawURLEncoding` in Go terms, or the URL-safe alphabet without `=` padding.
+
+```javascript
+// Decode a JWT payload without a library (for inspection only — never verify signatures this way)
+function decodeJwtPayload(token) {
+  const parts = token.split(".");
+  if (parts.length !== 3) {
+    throw new Error("Invalid JWT: expected 3 parts");
+  }
+
+  const payload = parts[1];
+
+  // Add padding back (JWT strips it)
+  const padded = payload.padEnd(payload.length + (4 - (payload.length % 4)) % 4, "=");
+
+  // Restore standard Base64 characters
+  const base64 = padded.replace(/-/g, "+").replace(/_/g, "/");
+
+  return JSON.parse(atob(base64));
+}
+
+const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+console.log(decodeJwtPayload(token));
+// { sub: '1234567890', name: 'John Doe', iat: 1516239022 }
+```
+
+```python
+import base64
+import json
+
+def decode_jwt_payload(token: str) -> dict:
+    """Decode and return the payload of a JWT (for inspection only)."""
+    parts = token.split(".")
+    if len(parts) != 3:
+        raise ValueError("Invalid JWT: expected 3 parts")
+
+    payload = parts[1]
+
+    # urlsafe_b64decode handles - and _, but needs correct padding
+    padding_needed = len(payload) % 4
+    if padding_needed:
+        payload += "=" * (4 - padding_needed)
+
+    decoded = base64.urlsafe_b64decode(payload)
+    return json.loads(decoded)
+
+token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+print(decode_jwt_payload(token))
+# {'sub': '1234567890', 'name': 'John Doe', 'iat': 1516239022}
+```
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"log"
+	"strings"
+)
+
+func decodeJWTPayload(token string) (map[string]interface{}, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("invalid JWT: expected 3 parts, got %d", len(parts))
+	}
+
+	// RawURLEncoding handles URL-safe alphabet without padding
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("decoding payload: %w", err)
+	}
+
+	var claims map[string]interface{}
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		return nil, fmt.Errorf("parsing JSON: %w", err)
+	}
+
+	return claims, nil
+}
+
+func main() {
+	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+	claims, err := decodeJWTPayload(token)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(claims) // map[iat:1.516239022e+09 name:John Doe sub:1234567890]
+}
+```
+
+### Webhook Payloads and Binary Data in JSON
+
+JSON does not have a binary data type. When an API needs to include binary content in a JSON payload — an image thumbnail, a cryptographic signature, a PDF attachment — it typically Base64-encodes the binary data and embeds it as a string:
+
+```javascript
+// Sending an image in a JSON API request
+async function sendImageToApi(imageFile, apiEndpoint) {
+  const buffer = await imageFile.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const base64Image = uint8ArrayToBase64(bytes); // from earlier
+
+  const payload = {
+    filename: imageFile.name,
+    mimeType: imageFile.type,
+    data: base64Image,
+    size: imageFile.size,
+  };
+
+  const response = await fetch(apiEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  return response.json();
+}
+
+// Receiving and decoding binary data from an API response
+async function processApiResponse(response) {
+  const json = await response.json();
+
+  if (json.data && json.mimeType) {
+    const bytes = base64ToUint8Array(json.data); // from earlier
+    const blob = new Blob([bytes], { type: json.mimeType });
+    return URL.createObjectURL(blob);
+  }
+
+  return null;
+}
+```
+
+---
+
+## URL-Safe Base64
+
+Standard Base64 uses `+`, `/`, and `=` — all of which have special meanings in URLs. When Base64 data appears in a URL query parameter, a path segment, or a cookie value, these characters cause problems:
+
+- `+` is interpreted as a space in query strings (`application/x-www-form-urlencoded`)
+- `/` is a path separator
+- `=` is an assignment operator in query strings
+
+### RFC 4648 Section 5: The URL-Safe Alphabet
+
+RFC 4648 Section 5 defines the URL-safe variant: replace `+` with `-`, replace `/` with `_`, and optionally omit the `=` padding. The rest of the alphabet is unchanged.
+
+| Standard | URL-Safe | Purpose |
+|----------|----------|---------|
+| `+`      | `-`      | Avoids query string interpretation as space |
+| `/`      | `_`      | Avoids URL path separator interpretation |
+| `=`      | (omit)   | Avoids query string `key=value` confusion |
+
+### URL-Safe Base64 in Each Language
+
+**JavaScript (browser):**
+
+```javascript
+function encodeBase64Url(str) {
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+    return String.fromCharCode(parseInt(p1, 16));
+  }))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+// A simpler version for binary data (Uint8Array)
+function uint8ArrayToBase64Url(bytes) {
+  const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("");
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function base64UrlToUint8Array(base64url) {
+  const base64 = base64url
+    .replace(/-/g, "+")
+    .replace(/_/g, "/")
+    .padEnd(base64url.length + (4 - (base64url.length % 4)) % 4, "=");
+
+  const binary = atob(base64);
+  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+}
+
+// Test
+const bytes = new Uint8Array([0xfb, 0xff, 0xfe]); // bytes that produce + and / in standard Base64
+const encoded = uint8ArrayToBase64Url(bytes);
+console.log("URL-safe:", encoded); // No +, /, or = characters
+const decoded = base64UrlToUint8Array(encoded);
+console.log("Decoded:", decoded);
+```
+
+**JavaScript (Node.js):**
+
+```javascript
+function toBase64Url(buffer) {
+  return buffer
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function fromBase64Url(base64url) {
+  const base64 = base64url
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+  const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, "=");
+  return Buffer.from(padded, "base64");
+}
+
+const input = Buffer.from([0xfb, 0xff, 0xfe]);
+const encoded = toBase64Url(input);
+console.log("URL-safe:", encoded);
+const decoded = fromBase64Url(encoded);
+console.log("Decoded:", decoded);
+```
+
+**Python:**
+
+```python
+import base64
+
+def encode_base64_url(data: bytes) -> str:
+    """Encode bytes to URL-safe Base64 without padding."""
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+def decode_base64_url(s: str) -> bytes:
+    """Decode URL-safe Base64, adding padding as needed."""
+    padding = 4 - len(s) % 4
+    if padding != 4:
+        s += "=" * padding
+    return base64.urlsafe_b64decode(s.encode("ascii"))
+
+# Test
+data = bytes([0xfb, 0xff, 0xfe])
+encoded = encode_base64_url(data)
+print("URL-safe:", encoded)  # No +, /, or =
+decoded = decode_base64_url(encoded)
+print("Decoded:", decoded)
+assert decoded == data
+```
+
+**Go:**
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"fmt"
+)
+
+func main() {
+	data := []byte{0xfb, 0xff, 0xfe}
+
+	// RawURLEncoding: URL-safe alphabet, no padding — the most common choice
+	encoded := base64.RawURLEncoding.EncodeToString(data)
+	fmt.Println("RawURLEncoding (no padding):", encoded)
+
+	// URLEncoding: URL-safe alphabet, with padding
+	encodedWithPadding := base64.URLEncoding.EncodeToString(data)
+	fmt.Println("URLEncoding (with padding): ", encodedWithPadding)
+
+	// Decode
+	decoded, err := base64.RawURLEncoding.DecodeString(encoded)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Println("Decoded:", decoded)
+}
+```
+
+Go makes this the cleanest: just pick `base64.RawURLEncoding` for no-padding URL-safe, or `base64.URLEncoding` if the receiving system expects padding. No string replacement needed.
+
+---
+
+## Performance Tips
+
+### Do Not Use Base64 for Large File Transfers
+
+Base64 increases data size by approximately 33 percent (every 3 bytes becomes 4 characters). For large file uploads or downloads, use multipart form data or binary HTTP bodies instead:
+
+```javascript
+// Bad: Base64-encoding a large file in a JSON API
+async function uploadFileBad(file, apiEndpoint) {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const base64 = uint8ArrayToBase64(bytes); // +33% size, +CPU encoding time
+
+  return fetch(apiEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: base64 }),
+  });
+}
+
+// Better: multipart form data sends binary directly
+function uploadFileGood(file, apiEndpoint) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return fetch(apiEndpoint, {
+    method: "POST",
+    body: formData, // No Base64 overhead
+  });
+}
+```
+
+```go
+// In Go: send binary directly with the correct Content-Type
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"path/filepath"
+)
+
+func uploadFile(filePath, apiEndpoint string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("opening file: %w", err)
+	}
+	defer file.Close()
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+
+	part, err := writer.CreateFormFile("file", filepath.Base(filePath))
+	if err != nil {
+		return fmt.Errorf("creating form file: %w", err)
+	}
+
+	if _, err := io.Copy(part, file); err != nil {
+		return fmt.Errorf("copying file: %w", err)
+	}
+
+	writer.Close()
+
+	resp, err := http.Post(apiEndpoint, writer.FormDataContentType(), &body)
+	if err != nil {
+		return fmt.Errorf("posting: %w", err)
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("Status:", resp.Status)
+	return nil
+}
+```
+
+### Use Streaming for Large Inputs
+
+When you must use Base64 for large data, stream it rather than loading everything into memory at once. The Node.js `Transform` stream and Go's `base64.NewEncoder`/`base64.NewDecoder` shown earlier are the right tools.
+
+A rough memory guideline:
+- Under 1 MB: buffered encoding is fine in any language
+- 1–50 MB: consider streaming; buffered still works if you have the memory budget
+- Over 50 MB: streaming is strongly preferred
+
+### Avoid Repeated Encoding
+
+A common mistake is encoding the same data multiple times in a request/response cycle — for example, encoding an image once when it is stored, and again when it is returned in an API response. Store data in its natural binary form and encode only at the transport boundary.
+
+### Pre-compute Data URIs
+
+For data URIs embedded in HTML or CSS that do not change (icons, logos), pre-compute them at build time rather than at request time:
+
+```python
+# In a build script:
+import base64
+from pathlib import Path
+
+def generate_css_with_embedded_icons(icon_dir: str, output_css: str) -> None:
+    """Embed all SVG icons as data URIs in a CSS file at build time."""
+    lines = []
+    for svg_path in Path(icon_dir).glob("*.svg"):
+        with open(svg_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("ascii")
+        class_name = svg_path.stem.replace("-", "_")
+        lines.append(f".icon-{class_name} {{")
+        lines.append(f"  background-image: url('data:image/svg+xml;base64,{encoded}');")
+        lines.append(f"}}")
+
+    with open(output_css, "w") as f:
+        f.write("\n".join(lines))
+
+generate_css_with_embedded_icons("./icons", "./dist/icons.css")
+```
+
+### Buffered vs. Chunked Encoding Benchmarks
+
+The relative performance of buffered vs. streaming encoding depends on input size. As a practical heuristic:
+
+| File Size  | Approach                         | Memory Cost |
+|------------|----------------------------------|-------------|
+| < 1 MB     | Buffered (read all, encode all)  | ~1.33x file size |
+| 1–20 MB    | Either; buffered is simpler      | ~1.33x file size |
+| > 20 MB    | Streaming                        | Fixed, small buffer |
+| > 100 MB   | Streaming required               | Fixed, small buffer |
+
+---
+
+## FAQ
+
+### Why does Base64-encoded data end with one or two equals signs?
+
+Base64 encodes three bytes at a time into four characters. When the input length is not a multiple of three, the final group is padded with zero bits to make it a full 6-bit unit, and `=` characters are appended to bring the output to a multiple of four characters. One `=` means the last group had two input bytes; two `=` signs mean it had one input byte. If the input length is already a multiple of three, there is no padding.
+
+### Is Base64 encryption?
+
+No. Base64 is an encoding scheme, not encryption. It transforms data into a different representation but provides zero confidentiality. Anyone who sees a Base64 string can decode it immediately. Do not use Base64 to obscure sensitive data.
+
+### When should I use URL-safe Base64 vs. standard Base64?
+
+Use URL-safe Base64 (with `-` and `_`) whenever the encoded string will appear in a URL — query parameters, path segments, or cookie values. Use standard Base64 for email attachments (MIME), data URIs, and any context where the encoded string is not embedded in a URL. JWTs always use URL-safe Base64 without padding.
+
+### Why does `btoa` in JavaScript throw an error on some strings?
+
+`btoa` treats each character as a single byte. JavaScript strings are UTF-16, and characters with code points above 255 cannot be represented as a single byte. The fix is to encode the string to UTF-8 bytes using `TextEncoder` first, then pass those bytes to `btoa`. See the [Handling Unicode in JavaScript](#handling-unicode-in-javascript) section for the complete pattern.
+
+### Can I decode a Base64 string without the padding equals signs?
+
+Most decoders accept Base64 without padding if you add it back before decoding. The rule is: if the string length modulo 4 is 1, add three `=` signs; if it is 2, add two; if it is 3, add one; if it is 0, add none. Python's `base64.urlsafe_b64decode` is lenient about this. Go's `base64.RawStdEncoding` and `base64.RawURLEncoding` are designed to work without padding. In Node.js, `Buffer.from(str, "base64")` ignores incorrect padding.
+
+### What is the difference between `b64encode` and `encodebytes` in Python?
+
+`b64encode` returns the encoded bytes as a single block with no line breaks. `encodebytes` (formerly `encodestring`) inserts a newline character every 76 characters, following the MIME standard for multi-line Base64. Use `b64encode` for most purposes; use `encodebytes` when generating MIME email content.
+
+### How do I verify that a string is valid Base64?
+
+Valid standard Base64 consists only of the characters `A-Z`, `a-z`, `0-9`, `+`, `/`, and `=` (at the end only), and its length must be a multiple of 4. URL-safe Base64 uses `-` and `_` instead of `+` and `/`. A simple regex check:
+
+```javascript
+// Standard Base64
+function isBase64(str) {
+  if (str.length % 4 !== 0) return false;
+  return /^[A-Za-z0-9+/]*={0,2}$/.test(str);
+}
+
+// URL-safe Base64 (with or without padding)
+function isBase64Url(str) {
+  return /^[A-Za-z0-9\-_]*={0,2}$/.test(str);
+}
+
+console.log(isBase64("SGVsbG8=")); // true
+console.log(isBase64("not valid!")); // false
+```
+
+```python
+import re
+
+def is_base64(s: str) -> bool:
+    if len(s) % 4 != 0:
+        return False
+    return bool(re.fullmatch(r"[A-Za-z0-9+/]*={0,2}", s))
+
+def is_base64_url(s: str) -> bool:
+    return bool(re.fullmatch(r"[A-Za-z0-9\-_]*={0,2}", s))
+
+print(is_base64("SGVsbG8="))   # True
+print(is_base64("not valid!")) # False
+```
+
+```go
+package main
+
+import (
+	"encoding/base64"
+	"fmt"
+)
+
+func isBase64(s string) bool {
+	_, err := base64.StdEncoding.DecodeString(s)
+	return err == nil
+}
+
+func isBase64URL(s string) bool {
+	_, err := base64.URLEncoding.DecodeString(s)
+	return err == nil
+}
+
+func main() {
+	fmt.Println(isBase64("SGVsbG8="))   // true
+	fmt.Println(isBase64("not valid!")) // false
+}
+```
+
+### How large can a data URI be?
+
+The HTML specification sets no maximum length for data URIs, but browsers impose practical limits. Chrome and Firefox handle data URIs up to around 2 MB reliably. Safari has historically been more restrictive. For images above a few hundred kilobytes, serving them as separate files is almost always better for performance — the browser can cache a file separately, but a data URI embedded in HTML or CSS is re-parsed every time the document loads.
+
+### Does Base64 encoding preserve the original data exactly?
+
+Yes, provided you use the same alphabet for encoding and decoding. Base64 is a lossless encoding — every sequence of bytes can be encoded and decoded back to the original sequence without any loss of information. The only edge case is whitespace: some encoders insert newlines, and some decoders ignore whitespace while others do not. Strip whitespace before decoding if you are not sure.
+
+### Is there a Base32 or Base16, and when would I use them?
+
+Yes. Base16 is hexadecimal encoding — two hex characters per byte, no padding needed. It is readable and widely supported but expands data to 200 percent of the original size. Base32 uses 32 characters (`A-Z` and `2-7`) and expands data to 160 percent. Base32's advantage is that it is case-insensitive and omits characters that look similar (0/O, 1/I), making it useful for human-readable codes — authentication tokens, backup codes, and Crockford's Base32 for IDs. Base64 is the right choice when size efficiency matters and the data will be handled by machines rather than typed by humans.
+
+---
+
+For hands-on experimentation with any of the examples in this post, the [Base64 tool](/tools/base64) lets you encode and decode instantly in the browser. For a deeper look at the algorithm underlying all of this — the 6-bit grouping, the alphabet design, and the history — see [What is Base64?](/blog/what-is-base64).

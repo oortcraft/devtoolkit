@@ -1,0 +1,2016 @@
+---
+title: "YAML Tutorial for Beginners: Syntax, Examples & Best Practices"
+description: "Master YAML syntax from scratch. Learn scalars, sequences, mappings, multi-line strings, anchors, and real-world examples for Docker, Kubernetes, and GitHub Actions."
+pubDate: "2026-03-29"
+tags: ["yaml", "tutorial", "devops"]
+relatedTools: ["json-to-yaml"]
+---
+
+If you have ever touched a Docker Compose file, a Kubernetes manifest, or a GitHub Actions workflow, you have written YAML. It is the de facto configuration language of the modern DevOps world — and yet most developers learn it by accident, picking up just enough syntax to copy-paste their way through CI pipelines. That approach works until it does not: a misplaced space brings down a deployment, an unquoted `no` silently becomes a boolean, or an anchor you did not understand starts corrupting your configuration. This guide teaches YAML properly — from the data model up — so you understand not just what to write, but why it works.
+
+## What is YAML?
+
+**YAML** stands for **YAML Ain't Markup Language** — a recursive acronym that reflects its original philosophy. When YAML was first designed in 2001 by Clark Evans, Ingy dot Net, and Oren Ben-Kiki, the goal was to create a human-readable data serialization language that was simpler and more natural than XML for configuration files and data exchange.
+
+The acronym originally stood for "Yet Another Markup Language," but the creators renamed it to emphasize that YAML is fundamentally about **data**, not document markup. Unlike XML or HTML, YAML has no angle brackets, no closing tags, and no verbose element syntax. The structure emerges from indentation and punctuation.
+
+**Data serialization** is the process of converting structured data — objects, lists, key-value pairs — into a format that can be stored in a file or transmitted over a network, and later reconstructed. YAML, JSON, and XML all serve this purpose. YAML's distinguishing characteristic is that its output is meant to be read and written by humans, not just parsed by machines.
+
+The current specification is YAML 1.2, published in 2009. Most tools implement YAML 1.1, which has some differences in type detection (particularly around boolean handling) that matter in practice — this guide will call out those differences where relevant.
+
+### Where YAML Is Used
+
+YAML has become the dominant configuration format in infrastructure tooling:
+
+- **Docker Compose** — service definitions, networks, volumes
+- **Kubernetes** — every resource type (Pods, Deployments, Services, ConfigMaps)
+- **GitHub Actions** — workflow and job definitions
+- **Ansible** — playbooks, inventory, variable files
+- **GitLab CI / CircleCI / Travis CI** — pipeline configuration
+- **Helm charts** — Kubernetes application packaging
+- **OpenAPI / Swagger** — API specification files
+- **AWS CloudFormation / Azure ARM templates** — infrastructure as code
+- **Jekyll / Hugo / Astro** — static site generator front matter
+
+If a tool has a configuration file, there is a good chance it is YAML.
+
+### How YAML Compares to Its Predecessors
+
+To understand why YAML exists, it helps to understand what it replaced.
+
+**XML** dominated configuration and data interchange in the early 2000s. It is verbose, requires closing tags for every element, and is difficult to write by hand without errors. A simple key-value pair like `name: Alice` requires `<name>Alice</name>` in XML — five times the characters, none of them adding information.
+
+**INI files** (still used in `.env` files, Windows registry exports, and tools like `pip`) are simple but flat — they support sections and key-value pairs but cannot represent nested structures or lists natively.
+
+**JSON** solved the verbosity problem but introduced its own friction: mandatory quotes around all keys, no comments, strict comma rules, and no multi-line strings. JSON is excellent for machine-generated data but uncomfortable to write and maintain by hand.
+
+YAML found the gap: a format that is nearly as expressive as XML, as compact as JSON, and as human-friendly as a handwritten config file. The price is parsing complexity — YAML parsers are among the most complex for any data format — but that complexity is hidden from the user.
+
+### The YAML Processing Model
+
+When a YAML parser reads a file, it goes through three stages:
+
+1. **Presentation layer** — the raw bytes of the YAML file are read as a stream of Unicode characters
+2. **Representation layer** — the characters are interpreted as a node graph of scalars, sequences, and mappings
+3. **Native layer** — the node graph is converted into native language types (Python dicts, JavaScript objects, Go structs, etc.)
+
+Understanding this model explains many YAML behaviors. Type tags (like `!!str`, `!!int`, `!!bool`) operate at the representation layer. Parser configuration (like choosing `safe_load` vs `load` in PyYAML) controls what happens at the native layer.
+
+## Basic Syntax Rules
+
+YAML's syntax is simpler than it first appears, but it has rules that are absolute. Violating them produces parse errors or, worse, silently incorrect data.
+
+### Indentation Uses Spaces, Never Tabs
+
+This is the single most important rule in YAML. **Tabs are forbidden as indentation.** If your YAML file contains a tab character for indentation, the parser will reject it with an error like `found character '\t' that cannot start any token`.
+
+The indentation amount is flexible — you can use 2 spaces, 4 spaces, or any consistent number — but you must be consistent within any given block. Most style guides and tooling defaults use 2 spaces.
+
+```yaml
+# Correct: 2-space indentation
+person:
+  name: Alice
+  address:
+    city: Seoul
+    country: Korea
+
+# Also correct: 4-space indentation
+person:
+    name: Alice
+    address:
+        city: Seoul
+        country: Korea
+
+# Wrong: mixing indentation levels inconsistently
+person:
+  name: Alice
+    city: Seoul   # error: this implies city is nested under name
+```
+
+Configure your editor to insert spaces when Tab is pressed in YAML files. In VS Code, this is controlled by `editor.insertSpaces` (default: true) and `editor.tabSize`.
+
+You can also add a `.editorconfig` file to enforce this for everyone on the team:
+
+```ini
+# .editorconfig
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+insert_final_newline = true
+```
+
+Most editors (VS Code, JetBrains, Vim, Emacs, Neovim) respect `.editorconfig` either natively or with a plugin. This is a simple, zero-cost way to prevent tab-related YAML errors across a team.
+
+### YAML is Case-Sensitive
+
+Keys and values are case-sensitive. `Name`, `name`, and `NAME` are three distinct keys. Boolean-like values `True`, `true`, and `TRUE` may be treated differently depending on the YAML version (more on this in the Data Types section).
+
+```yaml
+# These are three different keys
+Name: Alice
+name: Bob
+NAME: Charlie
+```
+
+This matters most when your YAML is consumed by a strict schema. If your application expects the key `apiVersion` and you write `apiversion` or `APIVersion`, the value will be missing or silently ignored. Always check the expected casing in the consuming tool's documentation.
+
+### The Structure of a YAML File
+
+A YAML file is a stream of one or more documents. Each document is a tree of nodes. Nodes come in three kinds:
+
+- **Scalar** — a single atomic value: a string, number, boolean, or null
+- **Sequence** — an ordered list of nodes (any mix of types)
+- **Mapping** — an unordered collection of key-node pairs
+
+Every YAML file, no matter how complex, is composed entirely of these three node types nested inside each other. When you understand that, the syntax stops being a collection of special cases and starts being a consistent set of rules for writing scalars, sequences, and mappings in two styles each (block and flow).
+
+### Key-Value Pairs
+
+The fundamental unit of YAML is a **mapping entry**: a key, a colon, a space, and a value. The space after the colon is mandatory.
+
+```yaml
+key: value
+name: Alice
+age: 30
+active: true
+```
+
+The colon-without-space is not a mapping indicator — `key:value` is a valid scalar string in YAML, not a key-value pair.
+
+### Comments
+
+YAML supports single-line comments starting with `#`. There are no multi-line comment delimiters.
+
+```yaml
+# This is a comment
+name: Alice  # inline comment
+
+# Comments can appear before any node
+server:
+  # The host to bind to
+  host: localhost
+  # Port number (must be > 1024 for non-root)
+  port: 8080
+```
+
+Comments are stripped by parsers and are invisible to the consuming application. They are purely for human readers.
+
+### Document Structure
+
+A YAML file can contain one or more **documents**, each optionally delimited by `---` (document start marker) and `...` (document end marker).
+
+```yaml
+---
+# Start of document 1
+name: Alice
+---
+# Start of document 2
+name: Bob
+...
+# End of document 2
+```
+
+When you have a single document (the common case), the `---` marker is optional but often included by convention, especially in Kubernetes manifests.
+
+## Data Types
+
+YAML supports a rich set of scalar types. One of its powerful — and occasionally dangerous — features is **type auto-detection**: the parser infers the type of a value from its content, without you declaring it explicitly.
+
+### Strings
+
+Strings are the most common scalar type. In most cases, quotes are optional:
+
+```yaml
+name: Alice
+greeting: Hello, World!
+path: /usr/local/bin
+version: v1.2.3
+```
+
+Strings require quoting when they:
+- Contain characters with special YAML meaning (`:`, `#`, `{`, `}`, `[`, `]`, `,`, `&`, `*`, `?`, `|`, `-`, `<`, `>`, `=`, `!`, `%`, `@`, `` ` ``)
+- Start with a special character
+- Would otherwise be auto-detected as another type (numbers, booleans, null)
+- Contain leading or trailing whitespace you want to preserve
+
+YAML supports two quoting styles:
+
+**Single quotes** — no escape sequences, literal content:
+
+```yaml
+message: 'Hello, World!'
+path: 'C:\Users\alice\documents'   # backslashes are literal
+literal: 'It''s a test'            # '' is the only escape: a literal single quote
+```
+
+**Double quotes** — supports C-style escape sequences:
+
+```yaml
+message: "Hello, World!"
+newline: "line one\nline two"
+tab: "col1\tcol2"
+unicode: "\u00E9"                  # é
+null_char: "value\0padded"
+```
+
+The practical rule: use single quotes when you need a literal string with no escape processing, and double quotes when you need escape sequences like `\n` or `\t`.
+
+### Numbers
+
+YAML auto-detects integers and floating-point numbers:
+
+```yaml
+# Integers
+count: 42
+negative: -7
+big_number: 1_000_000    # underscores as visual separators (YAML 1.2)
+hex: 0xFF                # hexadecimal
+octal: 0o17             # octal (YAML 1.2 notation)
+
+# Floats
+pi: 3.14159
+scientific: 6.022e23
+negative_float: -0.5
+```
+
+Special float values:
+
+```yaml
+infinity: .inf
+negative_infinity: -.inf
+not_a_number: .nan
+```
+
+**Important:** If a value looks like a number but you want it treated as a string (for example, a ZIP code like `01234` or a version number like `1.0`), quote it:
+
+```yaml
+zip_code: "01234"      # string: preserves leading zero
+version: "1.0"         # string: prevents ambiguity
+phone: "555-1234"      # string: hyphens could cause issues unquoted
+```
+
+### Booleans
+
+YAML 1.1 (implemented by most tools) recognizes many boolean representations:
+
+```yaml
+# YAML 1.1 boolean values (both true and false variants)
+active: true
+enabled: yes
+on: on
+flag: True
+verbose: TRUE
+
+inactive: false
+disabled: no
+off: off
+quiet: False
+```
+
+**YAML 1.2** (the current specification) recognizes only `true` and `false` (case-insensitive) as booleans. The `yes`, `no`, `on`, and `off` forms are plain strings in YAML 1.2.
+
+This difference matters in practice. If you write:
+
+```yaml
+ssl: yes
+```
+
+In a YAML 1.1 parser (Python's PyYAML default, most Ruby parsers), `ssl` will be `true` (boolean). In a YAML 1.2 parser (Rust's serde-yaml, newer Python parsers with `yaml.safe_load` and explicit 1.2 mode), `ssl` will be the string `"yes"`.
+
+**Best practice:** Always use `true` and `false`. Avoid `yes`, `no`, `on`, and `off` entirely to eliminate ambiguity across parser versions.
+
+```yaml
+# Unambiguous — works correctly in all parsers
+ssl_enabled: true
+debug_mode: false
+```
+
+### Type Tags
+
+YAML has an explicit type tag system using the `!!` prefix that lets you override auto-detection. You almost never need this in practice, but knowing it exists helps when debugging unexpected type conversions:
+
+```yaml
+# Force a value to be treated as a string regardless of content
+port_as_string: !!str 8080
+true_as_string: !!str true
+null_as_string: !!str null
+
+# Force a value to be treated as an integer
+integer: !!int "42"
+
+# Force a value to be treated as a float
+rate: !!float "1"
+
+# Binary data (base64 encoded)
+thumbnail: !!binary |
+  R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
+```
+
+The `!!` tags are part of the YAML Core Schema. You can use them to make type intent explicit in configuration files where ambiguity would be dangerous — for example, in a numeric field that might receive string input.
+
+### Parsing YAML in Code
+
+Seeing how parsers handle the different types is the fastest way to understand them. Here is how Python's `yaml.safe_load` handles each:
+
+```python
+import yaml
+
+data = yaml.safe_load("""
+name: Alice
+age: 30
+active: true
+score: 98.6
+empty:
+tilde: ~
+date: 2026-03-29
+port_str: "8080"
+port_int: 8080
+""")
+
+print(type(data['name']))    # <class 'str'>
+print(type(data['age']))     # <class 'int'>
+print(type(data['active']))  # <class 'bool'>
+print(type(data['score']))   # <class 'float'>
+print(data['empty'])         # None
+print(data['tilde'])         # None
+print(type(data['date']))    # <class 'datetime.date'>
+print(type(data['port_str']))  # <class 'str'>  — quoted
+print(type(data['port_int']))  # <class 'int'>  — unquoted
+```
+
+And in JavaScript with `js-yaml`:
+
+```javascript
+import yaml from 'js-yaml';
+
+const data = yaml.load(`
+name: Alice
+age: 30
+active: true
+score: 98.6
+empty:
+tilde: ~
+port_str: "8080"
+port_int: 8080
+`);
+
+console.log(typeof data.name);     // string
+console.log(typeof data.age);      // number
+console.log(typeof data.active);   // boolean
+console.log(typeof data.score);    // number
+console.log(data.empty);           // null
+console.log(data.tilde);           // null
+console.log(typeof data.port_str); // string
+console.log(typeof data.port_int); // number
+```
+
+Running these snippets against your own YAML is the best way to verify that the types your application receives match what you intended.
+
+### Null
+
+YAML represents null values in several ways:
+
+```yaml
+# All of these are null
+empty_key:
+explicit_null: null
+tilde: ~
+```
+
+The bare key with no value (`empty_key:`) and the tilde (`~`) are aliases for `null`. In most languages, a YAML null maps to `None` (Python), `nil` (Ruby/Go), `null` (JavaScript/Java), or `NULL` (PHP).
+
+### Dates and Timestamps
+
+YAML 1.1 auto-detects dates in ISO 8601 format:
+
+```yaml
+date: 2026-03-29              # date only
+datetime: 2026-03-29T10:30:00 # datetime
+datetime_utc: 2026-03-29T10:30:00Z
+datetime_tz: 2026-03-29T10:30:00+09:00
+```
+
+This auto-detection can be surprising. If you have a configuration value like `date: 2026-03-29` and your code expects a string, it will receive a date object instead. Quote dates that should be strings:
+
+```yaml
+release_date: "2026-03-29"    # guaranteed to be a string
+```
+
+## Sequences (Lists)
+
+A **sequence** is an ordered list of items. YAML supports two notations.
+
+### Block Sequence Notation
+
+The standard, human-readable format uses a dash-and-space (`- `) prefix for each item:
+
+```yaml
+fruits:
+  - apple
+  - banana
+  - cherry
+
+servers:
+  - hostname: web-01
+    ip: 192.168.1.10
+  - hostname: web-02
+    ip: 192.168.1.11
+```
+
+The dash must be followed by a space. The items are indented relative to the parent key. Each item can be any YAML type — a scalar, another sequence, or a mapping.
+
+### Flow Sequence Notation (Inline)
+
+For short lists, inline notation keeps everything on one line:
+
+```yaml
+fruits: [apple, banana, cherry]
+ports: [80, 443, 8080]
+flags: [true, false, true]
+```
+
+Flow notation uses JSON-like syntax. Items are separated by commas and enclosed in square brackets. Flow sequences can be nested inside block sequences:
+
+```yaml
+matrix:
+  - [1, 0, 0]
+  - [0, 1, 0]
+  - [0, 0, 1]
+```
+
+### Sequences of Scalars vs. Sequences of Mappings
+
+A sequence of scalar values (strings, numbers) uses the simple dash form:
+
+```yaml
+dependencies:
+  - express
+  - lodash
+  - axios
+```
+
+A sequence of mappings (objects/dicts) typically places the first key on the same line as the dash:
+
+```yaml
+users:
+  - name: Alice
+    role: admin
+    email: alice@example.com
+  - name: Bob
+    role: editor
+    email: bob@example.com
+```
+
+This is equivalent to a JSON array of objects. The dash introduces each object, and the object's key-value pairs are indented under the dash.
+
+### Nested Sequences
+
+Sequences can be nested to arbitrary depth:
+
+```yaml
+grid:
+  - - 1
+    - 2
+    - 3
+  - - 4
+    - 5
+    - 6
+```
+
+This represents a 2D array: `[[1, 2, 3], [4, 5, 6]]`. Nested sequences are less readable in block format; flow notation is often cleaner:
+
+```yaml
+grid:
+  - [1, 2, 3]
+  - [4, 5, 6]
+```
+
+### Empty Sequences
+
+An empty sequence can be written in either style:
+
+```yaml
+no_items: []       # flow notation — most common
+also_empty: ~      # null, not actually an empty list — be careful!
+```
+
+Note the difference: `[]` is an empty list; `~` or a bare key is null. If your code checks `if config.items:`, an empty list is falsy but not null — the behavior may differ depending on how your application handles the distinction.
+
+### Sequences as Top-Level Documents
+
+A YAML document can itself be a sequence at the top level (rather than a mapping):
+
+```yaml
+---
+- name: Alice
+  role: admin
+- name: Bob
+  role: editor
+- name: Charlie
+  role: viewer
+```
+
+This is a valid YAML document representing a list of three objects. Many tools that process lists of resources (Ansible inventory, OpenAPI path items) use this form.
+
+## Mappings (Objects/Dicts)
+
+A **mapping** is an unordered collection of key-value pairs — equivalent to a JSON object, Python dict, or JavaScript object. Keys must be unique within a mapping.
+
+### Basic Mappings
+
+```yaml
+person:
+  name: Alice
+  age: 30
+  email: alice@example.com
+```
+
+This is a mapping named `person` with three string/integer values. Parsers typically produce a dictionary or hash map from this structure.
+
+### Nested Mappings
+
+Mappings can contain other mappings to arbitrary depth:
+
+```yaml
+application:
+  name: my-app
+  version: "1.0.0"
+  database:
+    host: localhost
+    port: 5432
+    name: mydb
+    credentials:
+      username: app_user
+      password: secret
+  cache:
+    host: localhost
+    port: 6379
+    ttl: 3600
+```
+
+Each level of nesting is indicated by increased indentation. The parser reconstructs the nested structure as a tree of dictionaries.
+
+### Flow Mapping Notation (Inline)
+
+Like sequences, mappings have an inline JSON-like syntax:
+
+```yaml
+# Inline mapping
+point: {x: 10, y: 20}
+
+# Mixed: block mapping with inline sub-mappings
+servers:
+  - {host: web-01, port: 80}
+  - {host: web-02, port: 80}
+```
+
+Flow mappings are useful for short, simple objects where one line is more readable than multiple lines. Use them sparingly — deeply nested flow notation quickly becomes harder to read than its block equivalent.
+
+### Complex Keys
+
+YAML allows non-string keys, including sequences and mappings. The `?` indicator introduces a complex key:
+
+```yaml
+? [1, 2]
+: matrix_value
+
+? {name: Alice}
+: user_data
+```
+
+Complex keys are rare in practice. Most YAML in the wild uses string keys, and most languages only support string keys natively in their YAML parsers.
+
+### Mappings with Mixed Value Types
+
+A single mapping can hold values of different types:
+
+```yaml
+service:
+  name: payment-service           # string
+  version: 3                      # integer
+  enabled: true                   # boolean
+  timeout: 30.5                   # float
+  description: null               # null
+  tags:                           # nested sequence
+    - billing
+    - critical
+  config:                         # nested mapping
+    retries: 3
+    backoff: exponential
+```
+
+This mirrors a JSON object with mixed types — exactly what most application configuration looks like in practice.
+
+### Mapping Key Order
+
+YAML mappings are defined as unordered — the specification makes no guarantee about key order. However, many parsers (Python's PyYAML since Python 3.7, Go's gopkg.in/yaml.v3) preserve insertion order as an implementation detail. Do not rely on ordering if you need guaranteed order; use a sequence instead.
+
+### Empty Mappings
+
+An empty mapping is written as `{}` in flow notation:
+
+```yaml
+metadata: {}       # empty mapping
+annotations: {}    # empty mapping
+env: {}            # empty mapping
+```
+
+Some tools distinguish between a null value and an empty mapping. Prefer `{}` explicitly when you intend an empty object, not `~` or a bare key.
+
+## Multi-line Strings
+
+Handling multi-line strings is one of the areas where YAML genuinely excels over JSON. YAML provides two block scalar styles with precise control over how newlines and trailing whitespace are handled.
+
+### Literal Block Scalar (`|`)
+
+The pipe character introduces a **literal block scalar**. Every newline in the block is preserved exactly as written. This is ideal for shell scripts, configuration files embedded in YAML, or any content where line breaks are meaningful.
+
+```yaml
+script: |
+  #!/bin/bash
+  set -e
+  echo "Starting deployment"
+  cd /var/www/html
+  git pull origin main
+  systemctl restart nginx
+```
+
+The parsed value of `script` is:
+```
+#!/bin/bash
+set -e
+echo "Starting deployment"
+cd /var/www/html
+git pull origin main
+systemctl restart nginx
+```
+(with a trailing newline at the end)
+
+### Folded Block Scalar (`>`)
+
+The greater-than character introduces a **folded block scalar**. Single newlines are converted to spaces; blank lines become newlines. This is ideal for long prose descriptions, error messages, or any content that is logically one paragraph but is split across lines for readability.
+
+```yaml
+description: >
+  This is a long description that wraps
+  across multiple lines for readability
+  in the source file, but will be parsed
+  as a single continuous paragraph.
+
+  A blank line creates a new paragraph.
+  This line starts a new paragraph.
+```
+
+The parsed value of `description` is:
+```
+This is a long description that wraps across multiple lines for readability in the source file, but will be parsed as a single continuous paragraph.
+A blank line creates a new paragraph. This line starts a new paragraph.
+```
+
+### Chomping Indicators
+
+Both block scalar styles support **chomping** indicators that control how trailing newlines are handled. Append the indicator immediately after `|` or `>`:
+
+| Indicator | Name | Behavior |
+|---|---|---|
+| (none) | Clip | Single trailing newline (default) |
+| `-` | Strip | No trailing newlines |
+| `+` | Keep | All trailing newlines preserved |
+
+```yaml
+# Clip (default): one trailing newline
+clip: |
+  line one
+  line two
+
+# Strip: no trailing newlines
+strip: |-
+  line one
+  line two
+
+# Keep: preserves all trailing blank lines
+keep: |+
+  line one
+  line two
+
+
+```
+
+The chomping indicator matters when the consuming code is sensitive to trailing newlines — for example, when comparing strings exactly, or when embedding content into a template.
+
+### Indentation Indicator
+
+You can also specify the indentation level explicitly with a number after `|` or `>`:
+
+```yaml
+# Explicit 2-space indentation
+code: |2
+  indented content
+  more content
+```
+
+This is rarely needed since YAML auto-detects indentation, but it can be useful when the content itself starts with spaces.
+
+### Plain Multi-line Strings
+
+Without a block scalar indicator, a YAML scalar that spans multiple lines folds newlines into spaces:
+
+```yaml
+# Without | or >, newlines become spaces
+description: This is a long
+  description that spans
+  multiple lines.
+# Parsed as: "This is a long description that spans multiple lines."
+```
+
+This behavior is implicit and easy to misunderstand. For clarity, always use `|` or `>` when you intend multi-line content.
+
+## Advanced Features
+
+### Anchors and Aliases
+
+**Anchors** (`&`) define a named node that can be referenced later. **Aliases** (`*`) reference an anchor, inserting the anchored value at that point. This is YAML's mechanism for avoiding repetition.
+
+```yaml
+# Define an anchor
+default_settings: &defaults
+  timeout: 30
+  retries: 3
+  log_level: info
+
+# Reference the anchor
+development:
+  <<: *defaults          # merge defaults
+  log_level: debug       # override one value
+
+production:
+  <<: *defaults          # merge defaults
+  timeout: 60            # override one value
+  retries: 5
+```
+
+In this example, `development` and `production` both inherit all keys from `default_settings`, and each overrides specific values.
+
+Anchors can also be used for simple value reuse:
+
+```yaml
+database_host: &db_host db.example.com
+
+primary_db:
+  host: *db_host
+  port: 5432
+
+replica_db:
+  host: *db_host
+  port: 5433
+```
+
+The alias `*db_host` inserts the value `db.example.com` wherever it appears. If the hostname changes, you update it in one place.
+
+**Important limitations:**
+- Anchors are file-scoped. You cannot reference an anchor defined in another YAML file.
+- Aliases insert a **copy** of the anchored value, not a reference to it. Modifying the alias after it is parsed does not affect the original.
+- Overuse of anchors makes YAML harder to read, not easier. Prefer anchors for eliminating meaningful repetition, not as a general templating system.
+
+### Merge Keys (`<<`)
+
+The merge key `<<` is a special YAML key that merges the contents of a mapping (or sequence of mappings) into the current mapping. It is almost always used with aliases:
+
+```yaml
+defaults: &defaults
+  adapter: postgres
+  encoding: utf8
+  pool: 5
+
+development:
+  <<: *defaults
+  database: myapp_development
+  host: localhost
+
+test:
+  <<: *defaults
+  database: myapp_test
+  host: localhost
+
+production:
+  <<: *defaults
+  database: myapp_production
+  host: db.production.example.com
+  pool: 20              # override pool for production
+```
+
+When a key appears in both the merged mapping and the current mapping, the current mapping's value takes precedence. In the `production` block above, `pool: 20` overrides `pool: 5` from `*defaults`.
+
+You can merge from multiple anchors using a sequence:
+
+```yaml
+base: &base
+  timeout: 30
+
+extra: &extra
+  retries: 3
+
+combined:
+  <<: [*base, *extra]
+  name: combined-config
+```
+
+### Multiple Documents in One File
+
+A single YAML file can contain multiple independent documents separated by `---`. This is used extensively in Kubernetes, where a single file often contains multiple resource definitions:
+
+```yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  LOG_LEVEL: info
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 3
+```
+
+When parsing a multi-document YAML file, use your parser's multi-document loading function:
+
+```python
+import yaml
+
+with open("resources.yaml") as f:
+    docs = list(yaml.safe_load_all(f))
+    # docs is a list of two dicts
+```
+
+```javascript
+import yaml from 'js-yaml';
+import fs from 'fs';
+
+const docs = yaml.loadAll(fs.readFileSync('resources.yaml', 'utf8'));
+// docs is an array of two objects
+```
+
+## Working with YAML in Code
+
+Reading YAML in application code is straightforward with the right library. Writing YAML programmatically is less common but equally important for tools that generate configuration files, Kubernetes manifests, or CI pipeline definitions.
+
+### Python
+
+Python's standard YAML library is **PyYAML** (`pip install pyyaml`). For YAML 1.2 compliance and round-trip support (preserving comments and order), use **ruamel.yaml** instead.
+
+```python
+import yaml
+
+# Reading a YAML file safely
+with open("config.yaml", "r") as f:
+    config = yaml.safe_load(f)
+
+# Reading multiple documents from one file
+with open("resources.yaml", "r") as f:
+    docs = list(yaml.safe_load_all(f))
+
+# Reading from a string
+yaml_string = """
+name: Alice
+age: 30
+roles:
+  - admin
+  - editor
+"""
+data = yaml.safe_load(yaml_string)
+print(data['name'])   # Alice
+print(data['roles'])  # ['admin', 'editor']
+
+# Writing Python data to YAML
+config = {
+    "database": {
+        "host": "localhost",
+        "port": 5432,
+        "name": "mydb"
+    },
+    "debug": False,
+    "allowed_hosts": ["localhost", "127.0.0.1"]
+}
+
+yaml_output = yaml.dump(config, default_flow_style=False, sort_keys=False)
+print(yaml_output)
+# database:
+#   host: localhost
+#   port: 5432
+#   name: mydb
+# debug: false
+# allowed_hosts:
+# - localhost
+# - 127.0.0.1
+
+# Writing to a file
+with open("output.yaml", "w") as f:
+    yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+```
+
+Key `yaml.dump()` options:
+- `default_flow_style=False` — use block notation (recommended for readability)
+- `sort_keys=False` — preserve insertion order instead of sorting alphabetically
+- `allow_unicode=True` — write Unicode characters directly instead of escaping them
+- `indent=2` — set indentation width (default: 2)
+
+### JavaScript / Node.js
+
+The most popular YAML library for JavaScript is **js-yaml** (`npm install js-yaml`).
+
+```javascript
+import yaml from 'js-yaml';
+import fs from 'fs';
+
+// Reading a YAML file
+const config = yaml.load(fs.readFileSync('config.yaml', 'utf8'));
+console.log(config.database.host);
+
+// Reading multiple documents
+const allDocs = yaml.loadAll(fs.readFileSync('resources.yaml', 'utf8'));
+// allDocs is an array of objects
+
+// Reading from a string
+const data = yaml.load(`
+name: Alice
+age: 30
+active: true
+`);
+console.log(data.name);   // Alice
+console.log(data.active); // true (boolean)
+
+// Writing JavaScript objects to YAML
+const config2 = {
+  server: {
+    host: 'localhost',
+    port: 3000,
+  },
+  debug: false,
+  tags: ['api', 'production'],
+};
+
+const yamlString = yaml.dump(config2, {
+  indent: 2,
+  lineWidth: 80,
+  noRefs: true,  // don't use YAML anchors for repeated references
+});
+console.log(yamlString);
+
+// Writing to a file
+fs.writeFileSync('output.yaml', yamlString, 'utf8');
+```
+
+For TypeScript projects, js-yaml ships with type definitions. Import types explicitly if needed:
+
+```typescript
+import yaml from 'js-yaml';
+
+interface DatabaseConfig {
+  host: string;
+  port: number;
+  name: string;
+}
+
+interface AppConfig {
+  database: DatabaseConfig;
+  debug: boolean;
+}
+
+const config = yaml.load(
+  fs.readFileSync('config.yaml', 'utf8')
+) as AppConfig;
+
+console.log(config.database.port); // typed as number
+```
+
+### Go
+
+Go's most popular YAML library is **gopkg.in/yaml.v3** (`go get gopkg.in/yaml.v3`).
+
+```go
+package main
+
+import (
+    "fmt"
+    "os"
+    "gopkg.in/yaml.v3"
+)
+
+type DatabaseConfig struct {
+    Host string `yaml:"host"`
+    Port int    `yaml:"port"`
+    Name string `yaml:"name"`
+}
+
+type AppConfig struct {
+    Database DatabaseConfig `yaml:"database"`
+    Debug    bool           `yaml:"debug"`
+    Tags     []string       `yaml:"tags"`
+}
+
+func main() {
+    // Reading a YAML file into a struct
+    data, err := os.ReadFile("config.yaml")
+    if err != nil {
+        panic(err)
+    }
+
+    var config AppConfig
+    if err := yaml.Unmarshal(data, &config); err != nil {
+        panic(err)
+    }
+
+    fmt.Println(config.Database.Host) // localhost
+    fmt.Println(config.Debug)         // false
+
+    // Writing a struct to YAML
+    newConfig := AppConfig{
+        Database: DatabaseConfig{
+            Host: "db.example.com",
+            Port: 5432,
+            Name: "production",
+        },
+        Debug: false,
+        Tags:  []string{"api", "v2"},
+    }
+
+    out, err := yaml.Marshal(&newConfig)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(string(out))
+
+    // Writing to a file
+    if err := os.WriteFile("output.yaml", out, 0644); err != nil {
+        panic(err)
+    }
+}
+```
+
+### Using yq for Command-Line YAML Processing
+
+**yq** is a command-line YAML processor, similar to `jq` for JSON. It is invaluable for inspecting and modifying YAML files in shell scripts and CI pipelines.
+
+```bash
+# Install yq (macOS)
+brew install yq
+
+# Install yq (Linux)
+wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+chmod +x /usr/local/bin/yq
+
+# Read a value
+yq '.database.host' config.yaml
+
+# Update a value in place
+yq -i '.database.host = "db.production.example.com"' config.yaml
+
+# Read an array element
+yq '.servers[0].hostname' config.yaml
+
+# Add an item to an array
+yq -i '.tags += ["monitoring"]' config.yaml
+
+# Delete a key
+yq -i 'del(.debug)' config.yaml
+
+# Convert YAML to JSON
+yq -o=json config.yaml
+
+# Convert JSON to YAML
+yq -P input.json
+
+# Merge two YAML files (second file overrides first)
+yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' base.yaml override.yaml
+
+# Process Kubernetes manifests: get all Deployment names
+yq 'select(.kind == "Deployment") | .metadata.name' resources.yaml
+
+# Update image tag across all containers
+yq -i '(.spec.containers[].image) |= sub(":[^"]+$", ":v2.0.0")' pod.yaml
+```
+
+`yq` is particularly useful in CI/CD pipelines where you need to inject values (image tags, version numbers, environment-specific settings) into YAML files without a full templating system.
+
+## YAML vs JSON
+
+YAML is a strict superset of JSON — every valid JSON document is also valid YAML. You can paste a JSON object directly into a YAML file and it will parse correctly. The reverse is not true: YAML features like comments, anchors, and block scalars have no JSON equivalent.
+
+| Feature | YAML | JSON |
+|---|---|---|
+| Comments | Yes (`#`) | No |
+| Trailing commas | N/A (no commas needed) | No |
+| Multi-line strings | Yes (`|`, `>`) | No (must escape `\n`) |
+| Anchors / references | Yes | No |
+| Multiple documents per file | Yes | No |
+| Binary data type | Yes (base64 `!!binary`) | No |
+| Data types | Rich auto-detection | String, Number, Bool, Null, Array, Object |
+| Quotes (strings) | Optional for most strings | Always required |
+| Whitespace sensitivity | Yes (indentation) | No |
+| Machine readability | Good | Excellent |
+| Human readability | Excellent | Good |
+| Verbosity | Low | Medium |
+| Parsing complexity | High | Low |
+| Spec ambiguity | Higher (esp. 1.1 vs 1.2) | Very low |
+
+### When to Use YAML
+
+Choose YAML when:
+- The file is written and read primarily by humans (configuration files, CI pipelines)
+- You need comments to document configuration options
+- You want multi-line string support without escape sequences
+- You are working in an ecosystem where YAML is the convention (Kubernetes, Ansible, GitHub Actions)
+
+### When to Use JSON
+
+Choose JSON when:
+- The data is generated and consumed primarily by machines (API responses, serialized state)
+- You need guaranteed cross-platform consistency without parser version concerns
+- You are working in a JavaScript-heavy environment where `JSON.parse` is the natural choice
+- Schema validation with JSON Schema is a requirement
+
+### The Superset Relationship
+
+Because YAML is a superset of JSON, tools like [our JSON to YAML converter](/tools/json-to-yaml) can convert JSON to YAML without any data loss. The resulting YAML uses block notation for improved readability.
+
+```json
+{
+  "name": "Alice",
+  "age": 30,
+  "skills": ["Python", "Kubernetes", "Docker"]
+}
+```
+
+Becomes:
+
+```yaml
+name: Alice
+age: 30
+skills:
+  - Python
+  - Kubernetes
+  - Docker
+```
+
+The YAML version is more compact and requires no brackets, braces, or quotes for typical string values.
+
+## Real-World Examples
+
+### Docker Compose File
+
+Docker Compose uses YAML to define multi-container applications. A typical `compose.yaml`:
+
+```yaml
+version: "3.9"
+
+services:
+  web:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_files:/var/www/html
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    environment:
+      DATABASE_URL: postgresql://app_user:secret@db:5432/mydb
+      REDIS_URL: redis://cache:6379/0
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_started
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d mydb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cache:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - cache_data:/data
+
+volumes:
+  static_files:
+  db_data:
+  cache_data:
+
+networks:
+  default:
+    driver: bridge
+```
+
+Key YAML features used here:
+- Nested mappings (`services.web.build.args`)
+- Sequences of strings (`ports`, `volumes`)
+- Sequences of mappings (`services.db.healthcheck.test`)
+- Inline sequences with flow notation (`test: ["CMD-SHELL", ...]`)
+
+### Kubernetes Pod Manifest
+
+Kubernetes resources are always YAML. A complete Pod definition:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-app
+  namespace: production
+  labels:
+    app: my-app
+    version: "1.0.0"
+    environment: production
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+spec:
+  containers:
+    - name: app
+      image: my-registry/my-app:1.0.0
+      ports:
+        - containerPort: 3000
+          protocol: TCP
+      env:
+        - name: NODE_ENV
+          value: production
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: url
+      resources:
+        requests:
+          memory: "128Mi"
+          cpu: "250m"
+        limits:
+          memory: "256Mi"
+          cpu: "500m"
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: 3000
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        failureThreshold: 3
+      readinessProbe:
+        httpGet:
+          path: /ready
+          port: 3000
+        initialDelaySeconds: 5
+        periodSeconds: 5
+      volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+  volumes:
+    - name: config-volume
+      configMap:
+        name: app-config
+  restartPolicy: Always
+  serviceAccountName: my-app-sa
+```
+
+Notice the use of quoted strings for values that would otherwise be ambiguous (`version: "1.0.0"`, `prometheus.io/scrape: "true"`). In Kubernetes, almost all annotation values should be quoted because annotations are always strings.
+
+### GitHub Actions Workflow
+
+GitHub Actions workflows are defined in `.github/workflows/*.yml`:
+
+```yaml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - "release/**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_VERSION: "20"
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test -- --coverage
+        env:
+          CI: true
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+```
+
+This workflow demonstrates YAML's multi-line string in the `tags` field (using `|` to provide multiple tag templates to the metadata action), deeply nested mappings, and the use of GitHub Actions expression syntax (`${{ }}`) as string values.
+
+### Ansible Playbook
+
+Ansible uses YAML for playbooks — automated sequences of tasks run against hosts:
+
+```yaml
+---
+- name: Deploy web application
+  hosts: webservers
+  become: true
+  vars:
+    app_name: my-app
+    app_version: "1.0.0"
+    app_user: www-data
+    app_dir: /var/www/{{ app_name }}
+    node_version: "20"
+
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+  tasks:
+    - name: Install Node.js
+      ansible.builtin.shell: |
+        curl -fsSL https://deb.nodesource.com/setup_{{ node_version }}.x | bash -
+        apt-get install -y nodejs
+      args:
+        creates: /usr/bin/node
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+
+    - name: Deploy application files
+      ansible.builtin.synchronize:
+        src: "{{ playbook_dir }}/../dist/"
+        dest: "{{ app_dir }}/"
+        delete: true
+        recursive: true
+
+    - name: Install production dependencies
+      community.general.npm:
+        path: "{{ app_dir }}"
+        production: true
+
+    - name: Configure application
+      ansible.builtin.template:
+        src: templates/app.env.j2
+        dest: "{{ app_dir }}/.env"
+        owner: "{{ app_user }}"
+        mode: "0600"
+      notify: Restart application
+
+    - name: Start application service
+      ansible.builtin.systemd:
+        name: "{{ app_name }}"
+        state: started
+        enabled: true
+        daemon_reload: true
+
+  handlers:
+    - name: Restart application
+      ansible.builtin.systemd:
+        name: "{{ app_name }}"
+        state: restarted
+
+  post_tasks:
+    - name: Verify application is responding
+      ansible.builtin.uri:
+        url: "http://localhost:3000/healthz"
+        status_code: 200
+      retries: 5
+      delay: 10
+```
+
+Ansible makes heavy use of YAML's literal block scalar (`|`) for embedding shell scripts within playbooks. The Jinja2 template syntax (`{{ }}`) is evaluated by Ansible at runtime, not by the YAML parser.
+
+## Common Mistakes
+
+### Tabs Instead of Spaces
+
+The most common YAML error. Configure your editor to never insert tabs in `.yml` and `.yaml` files.
+
+```yaml
+# Wrong: tab before name
+person:
+	name: Alice   # tab character here — parse error
+
+# Correct: spaces
+person:
+  name: Alice
+```
+
+### Unquoted Special Strings
+
+YAML auto-detection creates silent bugs when values that look like booleans or null appear as configuration strings:
+
+```yaml
+# These values are parsed as booleans in YAML 1.1:
+country: NO       # true! Not the string "NO" — this is Norway's country code
+ssl: yes          # boolean true
+debug: false      # boolean false
+proxy: ~          # null, not the string "~"
+
+# Correct: quote them
+country: "NO"
+ssl: "yes"
+debug: "false"
+proxy: "~"
+```
+
+Real-world examples where this bites:
+- Country codes: `NO` (Norway), `YES` (not a real code, but illustrative)
+- On/off feature flags intended as string labels
+- Configuration values in CI tools where strings like `on` and `off` control Git branch triggers
+
+GitHub Actions is a notable case: the `on` key at the top of a workflow file is the YAML boolean `true` if unquoted. GitHub handles this by accepting both the quoted `"on"` and unquoted `on` (treating it as a special case), but it is a source of confusion.
+
+### Incorrect Indentation
+
+Indentation errors produce either parse errors or incorrect structure:
+
+```yaml
+# Intended: server with host and port
+server:
+  host: localhost
+  port: 8080
+
+# Bug: port is at the wrong level — it becomes a top-level key
+server:
+  host: localhost
+port: 8080       # now a sibling of server, not a child
+
+# Bug: inconsistent indentation
+server:
+  host: localhost
+    port: 8080   # parse error: port appears to be nested under host
+```
+
+### Colon Without Space
+
+A colon must be followed by a space (or newline) to be interpreted as a key-value separator:
+
+```yaml
+# Wrong: url is a string "https://example.com/path", not a mapping
+url: https://example.com/path   # this actually works — colon in value is fine
+# But this is wrong:
+key:value    # parsed as the string "key:value", not a mapping
+
+# The rule: a colon followed by a space (or end of line) is a mapping indicator
+key: value   # correct
+key:         # correct (null value)
+  subkey: value
+```
+
+Actually, a colon within a string value (like a URL) is fine — it is only the first colon after the key (at the start of a line or after indentation) that needs the space. The confusion arises from unquoted URLs that contain `://`:
+
+```yaml
+# This can cause issues in some parsers if the URL is a value in a flow context
+urls: [http://example.com, https://other.com]  # generally fine
+
+# In a plain scalar, a : followed by space IS a problem
+bad: this: has: colons  # parse error or unexpected result
+
+# Quote strings with colons-followed-by-space
+good: "this: has: colons"
+```
+
+### String Numbers That Lose Leading Zeros
+
+```yaml
+# Wrong: 08 and 09 cause issues in YAML 1.1 (invalid octal)
+zip_code: 08901     # parse error in YAML 1.1 (invalid octal literal)
+version: 1.0        # parsed as float 1.0, not string "1.0"
+
+# Correct: quote numeric-looking values you want as strings
+zip_code: "08901"
+version: "1.0"
+```
+
+### Forgetting to Quote Strings With Curly Braces
+
+In YAML, `{` at the start of a value begins a flow mapping. If your string starts with `{`, quote it:
+
+```yaml
+# Wrong: YAML tries to parse this as a flow mapping
+template: {name}   # parse error
+
+# Correct
+template: "{name}"
+
+# Also applies to Ansible/Jinja2 variables
+path: "{{ app_dir }}/config"   # must be quoted
+```
+
+### Indenting Sequence Items Relative to Their Key
+
+A common confusion is how much to indent sequence items relative to their parent key. Both of these are valid:
+
+```yaml
+# Style 1: items at key + 2 spaces (most common)
+fruits:
+  - apple
+  - banana
+
+# Style 2: dash at key + 0 spaces, content after dash
+fruits:
+- apple
+- banana
+```
+
+Style 1 is far more common and recommended by most style guides. The important rule is that all items in a sequence must be at the same indentation level. Mixing levels within the same sequence is a parse error.
+
+### Missing Space After Dash in Sequences
+
+The dash (`-`) that introduces a sequence item must be followed by a space:
+
+```yaml
+# Wrong: no space after dash
+fruits:
+  -apple    # parse error or treated as a string
+
+# Correct
+fruits:
+  - apple
+```
+
+### Multiline Strings Without a Block Indicator
+
+When you write a long value across multiple lines without `|` or `>`, YAML folds the newlines into spaces. This is often unintended:
+
+```yaml
+# What you wrote — intending a literal address with line breaks
+address:
+  123 Main Street
+  Anytown, CA 94102   # parse error: this looks like a new mapping
+
+# What you probably want (literal block)
+address: |
+  123 Main Street
+  Anytown, CA 94102
+
+# Or a single line with a folded block
+address: >
+  123 Main Street
+  Anytown, CA 94102
+```
+
+The second form (`address:` followed by an indented value without a block indicator) will actually cause a parse error because the second line looks like a new key-value pair. Always use `|` or `>` for intentional multi-line strings.
+
+### Anchors That Reference Values Before They Are Defined
+
+YAML anchors must be defined before they are used. A forward reference (using an alias before its anchor) is a parse error:
+
+```yaml
+# Wrong: alias *defaults used before anchor &defaults is defined
+development:
+  <<: *defaults    # parse error: anchor not yet defined
+
+defaults: &defaults
+  timeout: 30
+
+# Correct: anchor defined first
+defaults: &defaults
+  timeout: 30
+
+development:
+  <<: *defaults
+```
+
+### Confusing null and Empty String
+
+In YAML, a bare key with no value is null — not an empty string:
+
+```yaml
+# These are null:
+description:
+note: ~
+value: null
+
+# These are empty strings:
+description: ""
+note: ''
+```
+
+If your application expects an empty string default and receives null instead, you will get a null pointer error or unexpected behavior. Be explicit: use `""` when you want an empty string.
+
+## YAML Tooling and Linting
+
+Good tooling catches YAML errors before they reach production. Here is the essential toolkit for working with YAML professionally.
+
+### yamllint
+
+**yamllint** is the standard Python-based linter for YAML files. It checks syntax, style, and common anti-patterns.
+
+```bash
+# Install
+pip install yamllint
+
+# Lint a single file
+yamllint config.yaml
+
+# Lint all YAML files in a directory
+yamllint .
+
+# Use a custom configuration
+yamllint -c .yamllint.yml config.yaml
+```
+
+A typical `.yamllint.yml` configuration:
+
+```yaml
+# .yamllint.yml
+extends: default
+
+rules:
+  line-length:
+    max: 120
+    level: warning
+  truthy:
+    allowed-values: ["true", "false"]  # disallow yes/no/on/off
+    level: error
+  comments:
+    min-spaces-from-content: 1
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+```
+
+The `truthy` rule is particularly valuable: it flags `yes`, `no`, `on`, and `off` so your team always uses `true`/`false`.
+
+### VS Code YAML Extension
+
+The **Red Hat YAML extension** for VS Code (`redhat.vscode-yaml`) provides:
+- Real-time syntax validation
+- JSON Schema-based autocompletion
+- Hover documentation
+- Formatting
+- Schema association for Kubernetes, GitHub Actions, Docker Compose, and more
+
+Configure schema associations in `.vscode/settings.json`:
+
+```json
+{
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json": [
+      "compose.yaml",
+      "docker-compose.yml"
+    ],
+    "https://json.schemastore.org/github-workflow.json": [
+      ".github/workflows/*.yml"
+    ],
+    "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.28.0/all.json": [
+      "k8s/**/*.yaml"
+    ]
+  }
+}
+```
+
+With schema associations, VS Code will autocomplete Kubernetes resource fields, warn about unknown keys, and validate required fields — turning YAML authoring from guesswork into a guided experience.
+
+### Pre-commit Hooks
+
+Add YAML linting to your pre-commit hooks to prevent bad YAML from entering the repository:
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: [-c, .yamllint.yml]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+```
+
+```bash
+# Install and activate
+pip install pre-commit
+pre-commit install
+
+# Run against all files manually
+pre-commit run --all-files
+```
+
+### Kubernetes-Specific Tools
+
+For Kubernetes YAML, additional validation tools go beyond syntax:
+
+```bash
+# kubeval: validate against Kubernetes API schemas
+kubeval my-deployment.yaml
+
+# kube-score: score against best practices (resource limits, probes, etc.)
+kube-score score my-deployment.yaml
+
+# kubeconform: fast, up-to-date schema validation
+kubeconform -strict my-deployment.yaml
+
+# kubectl dry-run: validate against a live cluster's API server
+kubectl apply --dry-run=server -f my-deployment.yaml
+```
+
+These tools catch issues like missing `resources.limits`, absent liveness probes, and deprecated API versions — problems that yamllint cannot detect because they are semantic, not syntactic.
+
+## YAML Security
+
+YAML's flexibility is both its strength and its greatest security risk. Understanding the threats helps you make safe choices.
+
+### Arbitrary Code Execution via PyYAML
+
+The most significant YAML security vulnerability is the **yaml.load()** function in PyYAML (Python's most popular YAML library). By default, `yaml.load()` can instantiate arbitrary Python objects, including ones that execute code:
+
+```python
+import yaml
+
+# DANGEROUS: yaml.load() with untrusted input
+malicious_input = "!!python/object/apply:os.system ['rm -rf /']"
+yaml.load(malicious_input)  # executes the shell command!
+```
+
+This is not theoretical — CVE-2017-18342 and related vulnerabilities affected multiple Python applications that used `yaml.load()` on untrusted input.
+
+**The fix is simple: always use `yaml.safe_load()`.**
+
+```python
+import yaml
+
+# SAFE: safe_load() only processes standard YAML types
+with open("config.yaml") as f:
+    config = yaml.safe_load(f)
+
+# Also safe: the SafeLoader explicitly
+config = yaml.load(f, Loader=yaml.SafeLoader)
+
+# For multiple documents
+docs = list(yaml.safe_load_all(f))
+```
+
+`yaml.safe_load()` only supports the standard YAML types (strings, numbers, booleans, null, lists, dicts) and rejects any YAML tag that would trigger object construction.
+
+### Ruby and Other Languages
+
+Ruby's `Psych` library (used by Rails) had similar vulnerabilities in older versions. The general principle applies across languages: never use a YAML loader that allows arbitrary type instantiation on untrusted input.
+
+```ruby
+# Ruby: safe loading
+require 'yaml'
+
+# Safe in Psych 4.0+ (Ruby 3.1+): permitted_classes must be explicit
+YAML.safe_load(yaml_string)
+
+# Older Ruby with psych < 4.0: use safe_load explicitly
+YAML.safe_load(yaml_string, permitted_classes: [Date, Symbol])
+```
+
+### YAML Bomb (Billion Laughs Attack)
+
+Like XML, YAML is vulnerable to billion laughs attacks using anchors:
+
+```yaml
+a: &a ["lol","lol","lol","lol","lol","lol","lol","lol","lol"]
+b: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a]
+c: &c [*b,*b,*b,*b,*b,*b,*b,*b,*b]
+d: &d [*c,*c,*c,*c,*c,*c,*c,*c,*c]
+e: &e [*d,*d,*d,*d,*d,*d,*d,*d,*d]
+f: &f [*e,*e,*e,*e,*e,*e,*e,*e,*e]
+```
+
+Each alias expands the previous, resulting in a 9^6 (over 500,000) element list from a tiny input. This can exhaust memory and crash the parser.
+
+**Mitigations:**
+- Limit the size of accepted YAML input (reject inputs over a threshold, e.g., 1 MB)
+- Use parsers that limit alias expansion depth (newer versions of many parsers)
+- Never parse YAML from untrusted sources without input size limits
+
+### Secrets in YAML Files
+
+YAML configuration files frequently contain secrets — database passwords, API keys, private certificates. Practices to follow:
+
+```yaml
+# Wrong: hardcoded secret in YAML
+database:
+  password: mysecretpassword123
+
+# Better: environment variable reference (syntax varies by tool)
+database:
+  password: ${DATABASE_PASSWORD}
+
+# In Kubernetes: reference a Secret object instead of embedding the value
+env:
+  - name: DATABASE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: db-credentials
+        key: password
+```
+
+Never commit YAML files containing real secrets to version control. Use environment variables, secrets managers (HashiCorp Vault, AWS Secrets Manager, Kubernetes Secrets), or `.env` files excluded via `.gitignore`.
+
+### Schema Validation
+
+YAML itself has no built-in schema validation. The consuming application receives whatever the parser produces. For YAML that configures infrastructure or production systems, add explicit schema validation:
+
+- **JSON Schema** — most YAML parsers can validate against JSON Schema (since YAML is a superset of JSON)
+- **Kubernetes** — `kubectl apply --dry-run=server` validates against the API server schema
+- **yamllint** — lints YAML for syntax and style issues
+- **kube-score** — scores Kubernetes YAML against best practices
+
+```bash
+# Install yamllint
+pip install yamllint
+
+# Lint a file
+yamllint config.yaml
+
+# Lint with a custom config
+yamllint -d '{extends: default, rules: {line-length: {max: 120}}}' config.yaml
+```
+
+## FAQ
+
+### What is the difference between YAML 1.1 and YAML 1.2?
+
+YAML 1.2 (2009) is the current specification. The most important behavioral differences from YAML 1.1 are: YAML 1.2 only recognizes `true` and `false` as booleans (not `yes`, `no`, `on`, `off`); YAML 1.2 uses `0o17` for octal instead of `017`; and YAML 1.2 is a proper superset of JSON. Most tools and libraries still implement YAML 1.1. When in doubt about your parser's version, check its documentation and use explicit quoting for ambiguous values.
+
+### Does YAML support multiple values for the same key?
+
+No. Duplicate keys within a mapping are not allowed by the specification. Most parsers accept them but either raise a warning or silently use the last value. Do not rely on this behavior — treat duplicate keys as a bug.
+
+### Can I include one YAML file inside another?
+
+The YAML specification itself has no include or import directive. However, many tools that use YAML implement their own include mechanism. Ansible has `include_vars`, Kubernetes supports Kustomize overlays, and Helm has template includes. If you need file composition, use the tool's built-in mechanism rather than expecting YAML to handle it.
+
+### Why does my YAML lose data after parsing and re-serializing?
+
+Comments are always stripped by YAML parsers — they are not part of the data model. Anchor and alias information is also lost after parsing; the output is the expanded data. Key order may change. If you need to preserve comments for round-trip editing, you need a round-trip-capable parser like `ruamel.yaml` (Python) or `go-yaml v3` with custom marshaling.
+
+### How do I validate a YAML file from the command line?
+
+```bash
+# Python one-liner: parse and report errors
+python3 -c "import yaml, sys; yaml.safe_load(sys.stdin)" < config.yaml
+
+# Using yamllint for detailed linting
+yamllint config.yaml
+
+# For Kubernetes resources specifically
+kubectl apply --dry-run=client -f manifest.yaml
+```
+
+### What is the file extension for YAML files — .yml or .yaml?
+
+Both `.yml` and `.yaml` are correct and widely used. The YAML specification recommends `.yaml` as the canonical extension. In practice, `.yml` is common for Docker, GitHub Actions, and Jekyll (due to historical character limits on some filesystems). Either works with any YAML parser. Pick one and be consistent within a project.
+
+### How do I handle special characters in YAML strings?
+
+Use quoting — either single quotes for literal strings or double quotes for strings with escape sequences:
+
+```yaml
+# Contains a colon-space — must be quoted
+message: "Error: connection refused"
+
+# Contains a hash — must be quoted (hash starts a comment)
+color: "#ff0000"
+
+# Contains a backslash — single quotes prevent escape processing
+windows_path: 'C:\Users\alice\documents'
+
+# Contains both quotes — use the other quote type or escape
+quote1: "She said, 'hello'"
+quote2: 'He said, "world"'
+escaped: "She said, \"hello\""
+```
+
+### Can YAML represent circular references?
+
+YAML anchors can create forward references and repeated references, but they cannot represent true circular structures (an object that contains itself). True circular structures cannot be serialized to any text format. Most parsers will raise an error or loop infinitely if they encounter what looks like a circular anchor.
+
+### Is YAML whitespace-sensitive outside of indentation?
+
+Yes, in a few specific ways. Trailing spaces on a line are generally insignificant, but a line with only spaces may be treated differently from a blank line in block scalars. In block scalars (`|` and `>`), every character — including spaces within lines — is significant and preserved exactly. In plain scalars, consecutive spaces are folded to a single space.
+
+### How do I convert JSON to YAML quickly?
+
+Use [our JSON to YAML converter](/tools/json-to-yaml) for instant, in-browser conversion with syntax highlighting. For command-line conversion:
+
+```bash
+# Python one-liner
+python3 -c "import sys, yaml, json; print(yaml.dump(json.load(sys.stdin), default_flow_style=False))" < input.json > output.yaml
+
+# Using yq (a YAML/JSON processor)
+yq -P . input.json > output.yaml
+
+# Node.js with js-yaml
+node -e "const yaml=require('js-yaml'),fs=require('fs'); console.log(yaml.dump(JSON.parse(fs.readFileSync('/dev/stdin','utf8'))))"
+```
+
+The converted YAML will use block notation for improved readability, with comments and anchor support available for manual addition afterward.

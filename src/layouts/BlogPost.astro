@@ -2,6 +2,7 @@
 import BaseLayout from './BaseLayout.astro';
 import AdSlot from '../components/AdSlot.astro';
 import StructuredData from '../components/StructuredData.astro';
+import { tools } from '../lib/tools';
 
 interface Props {
   title: string;
@@ -13,11 +14,9 @@ interface Props {
 
 const { title, description, pubDate, updatedDate, relatedTools } = Astro.props;
 
-const toolLinks: Record<string, { name: string; href: string }> = {
-  'json-formatter': { name: 'JSON Formatter', href: '/tools/json-formatter' },
-  'json-validator': { name: 'JSON Validator', href: '/tools/json-validator' },
-  'json-to-yaml': { name: 'JSON to YAML Converter', href: '/tools/json-to-yaml' },
-};
+const toolLinks = Object.fromEntries(
+  tools.map((t) => [t.slug, { name: t.name, href: `/tools/${t.slug}` }])
+);
 
 const structuredData = {
   '@context': 'https://schema.org',
