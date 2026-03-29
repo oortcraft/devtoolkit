@@ -13,7 +13,7 @@ function Badge({ label, color }: { label: string; color: 'blue' | 'green' | 'amb
     amber: 'bg-amber-100 text-amber-700',
   };
   return (
-    <span className={`rounded px-2 py-0.5 text-[11px] font-semibold ${styles[color]}`}>
+    <span aria-label={label + ' section'} className={`rounded px-2 py-0.5 text-[11px] font-semibold ${styles[color]}`}>
       {label}
     </span>
   );
@@ -81,10 +81,24 @@ function JwtDecoderInner() {
     <div className="flex flex-col gap-6">
       {/* Input */}
       <div>
-        <div className="mb-2 flex h-8 items-center">
+        <div className="mb-2 flex h-8 items-center gap-3">
           <p className="text-[13px] font-medium text-[var(--color-muted-foreground)]">
             Encoded Token
           </p>
+          <button
+            type="button"
+            onClick={() => setInput('')}
+            className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
+          >
+            Clear
+          </button>
+          <button
+            type="button"
+            onClick={() => setInput(SAMPLE_TOKEN)}
+            className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
+          >
+            Load Sample
+          </button>
         </div>
         <textarea
           value={input}
@@ -117,16 +131,19 @@ function JwtDecoderInner() {
 
       {/* Decoded Sections */}
       {result.parts && (
-        <div className="flex flex-col gap-4 lg:flex-row lg:gap-4">
-          <Section label="HEADER" color="blue" meta={headerMeta} json={headerJson} />
-          <Section label="PAYLOAD" color="green" meta={payloadMeta} json={payloadJson} />
-          <Section
-            label="SIGNATURE"
-            color="amber"
-            json={`HMACSHA256(\n  base64UrlEncode(header) + "." +\n  base64UrlEncode(payload),\n  secret\n)`}
-            meta={result.parts.signature ? 'Present' : undefined}
-          />
-        </div>
+        <>
+          <div className="flex flex-col gap-4 lg:flex-row lg:gap-4">
+            <Section label="HEADER" color="blue" meta={headerMeta} json={headerJson} />
+            <Section label="PAYLOAD" color="green" meta={payloadMeta} json={payloadJson} />
+            <Section
+              label="SIGNATURE"
+              color="amber"
+              json={`HMACSHA256(\n  base64UrlEncode(header) + "." +\n  base64UrlEncode(payload),\n  secret\n)`}
+              meta={result.parts.signature ? 'Present' : undefined}
+            />
+          </div>
+          <p className="text-xs text-[var(--color-muted-foreground)] mt-2">This tool decodes JWT tokens for inspection only. No signature verification is performed. Never trust unverified tokens in production.</p>
+        </>
       )}
     </div>
   );

@@ -46,7 +46,8 @@ function HtmlEntityEncoderInner() {
       <div className="flex rounded-md bg-[var(--color-secondary)] p-1">
         <button
           type="button"
-          onClick={() => { setMode('encode'); setInput(''); }}
+          onClick={() => setMode('encode')}
+          aria-pressed={mode === 'encode'}
           className={[
             'flex-1 rounded px-4 py-1.5 text-sm transition-all',
             mode === 'encode'
@@ -58,7 +59,8 @@ function HtmlEntityEncoderInner() {
         </button>
         <button
           type="button"
-          onClick={() => { setMode('decode'); setInput(''); }}
+          onClick={() => setMode('decode')}
+          aria-pressed={mode === 'decode'}
           className={[
             'flex-1 rounded px-4 py-1.5 text-sm transition-all',
             mode === 'decode'

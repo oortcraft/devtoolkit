@@ -50,6 +50,8 @@ function RegexTesterInner() {
                 key={flag}
                 type="button"
                 title={title}
+                aria-label={title}
+                aria-pressed={activeFlags.has(flag)}
                 onClick={() => toggleFlag(flag)}
                 className={[
                   'rounded px-2 py-0.5 font-mono text-xs transition-colors',
@@ -94,8 +96,15 @@ function RegexTesterInner() {
 
       {/* Test String */}
       <div>
-        <div className="mb-2 flex h-8 items-center">
+        <div className="mb-2 flex h-8 items-center justify-between">
           <p className="text-[13px] font-medium text-[var(--color-muted-foreground)]">Test String</p>
+          <button
+            type="button"
+            onClick={() => { setPattern(''); setTestString(''); }}
+            className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
+          >
+            Clear
+          </button>
         </div>
         <textarea
           value={testString}
@@ -114,6 +123,7 @@ function RegexTesterInner() {
       </div>
 
       {/* Results */}
+      <div role="region" aria-live="polite" aria-label="Match results">
       {hasInput && !result.error && (
         <div>
           <div className="mb-2 flex h-8 items-center justify-between">
@@ -183,6 +193,7 @@ function RegexTesterInner() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

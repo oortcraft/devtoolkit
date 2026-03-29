@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 
 interface CopyButtonProps {
   text: string;
+  label?: string;
 }
 
-export default function CopyButton({ text }: CopyButtonProps) {
+export default function CopyButton({ text, label = 'Copy to clipboard' }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -38,6 +39,7 @@ export default function CopyButton({ text }: CopyButtonProps) {
       type="button"
       onClick={handleCopy}
       disabled={!text}
+      aria-label={copied ? 'Copied' : label}
       className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-secondary)] disabled:cursor-not-allowed disabled:opacity-40"
     >
       {copied ? (

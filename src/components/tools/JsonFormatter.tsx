@@ -56,6 +56,8 @@ function JsonFormatterInner() {
               <button
                 key={opt.value}
                 type="button"
+                aria-pressed={indent === opt.value}
+                aria-label={opt.label + ' indentation'}
                 onClick={() => setIndent(opt.value)}
                 className={[
                   'rounded px-3 py-1.5 text-sm transition-all',
@@ -83,6 +85,13 @@ function JsonFormatterInner() {
             className="rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-2 text-sm font-medium text-[var(--color-foreground)] shadow-sm transition-colors hover:bg-[var(--color-secondary)]"
           >
             Minify
+          </button>
+          <button
+            type="button"
+            onClick={() => { setInput(''); setOutput(''); setError(undefined); }}
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-2 text-sm font-medium text-[var(--color-foreground)] shadow-sm transition-colors hover:bg-[var(--color-secondary)]"
+          >
+            Clear
           </button>
         </div>
       </div>

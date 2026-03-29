@@ -47,7 +47,8 @@ function Base64ToolInner() {
         <div className="flex rounded-md bg-[var(--color-secondary)] p-1">
           <button
             type="button"
-            onClick={() => { setMode('encode'); setInput(''); }}
+            onClick={() => setMode('encode')}
+            aria-pressed={mode === 'encode'}
             className={[
               'flex-1 rounded px-4 py-1.5 text-sm transition-all sm:flex-none',
               mode === 'encode'
@@ -59,7 +60,8 @@ function Base64ToolInner() {
           </button>
           <button
             type="button"
-            onClick={() => { setMode('decode'); setInput(''); }}
+            onClick={() => setMode('decode')}
+            aria-pressed={mode === 'decode'}
             className={[
               'flex-1 rounded px-4 py-1.5 text-sm transition-all sm:flex-none',
               mode === 'decode'
@@ -68,6 +70,22 @@ function Base64ToolInner() {
             ].join(' ')}
           >
             Decode
+          </button>
+        </div>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => { setInput(''); setOutput(''); setError(undefined); }}
+            className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
+          >
+            Clear
+          </button>
+          <button
+            type="button"
+            onClick={() => { if (output) { setInput(output); } }}
+            className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
+          >
+            Swap
           </button>
         </div>
       </div>

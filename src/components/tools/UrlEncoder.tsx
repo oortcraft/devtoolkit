@@ -47,7 +47,8 @@ function UrlEncoderInner() {
         <div className="flex rounded-md bg-[var(--color-secondary)] p-1">
           <button
             type="button"
-            onClick={() => { setMode('encode'); setInput(''); }}
+            onClick={() => setMode('encode')}
+            aria-pressed={mode === 'encode'}
             className={[
               'flex-1 rounded px-4 py-1.5 text-sm transition-all sm:flex-none',
               mode === 'encode'
@@ -59,7 +60,8 @@ function UrlEncoderInner() {
           </button>
           <button
             type="button"
-            onClick={() => { setMode('decode'); setInput(''); }}
+            onClick={() => setMode('decode')}
+            aria-pressed={mode === 'decode'}
             className={[
               'flex-1 rounded px-4 py-1.5 text-sm transition-all sm:flex-none',
               mode === 'decode'

@@ -22,6 +22,24 @@ function DiffCheckerInner() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Toolbar */}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => { setTextA(''); setTextB(''); }}
+          className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
+        >
+          Clear
+        </button>
+        <button
+          type="button"
+          onClick={() => { const tmp = textA; setTextA(textB); setTextB(tmp); }}
+          className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
+        >
+          Swap
+        </button>
+      </div>
+
       {/* Inputs */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div>
@@ -79,6 +97,14 @@ function DiffCheckerInner() {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse font-mono text-[13px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              <thead className="sr-only">
+                <tr>
+                  <th scope="col">Original line</th>
+                  <th scope="col">Modified line</th>
+                  <th scope="col">Change type</th>
+                  <th scope="col">Content</th>
+                </tr>
+              </thead>
               <tbody>
                 {diffLines.map((line, idx) => {
                   const isAdded = line.type === 'added';
