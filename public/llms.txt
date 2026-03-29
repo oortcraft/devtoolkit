@@ -20,10 +20,14 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 - [Color Converter](https://oortcraft.dev/tools/color-converter): Convert colors between HEX, RGB, and HSL formats instantly.
 - [Timestamp Converter](https://oortcraft.dev/tools/timestamp-converter): Convert Unix timestamps to human-readable dates and vice versa.
 - [Cron Expression Builder](https://oortcraft.dev/tools/cron-builder): Build, test, and understand cron expressions with a visual editor.
+- [Markdown Preview](https://oortcraft.dev/tools/markdown-preview): Write Markdown and see real-time rendered preview side by side.
+- [CSS Minifier](https://oortcraft.dev/tools/css-minifier): Minify CSS code to reduce file size and improve load times.
+- [JSON Schema Validator](https://oortcraft.dev/tools/json-schema-validator): Validate JSON data against JSON Schema with detailed error reporting.
+- [HTML Entity Encoder & Decoder](https://oortcraft.dev/tools/html-entity-encoder): Encode and decode HTML entities for safe web content.
 
 ## Blog
 
-- [Blog](https://oortcraft.dev/blog): Developer tutorials and guides on JSON, Base64, URL encoding, UUIDs, and more.
+- [Blog](https://oortcraft.dev/blog): Developer tutorials and guides on JSON, Base64, URL encoding, UUIDs, Markdown, CSS, and more.
 
 ## AI Policy
 

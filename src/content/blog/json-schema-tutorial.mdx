@@ -1,0 +1,684 @@
+---
+title: "JSON Schema Tutorial: Validate Your Data Like a Pro"
+description: "Learn JSON Schema from scratch. Understand types, properties, required fields, arrays, and advanced validation with practical examples."
+pubDate: "2026-03-29"
+tags: ["json", "schema", "validation"]
+relatedTools: ["json-schema-validator", "json-validator"]
+---
+
+Data validation is one of the most overlooked aspects of software development. It is easy to assume that data arriving at your API, config files, or data pipeline matches the format you expect. That assumption breaks constantly. API clients send malformed payloads. Configuration files are edited by hand and have syntax errors. Database migrations introduce unexpected fields. Without validation, bugs propagate silently through your system, causing data corruption, crashes, and hard-to-debug runtime errors.
+
+JSON Schema is the standard way to validate JSON data. It is a declarative language that describes what valid JSON looks like — the structure, field types, constraints, and rules. Instead of writing imperative validation code scattered throughout your application, you define a single schema document and reuse it everywhere: API request validation, configuration file parsing, database migrations, form generation, and API documentation.
+
+This guide teaches you JSON Schema from first principles, with practical examples for every feature.
+
+## What is JSON Schema?
+
+JSON Schema is a vocabulary for annotating and validating JSON documents. It answers the question: "Does this JSON conform to my requirements?"
+
+Unlike JSON itself (which is a data format), JSON Schema is a *meta-language* — a language for describing other JSON. A schema is itself a JSON document that defines constraints on the structure and content of another JSON document.
+
+**Why JSON Schema matters:**
+
+- **Interoperability.** Schemas are language-independent. A schema written in Python can validate JSON in JavaScript, Go, Ruby, Java, or any language with a JSON Schema validator.
+- **Self-documentation.** A schema is a machine-readable contract that describes your API or data structure. Tools can generate API docs, SDKs, and UI forms from a single schema.
+- **Automation.** Validators exist for every language and framework. Once you define a schema, validation is automatic — no manual imperative code needed.
+- **Standardization.** JSON Schema is maintained by the JSON Schema organization and is published as IETF drafts. Multiple validators exist (ajv, jsonschema, etc.), and they all follow the same specification.
+
+**A brief history:** JSON Schema was created in 2010 and has evolved through multiple draft versions. The most recent stable drafts are Draft 2020-12 and Draft 2019-09. Most tools support Draft 7 (2019) and later, so examples in this guide use Draft 7 conventions, which are widely compatible.
+
+## Your First Schema
+
+The simplest way to understand JSON Schema is to write one. Here is a schema that validates a user object:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "age": { "type": "integer" }
+  },
+  "required": ["name"]
+}
+```
+
+Let's break this down:
+
+- `$schema`: Declares which version of JSON Schema this document uses. This is optional but recommended.
+- `type`: Specifies that valid data must be an object (not an array, string, or number).
+- `properties`: A dictionary defining allowed fields and their types. `name` must be a string; `age` must be an integer.
+- `required`: An array of field names that must be present. `name` is required; `age` is optional.
+
+**Valid data for this schema:**
+
+```json
+{ "name": "Alice" }
+{ "name": "Bob", "age": 30 }
+```
+
+**Invalid data:**
+
+```json
+{ "age": 30 }  // Missing required field "name"
+{ "name": "Charlie", "age": "thirty" }  // "age" is not an integer
+```
+
+## Data Types
+
+JSON Schema defines the following types, which map directly to JSON data types:
+
+### String
+
+Validates text values.
+
+```json
+{
+  "type": "string"
+}
+```
+
+Valid: `"hello"`, `"123"`, `""` (empty string)
+
+Invalid: `123`, `null`, `true`
+
+### Number
+
+Validates numeric values, including decimals.
+
+```json
+{
+  "type": "number"
+}
+```
+
+Valid: `42`, `3.14`, `-5`, `1e10`
+
+Invalid: `"42"`, `null`, `Infinity`
+
+### Integer
+
+Validates whole numbers (a subset of number).
+
+```json
+{
+  "type": "integer"
+}
+```
+
+Valid: `0`, `42`, `-100`
+
+Invalid: `3.14`, `"42"`, `null`
+
+### Boolean
+
+Validates true or false.
+
+```json
+{
+  "type": "boolean"
+}
+```
+
+Valid: `true`, `false`
+
+Invalid: `1`, `"true"`, `null`
+
+### Null
+
+Validates the null literal.
+
+```json
+{
+  "type": "null"
+}
+```
+
+Valid: `null`
+
+Invalid: `""`, `0`, `false`
+
+### Array
+
+Validates ordered collections.
+
+```json
+{
+  "type": "array"
+}
+```
+
+Valid: `[]`, `[1, 2, 3]`, `["a", "b"]`, `[1, "mixed", true]`
+
+Invalid: `"array"`, `{}`, `null`
+
+### Object
+
+Validates unordered key-value collections.
+
+```json
+{
+  "type": "object"
+}
+```
+
+Valid: `{}`, `{"key": "value"}`, `{"nested": {"field": 1}}`
+
+Invalid: `[]`, `"object"`, `null`
+
+## String Validation
+
+Strings are ubiquitous in JSON. JSON Schema provides several keywords for constraining string content.
+
+### Length Constraints
+
+```json
+{
+  "type": "string",
+  "minLength": 1,
+  "maxLength": 100
+}
+```
+
+Valid: `"a"`, `"hello world"`, any string from 1 to 100 characters
+
+Invalid: `""`, a string longer than 100 characters
+
+### Pattern Matching
+
+The `pattern` keyword uses regular expressions:
+
+```json
+{
+  "type": "string",
+  "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+}
+```
+
+This regex validates a basic email format. Valid: `"alice@example.com"`, `"user.name+tag@domain.co.uk"`
+
+Invalid: `"invalid.email"`, `"@example.com"`
+
+### Format Keywords
+
+JSON Schema defines semantic format keywords for common patterns:
+
+```json
+{
+  "type": "string",
+  "format": "email"
+}
+```
+
+Common formats: `email`, `hostname`, `ipv4`, `ipv6`, `uri`, `date`, `time`, `date-time`
+
+Note: Most validators only *validate* formats if explicitly configured to do so. By default, `format` is advisory (ignored during validation). For strict validation, check your validator's settings.
+
+**Example with date:**
+
+```json
+{
+  "type": "string",
+  "format": "date"
+}
+```
+
+Valid: `"2026-03-29"`
+
+Invalid: `"03/29/2026"`, `"2026-13-01"` (invalid month)
+
+## Number Validation
+
+Numeric validation controls the range and precision of values.
+
+### Range Constraints
+
+```json
+{
+  "type": "number",
+  "minimum": 0,
+  "maximum": 100
+}
+```
+
+Valid: `0`, `50`, `100`, `99.9`
+
+Invalid: `-1`, `101`
+
+Use `exclusiveMinimum` and `exclusiveMaximum` to exclude boundaries:
+
+```json
+{
+  "type": "number",
+  "exclusiveMinimum": 0,
+  "exclusiveMaximum": 100
+}
+```
+
+Valid: `0.1`, `50`, `99.9`
+
+Invalid: `0`, `100`
+
+### Multiple Of
+
+Validate that a number is a multiple of another value:
+
+```json
+{
+  "type": "integer",
+  "multipleOf": 5
+}
+```
+
+Valid: `0`, `5`, `10`, `-15`
+
+Invalid: `3`, `7`
+
+This is useful for validating quantities that must be in increments (e.g., pricing in cents, dimensions in fixed units).
+
+## Object Validation
+
+Objects are the most complex JSON type. JSON Schema provides rich controls for object structure.
+
+### Properties and Required
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": { "type": "integer" },
+    "email": { "type": "string", "format": "email" },
+    "active": { "type": "boolean" }
+  },
+  "required": ["id", "email"]
+}
+```
+
+Valid:
+```json
+{
+  "id": 1,
+  "email": "alice@example.com"
+}
+```
+
+Invalid:
+```json
+{
+  "id": 1
+}
+// Missing required "email"
+```
+
+### Additional Properties
+
+By default, JSON Schema allows additional properties not defined in `properties`. Control this with `additionalProperties`:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" }
+  },
+  "additionalProperties": false
+}
+```
+
+Valid: `{ "name": "Alice" }`
+
+Invalid: `{ "name": "Alice", "age": 30 }` (extra field not in properties)
+
+To allow additional properties of a specific type:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" }
+  },
+  "additionalProperties": { "type": "string" }
+}
+```
+
+Valid: `{ "name": "Alice", "nickname": "Ali" }`
+
+Invalid: `{ "name": "Alice", "age": 30 }` (age is not a string)
+
+### Pattern Properties
+
+Validate properties whose names match a regex:
+
+```json
+{
+  "type": "object",
+  "patternProperties": {
+    "^[a-z_]+$": { "type": "string" }
+  }
+}
+```
+
+Valid: `{ "user_name": "alice", "full_name": "Alice Smith" }`
+
+Invalid: `{ "userName": 123 }` (userName has uppercase; 123 is not a string)
+
+## Array Validation
+
+Arrays require keywords to specify what elements are allowed and constraints on array size.
+
+### Item Validation
+
+Validate all items with a single schema:
+
+```json
+{
+  "type": "array",
+  "items": { "type": "string" }
+}
+```
+
+Valid: `[]`, `["a"]`, `["apple", "banana", "cherry"]`
+
+Invalid: `["apple", 42]` (42 is not a string)
+
+Validate items with different types using an array of schemas:
+
+```json
+{
+  "type": "array",
+  "prefixItems": [
+    { "type": "string" },
+    { "type": "number" },
+    { "type": "boolean" }
+  ]
+}
+```
+
+Valid: `["Alice", 30, true]`
+
+Invalid: `["Alice", "30", true]` (second item is not a number)
+
+### Size Constraints
+
+```json
+{
+  "type": "array",
+  "minItems": 1,
+  "maxItems": 10
+}
+```
+
+Valid: `[1]`, `[1, 2, 3]`, an array with up to 10 items
+
+Invalid: `[]` (too few), `[1, 2, ..., 11 items]` (too many)
+
+### Unique Items
+
+Ensure all array elements are unique:
+
+```json
+{
+  "type": "array",
+  "items": { "type": "string" },
+  "uniqueItems": true
+}
+```
+
+Valid: `["apple", "banana", "cherry"]`
+
+Invalid: `["apple", "banana", "apple"]` (duplicate)
+
+## Combining Schemas
+
+JSON Schema allows combining multiple schemas with logical operators: `allOf`, `anyOf`, `oneOf`, and `not`.
+
+### allOf
+
+Data must be valid against *all* schemas:
+
+```json
+{
+  "allOf": [
+    { "type": "object" },
+    { "properties": { "id": { "type": "integer" } } },
+    { "required": ["id"] }
+  ]
+}
+```
+
+This validates objects with a required `id` field that is an integer.
+
+### anyOf
+
+Data must be valid against *at least one* schema:
+
+```json
+{
+  "anyOf": [
+    { "type": "string" },
+    { "type": "number" }
+  ]
+}
+```
+
+Valid: `"hello"`, `42`
+
+Invalid: `true`, `null`, `[]`
+
+### oneOf
+
+Data must be valid against *exactly one* schema (not zero, not more than one):
+
+```json
+{
+  "oneOf": [
+    { "properties": { "type": { "const": "email" } }, "required": ["type"] },
+    { "properties": { "type": { "const": "phone" } }, "required": ["type"] }
+  ]
+}
+```
+
+Valid: `{ "type": "email" }`, `{ "type": "phone" }`
+
+Invalid: `{}`, `{ "type": "email", "type": "phone" }`
+
+### not
+
+Data must *not* be valid against the schema:
+
+```json
+{
+  "type": "integer",
+  "not": { "multipleOf": 2 }
+}
+```
+
+Valid: `1`, `3`, `5` (odd numbers)
+
+Invalid: `2`, `4`, `6` (even numbers)
+
+## Real-World Example: User Registration Schema
+
+Here is a complete schema for a user registration API:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "User Registration",
+  "type": "object",
+  "properties": {
+    "username": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 30,
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "password": {
+      "type": "string",
+      "minLength": 8
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 18,
+      "maximum": 150
+    },
+    "newsletter": {
+      "type": "boolean",
+      "default": false
+    },
+    "phone": {
+      "type": "string",
+      "pattern": "^\\+?[1-9]\\d{1,14}$"
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": { "type": "string" },
+        "city": { "type": "string" },
+        "zip": { "type": "string" },
+        "country": { "type": "string" }
+      },
+      "required": ["city", "country"]
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "maxItems": 10
+    }
+  },
+  "required": ["username", "email", "password", "age"],
+  "additionalProperties": false
+}
+```
+
+**Valid data:**
+
+```json
+{
+  "username": "alice_smith",
+  "email": "alice@example.com",
+  "password": "securepass123",
+  "age": 25,
+  "newsletter": true,
+  "address": {
+    "city": "San Francisco",
+    "country": "USA"
+  },
+  "tags": ["developer", "designer"]
+}
+```
+
+**Invalid data:**
+
+```json
+{
+  "username": "alice smith",
+  "email": "alice@example.com",
+  "password": "secure",
+  "age": 16
+}
+// Reasons: username has space (pattern violation), password too short, age below 18
+```
+
+## JSON Schema in Practice
+
+JSON Schema validation is not just for APIs. It applies across your entire data pipeline.
+
+### API Validation
+
+Most web frameworks (Express, FastAPI, Django, Ruby on Rails) have JSON Schema validation middleware. Validate request bodies automatically before they reach your handler:
+
+```javascript
+// Express with ajv middleware (pseudocode)
+const schema = require('./schemas/user-registration.json');
+app.post('/register', validateSchema(schema), (req, res) => {
+  // req.body is guaranteed to match the schema
+  // No manual validation needed
+});
+```
+
+### Configuration Files
+
+Replace ad-hoc config parsing with schema validation:
+
+```json
+{
+  "$schema": "https://example.com/schemas/app-config.json",
+  "database": {
+    "host": { "type": "string" },
+    "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+    "username": { "type": "string" },
+    "password": { "type": "string" }
+  },
+  "required": ["database"]
+}
+```
+
+Tools like VS Code can validate YAML/JSON config files against a schema in real-time.
+
+### Form Generation
+
+Given a schema, UI frameworks can auto-generate forms with appropriate input fields, validations, and error messages. Libraries like `react-jsonschema-form` generate entire forms from a single schema.
+
+### API Documentation
+
+OpenAPI and AsyncAPI use JSON Schema to document request and response formats. Schema tooling can generate interactive API docs, client SDKs, and test fixtures directly from your schemas.
+
+### Data Migration
+
+When evolving data structures, schemas document the migration path. Old schemas validate legacy data; new schemas validate migrated data. Diff tools can highlight schema changes to understand backward compatibility.
+
+## FAQ
+
+**Do I need JSON Schema?**
+
+Yes, if you validate JSON. Hand-written validation code is error-prone and duplicated across the codebase. A schema is the single source of truth that multiple validators use.
+
+**Which JSON Schema version should I use?**
+
+Draft 2020-12 is the latest stable version. Most tools support it. If you need maximum compatibility with older tools, use Draft 7 (2019). The syntax differences are minor for common use cases.
+
+**Can JSON Schema enforce semantic constraints?**
+
+No. JSON Schema validates structure and types, but not business logic. "Username must be unique" cannot be expressed in JSON Schema alone; that requires application logic. JSON Schema stops at syntax and type validation.
+
+**How do I generate a schema from existing data?**
+
+Many tools generate schemas from JSON examples (e.g., jsonschema.net, quicktype). These are starting points, not complete solutions. Manually refine generated schemas to add constraints (`minLength`, `pattern`, `required`, etc.) and semantic information.
+
+**Can schemas reference other schemas?**
+
+Yes, using `$ref` and `$defs`. Schemas can be modular:
+
+```json
+{
+  "$defs": {
+    "address": {
+      "type": "object",
+      "properties": {
+        "city": { "type": "string" },
+        "country": { "type": "string" }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "home": { "$ref": "#/$defs/address" },
+    "work": { "$ref": "#/$defs/address" }
+  }
+}
+```
+
+This reuses the address schema in multiple places without duplication.
+
+## Conclusion
+
+JSON Schema is a powerful, standardized way to validate JSON data. By defining a schema once, you validate consistently across APIs, config parsers, form generators, and documentation. Schemas are self-documenting, language-independent, and dramatically reduce validation bugs.
+
+The best time to define a schema is at the start of a project. Make it a contract between your API and its clients, between configuration files and your application, between data producers and consumers.
+
+Ready to validate your JSON? Use the [JSON Schema Validator](/tools/json-schema-validator) to test schemas instantly, or the [JSON Validator](/tools/json-validator) to catch syntax errors in your JSON documents before schema validation.

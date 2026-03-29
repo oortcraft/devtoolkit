@@ -1,0 +1,40 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import HtmlEntityEncoder from '../../components/tools/HtmlEntityEncoder';
+---
+
+<ToolLayout
+  title="HTML Entity Encoder & Decoder | DevToolkit"
+  description="Encode and decode HTML entities for safe web content. Handles named and numeric entities."
+  toolName="HTML Entity Encoder & Decoder"
+  toolUrl="https://oortcraft.dev/tools/html-entity-encoder"
+  faq={[
+    { question: 'What are HTML entities?', answer: 'HTML entities are special codes that represent characters which have meaning in HTML, like < (less than) or & (ampersand). Encoding them prevents browsers from interpreting them as HTML tags.' },
+    { question: 'Is my data safe?', answer: 'Yes. All encoding and decoding happens in your browser. No data is sent to any server.' },
+    { question: 'Which entities are supported?', answer: 'All standard named HTML entities (e.g., &amp;amp;, &amp;lt;, &amp;gt;) and numeric entities (e.g., &amp;#123;, &amp;#x7B;) are supported.' },
+  ]}
+>
+  <div slot="tool">
+    <HtmlEntityEncoder client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the HTML Entity Encoder</h2>
+    <p>Select "Encode" or "Decode" mode, then type or paste your text. The output updates in real-time. All processing happens in your browser — nothing is sent to a server.</p>
+    <h2>What are HTML Entities?</h2>
+    <p>HTML entities are special character sequences that represent reserved or special characters in HTML. For example, the less-than sign (&lt;) is written as <code>&amp;lt;</code> to prevent browsers from interpreting it as an HTML tag.</p>
+    <h2>Common HTML Entities</h2>
+    <ul>
+      <li><code>&amp;amp;</code> → &amp; (ampersand)</li>
+      <li><code>&amp;lt;</code> → &lt; (less than)</li>
+      <li><code>&amp;gt;</code> → &gt; (greater than)</li>
+      <li><code>&amp;quot;</code> → " (double quote)</li>
+      <li><code>&amp;apos;</code> → ' (apostrophe)</li>
+      <li><code>&amp;nbsp;</code> → non-breaking space</li>
+    </ul>
+    <h2>FAQ</h2>
+    <h3>What are HTML entities?</h3>
+    <p>HTML entities are special codes that represent characters which have meaning in HTML.</p>
+    <h3>Is my data safe?</h3>
+    <p>Yes. All encoding and decoding happens in your browser. No data is sent to any server.</p>
+  </Fragment>
+</ToolLayout>

@@ -1,0 +1,105 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { encodeHtmlEntities, decodeHtmlEntities } from '../../lib/html-entity-utils';
+import CodeEditor from './CodeEditor';
+import CopyButton from './CopyButton';
+import ToolErrorBoundary from './ToolErrorBoundary';
+
+type Mode = 'encode' | 'decode';
+
+function HtmlEntityEncoderInner() {
+  const [input, setInput] = useState('');
+  const [output, setOutput] = useState('');
+  const [error, setError] = useState<string | undefined>();
+  const [mode, setMode] = useState<Mode>('encode');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (!input.trim()) {
+        setOutput('');
+        setError(undefined);
+        return;
+      }
+      const fn = mode === 'encode' ? encodeHtmlEntities : decodeHtmlEntities;
+      const { result, error: err } = fn(input);
+      if (err) {
+        setError(err);
+        setOutput('');
+      } else {
+        setError(undefined);
+        setOutput(result ?? '');
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [input, mode]);
+
+  const inputLabel = mode === 'encode' ? 'Plain Text / HTML' : 'HTML Entities Input';
+  const outputLabel = mode === 'encode' ? 'Encoded Output' : 'Decoded Output';
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Mode Toggle */}
+      <div className="flex rounded-md bg-[var(--color-secondary)] p-1">
+        <button
+          type="button"
+          onClick={() => { setMode('encode'); setInput(''); }}
+          className={[
+            'flex-1 rounded px-4 py-1.5 text-sm transition-all',
+            mode === 'encode'
+              ? 'bg-[var(--color-background)] font-medium text-[var(--color-foreground)] shadow-sm'
+              : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]',
+          ].join(' ')}
+        >
+          Encode
+        </button>
+        <button
+          type="button"
+          onClick={() => { setMode('decode'); setInput(''); }}
+          className={[
+            'flex-1 rounded px-4 py-1.5 text-sm transition-all',
+            mode === 'decode'
+              ? 'bg-[var(--color-background)] font-medium text-[var(--color-foreground)] shadow-sm'
+              : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]',
+          ].join(' ')}
+        >
+          Decode
+        </button>
+      </div>
+
+      {/* Editors */}
+      <div className="flex flex-col gap-4 md:flex-row">
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex h-8 items-center">
+            <p className="text-[13px] font-medium text-[var(--color-muted-foreground)]">{inputLabel}</p>
+          </div>
+          <CodeEditor
+            value={input}
+            onChange={setInput}
+            language="html"
+            placeholder={mode === 'encode' ? 'Type or paste HTML to encode...' : 'Paste HTML entities to decode...'}
+            error={error}
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex h-8 items-center justify-between">
+            <p className="text-[13px] font-medium text-[var(--color-muted-foreground)]">{outputLabel}</p>
+            <CopyButton text={output} />
+          </div>
+          <CodeEditor value={output} language="html" readOnly placeholder="Output will appear here as you type" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function HtmlEntityEncoder() {
+  return (
+    <ToolErrorBoundary>
+      <HtmlEntityEncoderInner />
+    </ToolErrorBoundary>
+  );
+}

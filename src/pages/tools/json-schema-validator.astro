@@ -1,0 +1,44 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import JsonSchemaValidator from '../../components/tools/JsonSchemaValidator';
+---
+
+<ToolLayout
+  title="JSON Schema Validator - Validate JSON Online | DevToolkit"
+  description="Validate JSON data against JSON Schema with detailed error reporting. Supports Draft-07 and 2020-12."
+  toolName="JSON Schema Validator"
+  toolUrl="https://oortcraft.dev/tools/json-schema-validator"
+  faq={[
+    { question: 'What JSON Schema drafts are supported?', answer: 'The validator uses Ajv which supports Draft-07 by default, the most widely used JSON Schema specification.' },
+    { question: 'Is my data safe?', answer: 'Yes. All validation happens in your browser. No data is sent to any server.' },
+    { question: 'What happens if my JSON is invalid?', answer: 'You will see detailed error messages showing the exact path, the validation keyword that failed, and a human-readable description of the issue.' },
+    { question: 'Can I use $ref in my schema?', answer: 'Local $ref references within the same schema are supported. External $ref URLs are not loaded for security reasons.' },
+  ]}
+>
+  <div slot="tool">
+    <JsonSchemaValidator client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the JSON Schema Validator</h2>
+    <p>Enter your JSON Schema in the left editor and your JSON data in the right editor. Click "Validate" to check if the data conforms to the schema. Use "Load Sample" to see an example.</p>
+    <h2>What is JSON Schema?</h2>
+    <p>JSON Schema is a vocabulary that allows you to annotate and validate JSON documents. It describes the structure, types, and constraints of JSON data — like a blueprint for your API payloads, configuration files, or database records.</p>
+    <h2>Common Schema Keywords</h2>
+    <ul>
+      <li><strong>type</strong> — Specifies the data type (string, number, object, array, boolean, null)</li>
+      <li><strong>properties</strong> — Defines the expected properties of an object</li>
+      <li><strong>required</strong> — Lists properties that must be present</li>
+      <li><strong>enum</strong> — Restricts a value to a fixed set of options</li>
+      <li><strong>pattern</strong> — Validates a string against a regular expression</li>
+      <li><strong>minimum / maximum</strong> — Sets numeric bounds</li>
+      <li><strong>items</strong> — Describes elements in an array</li>
+    </ul>
+    <h2>FAQ</h2>
+    <h3>What JSON Schema drafts are supported?</h3>
+    <p>The validator uses Ajv which supports Draft-07 by default, the most widely used JSON Schema specification.</p>
+    <h3>Is my data safe?</h3>
+    <p>Yes. All validation happens in your browser. No data is sent to any server.</p>
+    <h3>What happens if my JSON is invalid?</h3>
+    <p>You will see detailed error messages showing the exact path, the validation keyword that failed, and a human-readable description.</p>
+  </Fragment>
+</ToolLayout>

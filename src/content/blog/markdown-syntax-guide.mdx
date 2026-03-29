@@ -1,0 +1,357 @@
+---
+title: "Markdown Syntax Guide: From Basics to Advanced"
+description: "Master Markdown syntax with this complete guide. Learn headings, lists, links, images, tables, code blocks, and GitHub Flavored Markdown features."
+pubDate: "2026-03-29"
+tags: ["markdown", "tutorial", "documentation"]
+relatedTools: ["markdown-preview"]
+---
+
+Markdown has become the de facto language for writing on the internet. It powers GitHub READMEs, documentation sites, blogging platforms, chat applications, and countless technical writing workflows. Despite its simplicity, Markdown's real power lies in how cleanly it separates content from presentation — you focus on what you're saying, not how it looks. A single Markdown file can be rendered as HTML, PDF, emails, or rich text with no modifications to the source.
+
+Yet many developers use only a fraction of Markdown's syntax, or worse, struggle with edge cases like nested lists, table alignment, or code block escaping. This guide covers everything from the basics to advanced GitHub Flavored Markdown features, with examples you can copy and paste directly into your next README, blog post, or documentation.
+
+Try our [Markdown Preview Tool](/tools/markdown-preview) to test all examples in real time.
+
+## Basic Syntax
+
+### Headings
+
+Markdown headings use the hash symbol. Six levels are available (though most documents rarely go beyond three):
+
+```markdown
+# Heading 1
+## Heading 2
+### Heading 3
+#### Heading 4
+##### Heading 5
+###### Heading 6
+```
+
+Each level drops one level in the HTML hierarchy (h1 through h6). Use them to structure your document logically; avoid skipping levels (e.g., h1 followed directly by h3).
+
+### Paragraphs
+
+A paragraph is one or more consecutive lines of text. Paragraphs are separated by blank lines:
+
+```markdown
+This is the first paragraph. It can span
+multiple lines, but without a blank line between them,
+it's still one paragraph.
+
+This is the second paragraph, separated by a blank line.
+```
+
+Do not indent paragraphs with spaces — Markdown will interpret indented blocks as code.
+
+### Emphasis
+
+Bold and italic text are the most common styling. Asterisks `*` and underscores `_` work identically:
+
+```markdown
+*italic* or _italic_
+**bold** or __bold__
+***bold italic*** or ___bold italic___
+```
+
+Choose one style (asterisks or underscores) and stick with it for consistency within a document.
+
+### Blockquotes
+
+Blockquotes are indented blocks of text, useful for citations, callouts, or quoted material:
+
+```markdown
+> This is a blockquote.
+> It can span multiple lines.
+>
+> And contain multiple paragraphs.
+
+> Single-line blockquotes don't need the `>` on every line.
+This will not be in the blockquote.
+```
+
+Blockquotes can contain any other Markdown syntax — headings, lists, code blocks, etc.
+
+## Lists
+
+### Unordered Lists
+
+Create unordered lists with `-`, `+`, or `*`:
+
+```markdown
+- Item 1
+- Item 2
+- Item 3
+```
+
+All three symbols work identically. Stick with one for consistency.
+
+### Ordered Lists
+
+Ordered lists use numbers followed by a period:
+
+```markdown
+1. First item
+2. Second item
+3. Third item
+```
+
+The actual numbers don't matter — Markdown will auto-number them correctly. You can use `1.` for every item and Markdown will render them as 1, 2, 3.
+
+### Nested Lists
+
+Indent nested items with two or four spaces (or one tab):
+
+```markdown
+1. First item
+   - Nested unordered item
+   - Another nested item
+2. Second item
+   1. Nested ordered item
+   2. Another nested ordered item
+      - Deeply nested item
+```
+
+Inconsistent indentation breaks nesting. If nested items don't indent, try adding blank lines between list items or adjusting indentation by one or two more spaces.
+
+### List with Paragraphs
+
+To include multiple paragraphs in a list item, indent continuation paragraphs:
+
+```markdown
+1. First item with a paragraph.
+
+   This is a second paragraph in the first item. It must be indented.
+
+2. Second item.
+```
+
+## Links and Images
+
+### Inline Links
+
+The syntax is `[link text](URL)`:
+
+```markdown
+[Visit OpenAI](https://openai.com)
+[Email me](mailto:example@example.com)
+```
+
+### Reference Links
+
+Define link references elsewhere for cleaner source code:
+
+```markdown
+[Visit OpenAI][1]
+
+[1]: https://openai.com
+```
+
+References can appear anywhere in the document, often collected at the end. This is useful for long documents or when the same URL is referenced multiple times.
+
+### Implicit Links
+
+URLs and email addresses in angle brackets become clickable links automatically in most implementations:
+
+```markdown
+<https://example.com>
+<user@example.com>
+```
+
+### Images
+
+Image syntax mirrors link syntax, with an exclamation mark prefix:
+
+```markdown
+![alt text](image.jpg)
+![alt text](image.jpg "Image title")
+```
+
+The alt text describes the image for accessibility and appears if the image fails to load. The title (in quotes) is optional and typically appears as a hover tooltip in browsers.
+
+Reference-style images also work:
+
+```markdown
+![alt text][img1]
+
+[img1]: /path/to/image.jpg "Optional title"
+```
+
+## Code
+
+### Inline Code
+
+Wrap text in backticks to display it as code within a sentence:
+
+```markdown
+Use the `console.log()` function to print output.
+The `npm install` command installs dependencies.
+```
+
+If your code contains backticks, use multiple backticks to delimit:
+
+```markdown
+Use `` `example` `` if your code has backticks.
+```
+
+### Fenced Code Blocks
+
+Longer code blocks go in triple-backtick fences, optionally with a language identifier:
+
+```javascript
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+```
+
+Language identifiers enable syntax highlighting. Common ones include `javascript`, `python`, `bash`, `java`, `cpp`, `sql`, `html`, `css`, `json`, `yaml`, and `markdown`.
+
+Indented code blocks (four spaces or one tab) are the legacy alternative and less readable:
+
+```
+    function legacy() {
+      console.log("old style");
+    }
+```
+
+Prefer fenced blocks with language identifiers — they're clearer and enable syntax highlighting.
+
+## Tables
+
+GitHub Flavored Markdown (GFM) tables are useful for structured data:
+
+```markdown
+| Column 1 | Column 2 | Column 3 |
+|----------|----------|----------|
+| A        | B        | C        |
+| D        | E        | F        |
+```
+
+Alignment is controlled by colons in the separator row:
+
+```markdown
+| Left-aligned | Center-aligned | Right-aligned |
+|:-------------|:--------------:|---------------:|
+| A            | B              | C              |
+| D            | E              | F              |
+```
+
+The pipes and dashes don't need to align in the source — Markdown parsers ignore whitespace. The alignment colons do matter:
+
+- `|---|` — default (left)
+- `|:-:|` — center
+- `|-:|` — right
+
+Tables can contain inline Markdown like bold, links, and code:
+
+```markdown
+| Feature | Command | Status |
+|---------|---------|--------|
+| Build | `npm run build` | **Ready** |
+| Test | `npm test` | **Passing** |
+| Deploy | `npm deploy` | *Pending* |
+```
+
+## Advanced Features
+
+### Task Lists
+
+GitHub Flavored Markdown supports task lists with checkboxes:
+
+```markdown
+- [x] Completed task
+- [ ] Incomplete task
+- [x] Another done item
+```
+
+Task lists are rendered as interactive checkboxes on GitHub and many other platforms. They're useful for issue tracking, progress tracking, and checklists.
+
+### Strikethrough
+
+Mark text as crossed out using tildes:
+
+```markdown
+~~This text is struck through~~
+```
+
+This is a GFM extension and may not work on all platforms.
+
+### Footnotes
+
+Some Markdown parsers (like GitHub) support footnotes:
+
+```markdown
+This is a statement[^1].
+
+[^1]: Here's the footnote explanation.
+```
+
+Footnotes are automatically numbered and collected at the end of the document. Availability varies by platform — always test before relying on them.
+
+### Horizontal Rules
+
+Create visual breaks with three or more hyphens, asterisks, or underscores on their own line:
+
+```markdown
+---
+***
+___
+```
+
+All three render identically as a horizontal line.
+
+### Escaping
+
+To display a special character literally (instead of interpreting it as Markdown), escape it with a backslash:
+
+```markdown
+\*This is not italic\*
+\[This is not a link\]
+```
+
+Common characters to escape: `* _ [ ] ( ) # + - . !`
+
+## When to Use Markdown
+
+Markdown excels in specific contexts:
+
+- **Documentation** — READMEs, API docs, developer guides. Markdown renders cleanly on GitHub without extra tooling.
+- **Blogging** — Most modern blogging platforms (Hugo, Jekyll, Astro, Ghost) use Markdown for content.
+- **GitHub Issues and Pull Requests** — Comments, descriptions, and discussions use Markdown.
+- **Note-taking** — Obsidian, Roam Research, and Notion support Markdown syntax for personal wikis.
+- **Email and Chat** — Slack, Discord, and Telegram allow Markdown-style formatting.
+- **Static Site Generators** — Gatsby, Hugo, Next.js, and others use Markdown as content source.
+
+Markdown is not suitable for:
+
+- **Complex layouts** — Newsletter designs with sidebars and multi-column layouts require HTML/CSS
+- **Detailed styling** — When you need precise color control, custom fonts, or specific spacing, HTML is more direct
+- **Accessibility requirements** — Markdown alone cannot handle ARIA attributes or semantic HTML controls
+
+## Tips for Writing Better Markdown
+
+1. **Use consistent symbols** — Choose `-` for unordered lists and stick with it. Same for bold (always `**`, not `__`).
+
+2. **Blank lines matter** — Separate paragraphs, list sections, and code blocks with blank lines. This prevents parsing errors.
+
+3. **Test rendering** — Different platforms render Markdown slightly differently. GitHub's interpretation differs from common-mark; test on your target platform.
+
+4. **Favor fenced code blocks** — They're clearer than indented blocks and allow language-specific syntax highlighting.
+
+5. **Use reference links for long documents** — Especially when URLs are repeated, reference-style links keep your source readable.
+
+6. **Write headings first** — Structure your content with headings before writing the body. This improves both readability and SEO.
+
+7. **Avoid deep nesting** — Lists nested more than three levels deep are hard to read both in source and rendered form.
+
+8. **Escape special characters sparingly** — Escape only when necessary; overuse makes source code harder to read.
+
+9. **Put blank lines inside blockquotes** — `> line 1` followed by a blank line makes blockquotes more readable.
+
+10. **Use semantic HTML when Markdown isn't enough** — You can embed HTML directly in Markdown; use it for edge cases like custom classes or ARIA attributes.
+
+## Summary
+
+Markdown's simplicity is deceptive — there's depth here for those who take time to learn it properly. The core syntax (headings, paragraphs, emphasis, lists, links, code) covers 95% of real-world use. GitHub Flavored Markdown adds tables, task lists, strikethrough, and other conveniences that make it even more powerful for documentation and technical writing.
+
+The best way to master Markdown is to write with it daily. Keep this guide bookmarked and reference it when you encounter edge cases — and use our [Markdown Preview Tool](/tools/markdown-preview) to test your syntax instantly without pushing to production.

@@ -99,6 +99,30 @@ DevToolkit provides fast, private, open-source developer utilities that run enti
 **How to use**: Enter a cron expression or use preset buttons (Every minute, Every 5 min, Every hour, etc.). See a human-readable description and the next 5 scheduled run times. Supports standard 5-field cron syntax and special strings (@hourly, @daily, @weekly, @monthly, @yearly).
 **Cron fields**: minute (0-59), hour (0-23), day of month (1-31), month (1-12), day of week (0-6).
 
+### 15. Markdown Preview
+**URL**: https://oortcraft.dev/tools/markdown-preview
+**Description**: Write Markdown and see real-time rendered preview side by side.
+**How to use**: Type or paste Markdown in the left editor. The right panel shows the rendered HTML preview in real-time. Supports GitHub Flavored Markdown including tables, task lists, strikethrough, and fenced code blocks.
+**Key facts**: Uses the marked library for parsing and DOMPurify for XSS prevention. All processing happens client-side.
+
+### 16. CSS Minifier
+**URL**: https://oortcraft.dev/tools/css-minifier
+**Description**: Minify CSS code to reduce file size and improve page load times.
+**How to use**: Paste CSS code in the left panel. Minified output appears automatically in the right panel. Shows stats (original size, minified size, savings percentage).
+**Key facts**: Removes comments, unnecessary whitespace, trailing semicolons, and redundant characters. Does not change selectors, properties, or values. Typical savings range from 15-40%.
+
+### 17. JSON Schema Validator
+**URL**: https://oortcraft.dev/tools/json-schema-validator
+**Description**: Validate JSON data against JSON Schema with detailed error reporting.
+**How to use**: Enter a JSON Schema in the left editor and JSON data in the right editor. Click "Validate" to check conformance. Use "Load Sample" to see an example. Shows detailed error messages with paths and validation keywords.
+**Key facts**: Uses Ajv (Another JSON Schema Validator) supporting Draft-07. Local $ref references supported. All validation happens client-side.
+
+### 18. HTML Entity Encoder & Decoder
+**URL**: https://oortcraft.dev/tools/html-entity-encoder
+**Description**: Encode and decode HTML entities for safe web content.
+**How to use**: Select Encode or Decode mode. Type or paste text and the output updates in real-time. Handles named entities (&amp;, &lt;, &gt;, &quot;, &apos;) and numeric entities (&#123;, &#x7B;).
+**Key facts**: Encoding converts special characters to HTML entities to prevent browsers from interpreting them as markup. Essential for displaying code snippets in HTML and preventing XSS.
+
 ---
 
 ## Blog
@@ -150,6 +174,22 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
 11. **Cron Expressions Explained: A Complete Guide**
     URL: https://oortcraft.dev/blog/cron-expression-guide
     Topics: Cron syntax, five-field format, special characters, common patterns, crontab, timezone considerations.
+
+12. **Markdown Syntax Guide: From Basics to Advanced**
+    URL: https://oortcraft.dev/blog/markdown-syntax-guide
+    Topics: Markdown syntax, headings, lists, links, images, code blocks, tables, GFM features, task lists.
+
+13. **CSS Minification Explained: Why and How to Minify CSS**
+    URL: https://oortcraft.dev/blog/css-minification-explained
+    Topics: CSS minification, web performance, Core Web Vitals, build tools, PostCSS, cssnano, source maps.
+
+14. **JSON Schema Tutorial: Validate Your Data Like a Pro**
+    URL: https://oortcraft.dev/blog/json-schema-tutorial
+    Topics: JSON Schema, data validation, types, properties, required fields, arrays, combining schemas, real-world examples.
+
+15. **HTML Entities: A Complete Guide to Character Encoding**
+    URL: https://oortcraft.dev/blog/html-entities-guide
+    Topics: HTML entities, character encoding, named entities, numeric entities, UTF-8, XSS prevention, special characters.
 
 ---
 

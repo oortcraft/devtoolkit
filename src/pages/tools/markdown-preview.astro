@@ -1,0 +1,40 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import MarkdownPreview from '../../components/tools/MarkdownPreview';
+---
+
+<ToolLayout
+  title="Markdown Preview - Live Editor | DevToolkit"
+  description="Write Markdown and see real-time rendered preview. Supports GFM, tables, and code blocks."
+  toolName="Markdown Preview"
+  toolUrl="https://oortcraft.dev/tools/markdown-preview"
+  faq={[
+    { question: 'What Markdown features are supported?', answer: 'GitHub Flavored Markdown including tables, task lists, strikethrough, and fenced code blocks.' },
+    { question: 'Is my content saved?', answer: 'No. Everything runs in your browser. Nothing is saved or sent to any server.' },
+    { question: 'Can I export the rendered HTML?', answer: 'Yes. You can copy the rendered HTML output using the copy button.' },
+  ]}
+>
+  <div slot="tool">
+    <MarkdownPreview client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the Markdown Preview</h2>
+    <p>Type or paste Markdown in the left editor. The right panel shows the rendered HTML preview in real-time. All processing happens in your browser — nothing is sent to a server.</p>
+    <h2>What is Markdown?</h2>
+    <p>Markdown is a lightweight markup language that lets you write formatted text using plain text syntax. Created by John Gruber in 2004, it's widely used in README files, documentation, blogs, and messaging platforms like GitHub and Slack.</p>
+    <h2>Supported Syntax</h2>
+    <ul>
+      <li><strong>Headings</strong> — # H1, ## H2, ### H3</li>
+      <li><strong>Emphasis</strong> — *italic*, **bold**, ~~strikethrough~~</li>
+      <li><strong>Lists</strong> — Ordered (1. 2. 3.) and unordered (- item)</li>
+      <li><strong>Links & Images</strong> — [text](url) and ![alt](url)</li>
+      <li><strong>Code</strong> — Inline `code` and fenced code blocks</li>
+      <li><strong>Tables</strong> — GFM table syntax with | pipes |</li>
+    </ul>
+    <h2>FAQ</h2>
+    <h3>What Markdown features are supported?</h3>
+    <p>GitHub Flavored Markdown including tables, task lists, strikethrough, and fenced code blocks.</p>
+    <h3>Is my content saved?</h3>
+    <p>No. Everything runs in your browser. Nothing is saved or sent to any server.</p>
+  </Fragment>
+</ToolLayout>
