@@ -3,6 +3,7 @@ import BaseLayout from './BaseLayout.astro';
 import AdSlot from '../components/AdSlot.astro';
 import StructuredData from '../components/StructuredData.astro';
 import { tools } from '../lib/tools';
+import { getCollection } from 'astro:content';
 
 interface Props {
   title: string;
@@ -15,6 +16,12 @@ interface Props {
 const { title, description, toolName, toolUrl, faq } = Astro.props;
 const currentSlug = Astro.url.pathname.replace(/^\/tools\//, '').replace(/\/$/, '');
 const currentTool = tools.find(t => t.slug === currentSlug);
+
+const allPosts = await getCollection('blog');
+const relatedPosts = allPosts
+  .filter(post => post.data.relatedTools?.includes(currentSlug))
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
+  .slice(0, 4);
 
 const graphItems: Record<string, any>[] = [
   {
@@ -118,6 +125,22 @@ const structuredData = {
     <div class="prose prose-neutral mt-12 max-w-none prose-headings:font-semibold prose-headings:text-[var(--color-foreground)] prose-p:text-[var(--color-muted-foreground)] prose-a:text-[var(--color-primary)] prose-code:rounded prose-code:bg-[var(--color-secondary)] prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-pre:bg-[#1e1e2e] prose-pre:text-slate-200 [&_pre_code]:bg-transparent [&_pre_code]:p-0">
       <slot name="content" />
     </div>
+    {relatedPosts.length > 0 && (
+      <section class="mt-12">
+        <h2 class="mb-4 text-lg font-semibold text-[var(--color-foreground)]">Related Articles</h2>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {relatedPosts.map(post => (
+            <a
+              href={`/blog/${post.id}`}
+              class="group rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-4 transition-colors hover:bg-[var(--color-secondary)]"
+            >
+              <p class="font-medium text-[var(--color-foreground)] group-hover:text-[var(--color-primary)] text-sm">{post.data.title}</p>
+              <p class="mt-1 text-xs text-[var(--color-muted-foreground)] line-clamp-2">{post.data.description}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
     <AdSlot position="footer" />
   </div>
 </BaseLayout>
