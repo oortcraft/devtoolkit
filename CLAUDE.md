@@ -36,7 +36,17 @@ This is a monetization-focused developer tools site. Every decision should be ev
 2. Implement code following existing patterns
 3. `npm run build` — must pass with 0 errors
 4. Update `llms.txt` + `llms-full.txt` for new tools/blogs
-5. Commit and push to main → auto-deploy
+5. Commit and push to main
+
+## Deploy
+
+1. `git push origin main` — GitHub-Vercel 연동으로 자동 배포 트리거
+2. 배포 확인: `npx vercel ls 2>&1 | head -5` 로 최근 배포 시간 확인
+3. 실제 페이지 접속 확인 (새로 추가된 URL 중 하나로 확인)
+4. **배포가 안 된 경우** (push 후 새 배포가 안 보이거나, 새 페이지가 404일 때):
+   - 사용자에게 "Vercel 자동 배포가 트리거되지 않았습니다. 수동 배포할까요?" 확인
+   - 승인 시: `npx vercel --prod` 로 수동 프로덕션 배포
+   - 배포 후 다시 페이지 접속 확인
 
 ## SEO/AEO
 
