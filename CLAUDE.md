@@ -48,6 +48,14 @@ This is a monetization-focused developer tools site. Every decision should be ev
 
 Follow existing pattern: `feat:`, `fix:`, `refactor:`, `content:`, `style:` prefixes with English descriptions.
 
+## After Deploy
+
+After committing and pushing, always update the project memory file at `~/.claude/projects/-Users-junseok-kang-Desktop-toy-devtoolkit/memory/project_devtoolkit.md` to reflect:
+- Current tool count and list
+- Current blog count
+- Any new decisions or strategy changes
+- Updated "next steps" based on what was completed
+
 ## Don't
 
 - Don't add features without considering monetization impact
