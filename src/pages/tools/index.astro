@@ -2,16 +2,6 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { tools } from '../../lib/tools';
 
-const iconMap: Record<string, string> = {
-  'json-formatter': '{ }',
-  'json-validator': '✓',
-  'json-to-yaml': '⇄',
-  'base64': 'B64',
-  'url-encoder': '%20',
-  'uuid-generator': '#',
-  'hash-generator': '#!',
-  'lorem-ipsum': 'Aa',
-};
 ---
 
 <BaseLayout
@@ -31,7 +21,7 @@ const iconMap: Record<string, string> = {
         >
           <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-secondary)] sm:h-10 sm:w-10">
             <span class="font-mono text-xs font-semibold text-[var(--color-foreground)] sm:text-sm">
-              {iconMap[tool.slug] || '{}'}
+              {tool.icon}
             </span>
           </div>
           <h2 class="text-[15px] font-semibold text-[var(--color-foreground)] sm:text-base">{tool.name}</h2>

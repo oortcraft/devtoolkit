@@ -1,0 +1,40 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import DiffChecker from '../../components/tools/DiffChecker';
+---
+
+<ToolLayout
+  title="Diff Checker - Compare Text Online | DevToolkit"
+  description="Compare two texts and see differences highlighted line by line. Free online diff tool — runs entirely in your browser, no data sent to any server."
+  toolName="Diff Checker"
+  toolUrl="https://oortcraft.dev/tools/diff-checker"
+  faq={[
+    { question: 'Is my data safe?', answer: 'Yes. All comparison happens in your browser using JavaScript. No text is ever sent to a server.' },
+    { question: 'What kind of diff does this tool produce?', answer: 'It produces a line-by-line diff using the Longest Common Subsequence (LCS) algorithm, similar to the Unix diff command.' },
+    { question: 'Can I compare code files?', answer: 'Yes. Paste any text — code, prose, configs, or logs — and the tool will highlight added, removed, and unchanged lines.' },
+  ]}
+>
+  <div slot="tool">
+    <DiffChecker client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the Diff Checker</h2>
+    <p>Paste your original text into the left field and your modified text into the right field. The diff is computed automatically and shown below, with green lines for additions and red lines for removals.</p>
+    <h2>What is a Diff?</h2>
+    <p>A diff (short for difference) is a comparison between two versions of a text. It shows which lines were added, removed, or left unchanged. Diffs are used in version control systems like Git to track code changes over time.</p>
+    <h2>Use Cases</h2>
+    <ul>
+      <li><strong>Code review</strong> — Compare two versions of a function or file before merging.</li>
+      <li><strong>Config changes</strong> — Spot differences between two configuration files.</li>
+      <li><strong>Document editing</strong> — See what changed between two drafts of a document.</li>
+      <li><strong>Log analysis</strong> — Compare log outputs from two runs to find discrepancies.</li>
+    </ul>
+    <h2>FAQ</h2>
+    <h3>Is my data safe?</h3>
+    <p>Yes. All comparison happens in your browser using JavaScript. No text is ever sent to a server.</p>
+    <h3>What kind of diff does this tool produce?</h3>
+    <p>It produces a line-by-line diff using the Longest Common Subsequence (LCS) algorithm, similar to the Unix <code>diff</code> command.</p>
+    <h3>Can I compare code files?</h3>
+    <p>Yes. Paste any text — code, prose, configs, or logs — and the tool will highlight added, removed, and unchanged lines.</p>
+  </Fragment>
+</ToolLayout>

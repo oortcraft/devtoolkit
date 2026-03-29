@@ -1,0 +1,424 @@
+---
+title: "What is JWT? JSON Web Tokens Explained"
+description: "Learn what JSON Web Tokens are, how they work, their structure (header, payload, signature), and when to use them for authentication and authorization."
+pubDate: "2026-03-29"
+tags: ["jwt", "security", "authentication"]
+relatedTools: ["jwt-decoder"]
+---
+
+JSON Web Tokens have become the industry standard for stateless authentication and authorization in modern web applications. From single-page applications to microservices, JWTs enable secure credential transmission without server-side session storage. Yet many developers implement JWT authentication without fully understanding how they work or the security tradeoffs involved. This guide demystifies JWTs completely.
+
+## What is JWT?
+
+**JWT** (JSON Web Token) is a compact, self-contained method for securely transmitting claims between two parties as a JSON object. A **claim** is a piece of information about an entity (typically a user) and assertions about them. JWTs are digitally signed, meaning the recipient can verify both the authenticity and integrity of the token.
+
+The token is represented as three Base64URL-encoded parts separated by dots:
+
+```
+header.payload.signature
+```
+
+Example JWT:
+
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwiZXhwIjoxNjc2NjI2MDAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+```
+
+JWTs were formally specified in [RFC 7519](https://tools.ietf.org/html/rfc7519) in May 2015 and have become the de facto standard for API authentication, OAuth 2.0 flows, and secure inter-service communication.
+
+## JWT Structure
+
+A JWT consists of exactly three parts, each Base64URL-encoded and separated by a dot (`.`). Understanding each part is essential to using JWTs securely.
+
+### 1. Header
+
+The **header** is a JSON object containing metadata about the token itself, primarily the signing algorithm and token type.
+
+```json
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+```
+
+Common header fields:
+
+- **`alg`** (required): The signing algorithm. Common values: `HS256` (HMAC-SHA256), `HS512` (HMAC-SHA512), `RS256` (RSA with SHA256), `ES256` (ECDSA with SHA256).
+- **`typ`** (optional): The token type, almost always `"JWT"`.
+- **`kid`** (optional): A key ID, useful when multiple signing keys are in rotation.
+
+The header is Base64URL-encoded:
+
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+```
+
+Base64URL-decode it and you get back the JSON above.
+
+### 2. Payload
+
+The **payload** (also called **claims**) is a JSON object containing the actual data the token represents. This is where you encode user information, permissions, session metadata, and any other relevant assertions.
+
+```json
+{
+  "sub": "user123",
+  "email": "alice@example.com",
+  "iat": 1676540400,
+  "exp": 1676626800,
+  "iss": "https://api.example.com",
+  "aud": "web-app",
+  "roles": ["admin", "editor"]
+}
+```
+
+**Standard claims** (RFC 7519) include:
+
+- **`sub`** (subject): A unique identifier for the principal (e.g., user ID). This is the "who" of the token.
+- **`iss`** (issuer): The party that issued the token (e.g., authentication service URL). Receivers verify this to ensure the token came from a trusted source.
+- **`aud`** (audience): The intended recipient(s) of the token (e.g., application ID or service name). Receivers verify they are in the intended audience.
+- **`exp`** (expiration time): Unix timestamp (seconds since epoch) when the token expires. Tokens with `exp` in the past are invalid.
+- **`iat`** (issued at): Unix timestamp when the token was created.
+- **`nbf`** (not before): Unix timestamp before which the token must not be accepted.
+- **`jti`** (JWT ID): A unique identifier for the token, useful for token revocation or tracking.
+
+You can also include **custom claims** (application-specific data):
+
+```json
+{
+  "sub": "user123",
+  "exp": 1676626800,
+  "permissions": ["read:articles", "write:comments"],
+  "theme": "dark"
+}
+```
+
+The payload is Base64URL-encoded. Importantly, **the payload is not encrypted** — anyone can decode it. Never include sensitive data (passwords, API keys, credit card numbers) in a JWT.
+
+### 3. Signature
+
+The **signature** proves that the token was created by the issuer and has not been tampered with.
+
+The signature is created by:
+
+1. Taking the first two parts (header and payload) as strings: `header.payload`
+2. Hashing them with a secret key and the algorithm specified in the header
+3. Base64URL-encoding the result
+
+For HMAC-SHA256 (HS256):
+
+```
+HMAC-SHA256(
+  base64UrlEncode(header) + "." + base64UrlEncode(payload),
+  secret_key
+)
+```
+
+Only the issuer knows the secret key. When a receiver gets a JWT, they:
+
+1. Recompute the signature using the same algorithm and the same secret
+2. Compare their computed signature to the signature in the token
+3. If they match, the token is authentic and unmodified
+
+If someone alters the payload (even by a single character) and doesn't know the secret key, the signature will no longer match.
+
+**Asymmetric signing (RSA, ECDSA):** Instead of a shared secret, the issuer uses a private key to sign and the receiver uses the corresponding public key to verify. The private key never needs to be shared.
+
+## How JWT Authentication Works
+
+Here is the typical flow:
+
+1. **User logs in** with username and password.
+2. **Server validates credentials** and creates a JWT containing user ID and other relevant claims.
+3. **Server returns the JWT** to the client (typically in the response body or as a secure HTTP-only cookie).
+4. **Client stores the JWT** (in memory, localStorage, sessionStorage, or a secure cookie).
+5. **Client includes JWT in subsequent requests** (typically in the `Authorization: Bearer <token>` header).
+6. **Server receives the request** and verifies the JWT signature using its secret key or public key.
+7. **Server extracts claims** from the verified token (no database lookup required) and proceeds with the request.
+8. **Token expires** after the `exp` time. Client must obtain a new token via login or a refresh token flow.
+
+The key benefit: Once a JWT is issued and signed, the server does not need to store session state. Verification is stateless and cryptographic.
+
+## Common JWT Claims and Usage
+
+Here is a real-world example JWT payload with explanations:
+
+```json
+{
+  "sub": "user_uuid_12345",
+  "iss": "https://auth.myapp.com",
+  "aud": "myapp-web-client",
+  "exp": 1704067200,
+  "iat": 1704063600,
+  "nbf": 1704063600,
+  "jti": "unique-token-id-abc123",
+  "email": "alice@example.com",
+  "email_verified": true,
+  "name": "Alice Johnson",
+  "roles": ["user", "moderator"],
+  "permissions": ["read:posts", "write:posts", "delete:posts"],
+  "org_id": "org_456"
+}
+```
+
+- **`sub`**: Uniquely identifies the user (e.g., UUID, database ID). Must be present.
+- **`iss`**: Your authentication service. Prevents tokens from other services being accepted.
+- **`aud`**: The application that should accept this token. Prevents tokens meant for service A from being used at service B.
+- **`exp` and `iat`**: Define the token's lifetime. A common lifetime is 15 minutes to 1 hour.
+- **`jti`**: Unique token ID. If you need to revoke tokens, you can maintain a blacklist of `jti` values.
+- **`roles` and `permissions`**: Authorization data. Embed role/permission information in the token to avoid per-request database queries.
+- Custom claims like `org_id`, `theme`, or any application-specific data.
+
+## JWT vs Session Cookies
+
+Both JWTs and session cookies authenticate users, but they work very differently.
+
+### Session Cookies
+
+- Server stores session state in memory, database, or cache (Redis).
+- Server sends a session ID to the client as a secure, HTTP-only cookie.
+- Client includes the cookie in each request (automatically, via browser).
+- Server looks up the session ID in its store to retrieve user data.
+- Session state is mutable: server can revoke or update it immediately.
+- Scale challenge: Session store must be shared across multiple servers (requires sticky sessions or external cache).
+
+### JWTs
+
+- Server does not store state. The token itself contains all needed information.
+- Client receives JWT and stores it (localStorage, sessionStorage, or cookie).
+- Client includes JWT in each request (manually, via `Authorization` header, or via cookie).
+- Server verifies the signature cryptographically; no database lookup needed.
+- Token is immutable: changes take effect only after issuance (can lead to stale claims).
+- Scales effortlessly: each server can independently verify any JWT using the issuer's public key.
+
+### When to Use Each
+
+**Use session cookies if:**
+- You need immediate revocation (user logs out or permissions change).
+- You need to track fine-grained per-session state.
+- Your application is monolithic or runs on a single server.
+- Simplicity and browser automation matter most.
+
+**Use JWTs if:**
+- You have multiple services that need to validate tokens independently.
+- You need stateless authentication (no session store).
+- You are building a distributed system or microservices architecture.
+- Mobile clients or SPAs need to manage authentication.
+- You need to avoid session affinity (sticky sessions) in load-balanced environments.
+
+**Hybrid approach:** Use both. Issue a short-lived JWT and a long-lived refresh token (stored in a secure HTTP-only cookie). The refresh token is used to obtain new JWTs without user interaction. This gives you scalability of JWTs with some revocation capability via refresh token invalidation.
+
+## Creating and Verifying JWTs
+
+### JavaScript (Node.js)
+
+Creating a JWT using the popular `jsonwebtoken` library:
+
+```javascript
+const jwt = require('jsonwebtoken');
+
+const payload = {
+  sub: 'user123',
+  email: 'alice@example.com',
+  roles: ['admin']
+};
+
+const secret = 'your-secret-key-min-32-chars-long';
+
+// Create a JWT with a 1-hour expiration
+const token = jwt.sign(payload, secret, { expiresIn: '1h' });
+console.log(token);
+// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwiZW1haWwiOiJhbGljZUBleGFtcGxlLmNvbSIsInJvbGVzIjpbImFkbWluIl0sImlhdCI6MTY3NjYyNjAwMCwiZXhwIjoxNjc2NjI5NjAwfQ.signature...
+```
+
+Verifying a JWT:
+
+```javascript
+const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+
+try {
+  const decoded = jwt.verify(token, secret);
+  console.log('Token is valid. Payload:', decoded);
+  // { sub: 'user123', email: 'alice@example.com', roles: ['admin'], iat: ..., exp: ... }
+} catch (error) {
+  console.error('Token verification failed:', error.message);
+  // Handles: expired token, invalid signature, malformed token
+}
+```
+
+With RSA (asymmetric, public/private key):
+
+```javascript
+const fs = require('fs');
+
+// Read keys (typically from environment or key store)
+const privateKey = fs.readFileSync('private.pem', 'utf8');
+const publicKey = fs.readFileSync('public.pem', 'utf8');
+
+// Sign with private key
+const token = jwt.sign(payload, privateKey, { algorithm: 'RS256', expiresIn: '1h' });
+
+// Verify with public key
+const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] });
+```
+
+### TypeScript
+
+```typescript
+import jwt from 'jsonwebtoken';
+
+interface Payload {
+  sub: string;
+  email: string;
+  roles: string[];
+}
+
+const secret: string = process.env.JWT_SECRET || 'default-secret';
+
+function createToken(payload: Payload): string {
+  return jwt.sign(payload, secret, { expiresIn: '1h' });
+}
+
+function verifyToken(token: string): Payload {
+  try {
+    return jwt.verify(token, secret) as Payload;
+  } catch (error) {
+    throw new Error(`Token verification failed: ${error}`);
+  }
+}
+
+// Usage
+const token = createToken({ sub: 'user123', email: 'alice@example.com', roles: ['admin'] });
+const payload = verifyToken(token);
+```
+
+### Python
+
+```python
+import jwt
+import json
+from datetime import datetime, timedelta
+
+payload = {
+    'sub': 'user123',
+    'email': 'alice@example.com',
+    'roles': ['admin'],
+    'exp': datetime.utcnow() + timedelta(hours=1),
+    'iat': datetime.utcnow()
+}
+
+secret = 'your-secret-key-min-32-chars-long'
+
+# Create a JWT
+token = jwt.encode(payload, secret, algorithm='HS256')
+print(token)
+
+# Verify a JWT
+try:
+    decoded = jwt.decode(token, secret, algorithms=['HS256'])
+    print('Token is valid. Payload:', decoded)
+except jwt.ExpiredSignatureError:
+    print('Token has expired')
+except jwt.InvalidTokenError:
+    print('Invalid token')
+```
+
+## JWT Security Best Practices
+
+**Use HTTPS always.** JWTs are signed but not encrypted. The payload is Base64URL-encoded plaintext. Always transmit JWTs over HTTPS to prevent interception.
+
+**Keep secrets secure.** The secret key used to sign JWTs is sensitive. Store it in environment variables, a secrets manager (AWS Secrets Manager, HashiCorp Vault), or a key management service. Never commit it to version control.
+
+**Set reasonable expiration times.** Short-lived tokens (15 minutes to 1 hour) limit exposure if a token is compromised. Use refresh tokens to obtain new access tokens without user interaction.
+
+**Validate all standard claims.** Always verify `exp`, `iss`, and `aud` when verifying a token. Don't just check the signature; validate that the token was intended for your application.
+
+```javascript
+jwt.verify(token, secret, {
+  algorithms: ['HS256'],
+  issuer: 'https://auth.myapp.com',
+  audience: 'myapp-web-client'
+});
+```
+
+**Use strong algorithms.** Prefer HMAC-SHA256 (HS256) or RSA with SHA256 (RS256) or stronger. Avoid deprecated algorithms like HS256 with weak secrets or MD5-based signing.
+
+**Never put sensitive data in the payload.** Passwords, API keys, credit card numbers, and personal identification numbers must never be in a JWT. Use the token ID (`jti`) to look up sensitive data server-side if needed.
+
+**Implement token revocation for critical operations.** While JWTs are stateless, maintain a small blacklist (`jti` values) of revoked tokens for logout, permission changes, or security incidents. Use a fast cache (Redis) for high-throughput validation.
+
+**Use HTTP-only cookies for storage (if possible).** If storing JWTs in the browser, prefer HTTP-only, Secure, SameSite cookies over localStorage. This protects against XSS attacks. However, HTTP-only cookies are vulnerable to CSRF; use CSRF tokens as well.
+
+**Implement refresh token rotation.** For long-lived sessions, issue short-lived access tokens and longer-lived refresh tokens. After using a refresh token once, issue a new refresh token and invalidate the old one. This limits damage if a refresh token is compromised.
+
+## When NOT to Use JWT
+
+JWTs are powerful but not always the right choice.
+
+**Don't use JWTs when you need immediate revocation.** A logged-out user's JWT remains valid until expiration. If immediate logout is critical (e.g., after a security incident), session-based authentication is safer. Alternatively, maintain a small revocation list for high-value tokens.
+
+**Don't use JWTs for long-lived "remember me" tokens.** Access tokens should be short-lived. For "remember me" functionality, use refresh tokens or session cookies, which are revocable.
+
+**Don't use JWTs to store large amounts of data.** Every JWT is transmitted with every request. Large tokens increase bandwidth. If you need to store lots of user data, use a small token with a user ID and look up the data server-side.
+
+**Don't use JWTs without HTTPS.** Signed but unencrypted, JWTs are vulnerable to interception and manipulation over plain HTTP. Always use HTTPS.
+
+**Don't use JWTs for server-to-server communication if confidentiality matters.** The payload is readable to anyone who has the token. For sensitive inter-service data, consider encrypted JWEs (JSON Web Encryption) or encrypted TLS tunnels.
+
+## Inspecting and Debugging JWTs
+
+You can decode and inspect any JWT using our [JWT Decoder](/tools/jwt-decoder). Paste a token and the tool will show you the header, payload, and signature verification status (if you provide the secret).
+
+Manual decoding in JavaScript:
+
+```javascript
+const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIn0.signature...';
+
+const parts = token.split('.');
+const header = JSON.parse(atob(parts[0]));
+const payload = JSON.parse(atob(parts[1]));
+const signature = parts[2];
+
+console.log('Header:', header);
+console.log('Payload:', payload);
+console.log('Signature:', signature);
+```
+
+Note: `atob()` handles Base64 but not Base64URL. For proper Base64URL decoding (which uses `-` and `_` instead of `+` and `/`), replace those characters first:
+
+```javascript
+function decodeBase64Url(str) {
+  return atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+}
+
+const payload = JSON.parse(decodeBase64Url(parts[1]));
+```
+
+## FAQ
+
+**Can a JWT be revoked before it expires?**
+
+Standard JWTs cannot be revoked — they remain valid until `exp`. To revoke a token, maintain a small blacklist (database or cache) of revoked token IDs (`jti` values) and check it during verification. For high-traffic services, use a fast cache like Redis. Alternatively, check a revocation list only for sensitive operations.
+
+**Can I use the same JWT for multiple applications?**
+
+Yes, if you issue the token with an `aud` (audience) claim listing all intended recipients. However, it's generally better practice to issue separate tokens per application to limit blast radius if one application is compromised.
+
+**What is the difference between a JWT and a session token?**
+
+A session token is typically an opaque string (e.g., a random UUID) that references server-side session state. A JWT is self-contained and cryptographically signed; no server-side state is needed. Session tokens require a session store; JWTs don't.
+
+**Can JWTs be encrypted?**
+
+Yes, but standard JWT is just signed, not encrypted. Use JWE (JSON Web Encryption) for encrypted JWTs. JWE wraps a JWT and encrypts the entire token. However, most use cases only need signing (integrity), not encryption (confidentiality).
+
+**What is a refresh token?**
+
+A refresh token is a long-lived credential used to obtain new short-lived access tokens without requiring the user to log in again. Refresh tokens are typically stored securely (HTTP-only cookie or secure storage) and are less frequently transmitted than access tokens, limiting exposure.
+
+**How large can a JWT be?**
+
+There is no hard limit in the spec, but large tokens increase per-request overhead. Keep JWTs under a few kilobytes. If you need to transmit large amounts of data, use the token only to authenticate and fetch data server-side.
+
+**Why use JWTs instead of just hashing user data?**
+
+A hash is one-way; you can't extract the original data. A JWT is signed but readable — you can extract the payload without the secret. JWTs are useful because the server can trust the payload is from the issuer without a database lookup. Hashing provides integrity only; JWTs provide both integrity and identification.

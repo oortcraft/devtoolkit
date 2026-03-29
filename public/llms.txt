@@ -14,6 +14,10 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 - [UUID Generator](https://oortcraft.dev/tools/uuid-generator): Generate random UUIDs (v4) or time-based UUIDs (v1).
 - [Hash Generator](https://oortcraft.dev/tools/hash-generator): Generate MD5, SHA-1, SHA-256, SHA-512 hashes from text.
 - [Lorem Ipsum Generator](https://oortcraft.dev/tools/lorem-ipsum): Generate placeholder text for designs and mockups.
+- [JWT Decoder & Validator](https://oortcraft.dev/tools/jwt-decoder): Decode, inspect, and validate JSON Web Tokens instantly.
+- [Regex Tester](https://oortcraft.dev/tools/regex-tester): Test regular expressions with real-time matching and highlighting.
+- [Diff Checker](https://oortcraft.dev/tools/diff-checker): Compare two texts and see differences highlighted line by line.
+- [Color Converter](https://oortcraft.dev/tools/color-converter): Convert colors between HEX, RGB, and HSL formats instantly.
 
 ## Blog
 

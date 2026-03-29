@@ -1,0 +1,40 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import JwtDecoder from '../../components/tools/JwtDecoder';
+---
+
+<ToolLayout
+  title="JWT Decoder & Validator - Decode JSON Web Tokens | DevToolkit"
+  description="Decode, inspect, and validate JSON Web Tokens. View header, payload, and signature details instantly in your browser."
+  toolName="JWT Decoder & Validator"
+  toolUrl="https://oortcraft.dev/tools/jwt-decoder"
+  faq={[
+    { question: 'Is it safe to paste my JWT here?', answer: 'Yes. All decoding happens entirely in your browser using JavaScript. No data is sent to any server.' },
+    { question: 'Can this tool verify JWT signatures?', answer: 'This tool decodes and displays JWT contents. Full cryptographic signature verification requires the signing secret or public key, which is not sent to the browser for security reasons.' },
+    { question: 'What JWT algorithms are supported?', answer: 'The decoder works with any JWT regardless of algorithm (HS256, RS256, ES256, etc.). It decodes the Base64URL-encoded header and payload without needing the signing key.' },
+  ]}
+>
+  <div slot="tool">
+    <JwtDecoder client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the JWT Decoder</h2>
+    <p>Paste a JSON Web Token into the input field. The tool instantly decodes the Base64URL-encoded header and payload, displaying the contents in a readable JSON format. The signature section shows the algorithm used.</p>
+    <h2>What is a JWT?</h2>
+    <p>A JSON Web Token (JWT) is a compact, URL-safe token format used for securely transmitting information between parties. It consists of three parts separated by dots: a header (algorithm and token type), a payload (claims and data), and a signature (for verification).</p>
+    <h2>JWT Structure</h2>
+    <ul>
+      <li><strong>Header</strong> — Contains the signing algorithm (e.g., HS256, RS256) and token type (JWT).</li>
+      <li><strong>Payload</strong> — Contains claims: registered (iss, exp, sub), public, and private claims.</li>
+      <li><strong>Signature</strong> — Created by signing the encoded header and payload with a secret or private key.</li>
+    </ul>
+    <h2>Common JWT Claims</h2>
+    <ul>
+      <li><strong>iss</strong> (Issuer) — Who issued the token.</li>
+      <li><strong>sub</strong> (Subject) — The subject of the token.</li>
+      <li><strong>exp</strong> (Expiration) — When the token expires (Unix timestamp).</li>
+      <li><strong>iat</strong> (Issued At) — When the token was issued.</li>
+      <li><strong>aud</strong> (Audience) — Intended recipient of the token.</li>
+    </ul>
+  </Fragment>
+</ToolLayout>

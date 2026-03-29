@@ -63,6 +63,30 @@ DevToolkit provides fast, private, open-source developer utilities that run enti
 **How to use**: Select number of paragraphs (1-10), click Generate. Starts with classic "Lorem ipsum dolor sit amet..." followed by randomized Latin-style text.
 **Use cases**: Filling mockups and wireframes, testing typography and layout, populating templates, demonstrating font styles.
 
+### 9. JWT Decoder & Validator
+**URL**: https://oortcraft.dev/tools/jwt-decoder
+**Description**: Decode, inspect, and validate JSON Web Tokens instantly in the browser.
+**How to use**: Paste a JWT token. The tool automatically decodes and displays the header (algorithm, type), payload (claims, data), and signature information. Shows issued/expiration timestamps.
+**Key facts**: JWTs consist of three Base64URL-encoded parts separated by dots. Decoding happens entirely client-side. Supports all JWT algorithms (HS256, RS256, ES256, etc.).
+
+### 10. Regex Tester
+**URL**: https://oortcraft.dev/tools/regex-tester
+**Description**: Test regular expressions with real-time matching and highlighting.
+**How to use**: Enter a regex pattern and test string. Matches appear in real-time with index positions and matched text. Toggle flags (g, i, m, s) with buttons. Capture groups are displayed for each match.
+**Use cases**: Validating regex patterns, debugging complex expressions, learning regex syntax, testing patterns before using in code.
+
+### 11. Diff Checker
+**URL**: https://oortcraft.dev/tools/diff-checker
+**Description**: Compare two texts and see differences highlighted line by line.
+**How to use**: Paste original text on the left and modified text on the right. Differences appear below with green highlights for additions and red highlights for deletions. Shows stats (additions, deletions, unchanged lines).
+**Key facts**: Uses LCS (Longest Common Subsequence) algorithm. Line-based comparison. Runs entirely in the browser.
+
+### 12. Color Converter
+**URL**: https://oortcraft.dev/tools/color-converter
+**Description**: Convert colors between HEX, RGB, and HSL formats instantly.
+**How to use**: Enter any color value (HEX, RGB, or HSL format). All three format outputs update in real-time with a color preview swatch. Copy any format with one click.
+**Supported formats**: HEX (3/6/8 digit), RGB (rgb(r, g, b)), HSL (hsl(h, s%, l%)), CSS named colors.
+
 ---
 
 ## Blog
@@ -90,6 +114,22 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
 5. **JSON vs XML**
    URL: https://oortcraft.dev/blog/json-vs-xml
    Topics: Format comparison, when to use each, migration strategies, modern best practices.
+
+6. **What is JWT? JSON Web Tokens Explained**
+   URL: https://oortcraft.dev/blog/what-is-jwt
+   Topics: JWT structure, header/payload/signature, authentication flow, common claims, security best practices.
+
+7. **Regex Cheat Sheet for Developers**
+   URL: https://oortcraft.dev/blog/regex-cheat-sheet
+   Topics: Regex syntax reference, character classes, quantifiers, groups, lookahead/lookbehind, common patterns.
+
+8. **Text Diff Algorithms Explained**
+   URL: https://oortcraft.dev/blog/text-diff-explained
+   Topics: LCS algorithm, Myers diff, how Git uses diff, unified diff format, practical applications.
+
+9. **Color Formats Explained: HEX, RGB, and HSL**
+   URL: https://oortcraft.dev/blog/color-formats-guide
+   Topics: Color representation, HEX/RGB/HSL formats, when to use each, accessibility, CSS color functions.
 
 ---
 

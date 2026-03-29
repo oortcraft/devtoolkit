@@ -27,16 +27,6 @@ const structuredData = {
   ],
 };
 
-const iconMap: Record<string, string> = {
-  'json-formatter': '{ }',
-  'json-validator': '✓',
-  'json-to-yaml': '⇄',
-  'base64': 'B64',
-  'url-encoder': '%20',
-  'uuid-generator': '#',
-  'hash-generator': '#!',
-  'lorem-ipsum': 'Aa',
-};
 ---
 
 <BaseLayout
@@ -85,7 +75,7 @@ const iconMap: Record<string, string> = {
             <div class="px-6 pt-6 pb-4">
               <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-secondary)]">
                 <span class="font-mono text-sm font-semibold text-[var(--color-foreground)]">
-                  {iconMap[tool.slug] || '{}'}
+                  {tool.icon}
                 </span>
               </div>
             </div>

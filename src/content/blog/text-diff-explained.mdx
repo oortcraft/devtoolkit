@@ -1,0 +1,285 @@
+---
+title: "Text Diff Algorithms Explained: How Git and Diff Tools Work"
+description: "Understand how text diff algorithms work, from simple line comparison to the Myers diff algorithm used in Git. Learn about LCS, edit distance, and practical applications."
+pubDate: "2026-03-29"
+tags: ["diff", "algorithms", "git"]
+relatedTools: ["diff-checker"]
+---
+
+Every developer has used a diff tool. You see it in pull requests, commit reviews, and merge conflict resolution. But few understand what happens under the hood. Diff algorithms are elegant solutions to a deceptively simple problem: given two texts, what are the minimal changes that transform one into the other?
+
+This guide covers the algorithms that power Git, GitHub, and every modern diff viewer. You will learn why `git diff` is fast, what unified diff format actually shows, and when character-level diff matters more than line-level comparison.
+
+## What is a Diff?
+
+A **diff** (short for difference) is a record of changes between two texts. Instead of storing two complete copies, a diff describes only what changed: which lines were added, removed, or modified. This is why Git repositories are efficient — they store deltas, not snapshots.
+
+A simple example:
+
+**Original text:**
+```
+apple
+banana
+cherry
+```
+
+**Modified text:**
+```
+apple
+blueberry
+cherry
+date
+```
+
+**Diff output:**
+```diff
+  apple
+- banana
++ blueberry
+  cherry
++ date
+```
+
+The `+` indicates lines added, `-` indicates lines removed, and unmarked lines are context (unchanged). This diff is human-readable and conveys complete information about the change.
+
+Diff algorithms solve the core problem: given two sequences of lines (or characters), find the minimal set of additions, deletions, and substitutions to transform one into the other. This is known as the **edit distance** or **Levenshtein distance** problem.
+
+## Line-Based vs Character-Based Diff
+
+Diffs come in two flavors: line-level and character-level.
+
+### Line-Based Diff
+
+Line-based diff compares entire lines. This is what you see in most Git interfaces and pull requests. A line is considered "changed" if any character in it differs.
+
+**Advantage:** Fast, clear, and works well for code where changes often span full lines.
+
+**Disadvantage:** Changes to a single character result in the entire line being marked as modified, making fine-grained reviews harder.
+
+Example with line-based diff:
+
+```
+// Original
+const userName = getUserName(); // Get user name from API
+
+// Modified
+const userName = getUserNameAsync(); // Get user name from API
+```
+
+A line-based diff marks the entire line as changed, even though only one word changed:
+
+```diff
+- const userName = getUserName(); // Get user name from API
++ const userName = getUserNameAsync(); // Get user name from API
+```
+
+### Character-Based Diff
+
+Character-based diff compares text character by character, revealing exactly which words or segments changed. This is more precise but also more expensive computationally.
+
+With character-level granularity:
+
+```diff
+- const userName = getUserName(); // Get user name from API
++ const userName = getUserNameAsync(); // Get user name from API
+                       ^^^^^^^^^
+                       changed
+```
+
+Modern tools like GitHub show both — line-level in the overview, character-level within changed lines (highlighted in red and green).
+
+## The Longest Common Subsequence (LCS) Algorithm
+
+The foundation of many diff algorithms is the **Longest Common Subsequence (LCS)** problem. Given two sequences, find the longest subsequence that appears in both, in order (but not necessarily contiguous).
+
+### Understanding LCS
+
+Consider two strings:
+
+```
+String A: AGCAT
+String B: GAC
+```
+
+The longest common subsequence is `GAC` (length 3). A subsequence is different from a substring — the characters must appear in order but do not need to be consecutive.
+
+LCS is computed with dynamic programming. Build a 2D table where `dp[i][j]` represents the length of the LCS of the first `i` characters of A and the first `j` characters of B.
+
+```
+    ""  G  A  C
+""   0  0  0  0
+A    0  0  1  1
+G    0  1  1  1
+C    0  1  1  2
+A    0  1  2  2
+T    0  1  2  2
+```
+
+**How to fill the table:**
+- If characters match: `dp[i][j] = dp[i-1][j-1] + 1`
+- If they don't match: `dp[i][j] = max(dp[i-1][j], dp[i][j-1])`
+
+The bottom-right cell gives the LCS length (2 in this case: `GA` or `AC`).
+
+### Why LCS Matters for Diff
+
+Once you have the LCS, you can infer the edits:
+- Characters in A but not in LCS were deleted
+- Characters in B but not in LCS were added
+- The LCS represents lines that are unchanged
+
+LCS-based diff algorithms are correct but slower (O(n² × m²) in the worst case), making them impractical for large files.
+
+## The Myers Diff Algorithm
+
+**Myers algorithm** (1986) is the breakthrough that made practical diff tools possible. It is used by Git, GitHub, and most modern diff viewers because it is fast and produces human-readable results.
+
+### Key Insight: Edit Scripts
+
+Instead of finding LCS, Myers works with **edit scripts** — the actual sequence of insertions and deletions. The algorithm finds the shortest edit script (fewest operations).
+
+The Myers algorithm uses a clever approach:
+1. Represent differences as a path through a grid
+2. Each cell in the grid represents a position in both texts
+3. The algorithm finds the shortest path (minimum edits) from top-left to bottom-right
+
+**Simplified explanation:**
+
+Imagine you're at position (0, 0) in both texts. You can:
+- Move right (skip a line in text B, meaning it was deleted)
+- Move down (skip a line in text A, meaning it was inserted)
+- Move diagonally (if lines match, meaning no change)
+
+The shortest path through this grid is the optimal diff.
+
+**Why it's fast:**
+Myers uses a mid-point strategy and only explores promising paths, not the entire grid. This reduces complexity from O(n × m × d) for naive approaches to O(min(n, m) × d) where `d` is the number of differences. For similar texts (which most code is), `d` is small, making Myers very fast.
+
+### Myers vs LCS
+
+| Aspect | LCS | Myers |
+|--------|-----|-------|
+| Complexity | O(n² × m²) | O(n × m × d) |
+| Speed | Slow for large files | Fast (Git standard) |
+| Output | Multiple valid diffs | Single canonical diff |
+| Use case | Small texts, exact match | Code, large files, practical diff |
+
+## Unified Diff Format
+
+**Unified diff** (unified format) is the standard way to present diffs. It shows context around changes, making it human-readable and suitable for email or patch files.
+
+```diff
+--- a/file.txt
++++ b/file.txt
+@@ -1,5 +1,6 @@
+ apple
+ banana
+-cherry
++blueberry
+ date
++elderberry
+ fig
+```
+
+**Format breakdown:**
+- `--- a/file.txt` and `+++ b/file.txt`: Original and modified file
+- `@@ -1,5 +1,6 @@`: Original file shows 5 lines starting at line 1; modified file shows 6 lines starting at line 1
+- Spaces at the start: context (unchanged lines)
+- `-` prefix: deleted line
+- `+` prefix: added line
+
+Context lines (default 3 before and after changes) help reviewers understand the surrounding code. This is why `git diff -U5` gives you 5 lines of context instead of 3.
+
+## How Git Uses Diff
+
+Git uses Myers algorithm for all diff operations:
+
+```bash
+# Show unstaged changes (line-level diff)
+git diff
+
+# Show staged changes (line-level diff)
+git diff --cached
+
+# Show changes in a commit
+git diff HEAD~1
+
+# Word-level diff (highlights word changes)
+git diff --word-diff
+
+# Character-level diff (highlights character changes)
+git diff --color-words
+```
+
+When you run `git diff`, Git:
+1. Reads the working tree version and the index version
+2. Splits both into lines
+3. Applies Myers algorithm to find minimal edits
+4. Formats output as unified diff
+5. Displays with color codes
+
+Internally, Git stores diffs as **pack files** — compressed snapshots with delta encoding. This is why cloning a large repository is relatively fast.
+
+## Practical Applications
+
+### Code Review
+
+Diffs are essential for code review. They show exactly what changed, allowing reviewers to focus on the logic modifications rather than reading entire files.
+
+**Best practice:** Keep diffs focused. Large diffs that mix multiple concerns are harder to review. Break them into smaller, logically independent changes.
+
+### Document Comparison
+
+Beyond code, diff algorithms work on any text. Technical writers use diffs to track documentation changes. Compare any two documents instantly with our [Diff Checker](/tools/diff-checker).
+
+**Example:** Comparing API documentation versions to identify breaking changes.
+
+### Configuration Management
+
+When managing infrastructure as code (Terraform, CloudFormation, Kubernetes manifests), diffs show proposed changes before they are applied. This prevents accidental deletions or misconfigurations.
+
+```bash
+terraform plan  # Shows a diff of infrastructure changes
+```
+
+### Merge Conflict Resolution
+
+Git uses diff internally to resolve merges. When two branches modify the same lines, Git cannot auto-merge and presents a conflict. The diff shows both changes, allowing the developer to manually resolve them.
+
+### Patch Files
+
+A diff can be converted to a patch file (`.patch`) and applied to another repository:
+
+```bash
+# Create a patch
+git diff > feature.patch
+
+# Apply the patch
+patch < feature.patch
+```
+
+This is how open-source projects traditionally share changes before Git became ubiquitous.
+
+## Limits and Trade-Offs
+
+Diff algorithms are heuristic-based. The Myers algorithm finds the **shortest** edit script, but "shortest" is not always what a human finds most readable.
+
+**Example:**
+
+```
+// Original
+function add(a, b) { return a + b; }
+
+// Modified
+function multiply(a, b) { return a * b; }
+```
+
+The shortest diff could be interpreted as "changed the function name and operator" or "deleted the entire function and added a new one." Myers picks the representation with fewest operations, which is usually — but not always — what makes sense semantically.
+
+## Summary
+
+Text diff algorithms are elegant solutions to a practical problem. Simple line-based comparison is fast but coarse. The LCS algorithm is theoretically pure but computationally expensive. Myers algorithm balances speed and accuracy, which is why it powers Git.
+
+When you see a pull request diff or run `git diff`, you are witnessing the output of decades of algorithm research applied to a real-world problem. Understanding how it works makes you a more effective code reviewer and gives you appreciation for the tools you use daily.
+
+Next time you examine a diff, remember: Git already found the shortest edit script in milliseconds using an algorithm designed specifically for this task. Your job is to understand what changed and why — the algorithm handles the how.
