@@ -4,6 +4,7 @@ interface Props {
 }
 
 const { position } = Astro.props;
+const adsenseId = import.meta.env.PUBLIC_ADSENSE_ID;
 
 const minHeights: Record<string, string> = {
   header: 'min-h-[90px]',
@@ -11,12 +12,29 @@ const minHeights: Record<string, string> = {
   'in-content': 'min-h-[250px]',
   footer: 'min-h-[90px]',
 };
+
+const adFormats: Record<string, string> = {
+  header: 'horizontal',
+  sidebar: 'vertical',
+  'in-content': 'fluid',
+  footer: 'horizontal',
+};
 ---
 
-<!-- Ad Slot: {position} — Insert Ezoic/AdSense code here -->
-<div
-  data-ad-slot={position}
-  class:list={["hidden", minHeights[position]]}
-  aria-hidden="true"
->
-</div>
+{adsenseId && (
+  <div
+    data-ad-slot={position}
+    class:list={[minHeights[position], "w-full"]}
+  >
+    <ins
+      class="adsbygoogle"
+      style="display:block"
+      data-ad-client={adsenseId}
+      data-ad-format={adFormats[position]}
+      data-full-width-responsive="true"
+    ></ins>
+    <script is:inline>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+  </div>
+)}
