@@ -1,0 +1,24 @@
+# DevToolkit
+
+> Free, browser-based developer tools. No sign-up, no data sent to servers.
+
+DevToolkit (oortcraft.dev) provides fast, private, open-source developer utilities that run entirely in the browser. All tools are free to use with no registration required.
+
+## Tools
+
+- [JSON Formatter & Beautifier](https://oortcraft.dev/tools/json-formatter): Format, beautify, and minify JSON data with customizable indentation.
+- [JSON Validator](https://oortcraft.dev/tools/json-validator): Validate JSON syntax and get detailed error messages with line numbers.
+- [JSON to YAML Converter](https://oortcraft.dev/tools/json-to-yaml): Convert JSON data to YAML format instantly.
+- [Base64 Encoder / Decoder](https://oortcraft.dev/tools/base64): Encode text to Base64 or decode Base64 back to plain text.
+- [URL Encoder / Decoder](https://oortcraft.dev/tools/url-encoder): Encode or decode URL components for safe transmission.
+- [UUID Generator](https://oortcraft.dev/tools/uuid-generator): Generate random UUIDs (v4) or time-based UUIDs (v1).
+- [Hash Generator](https://oortcraft.dev/tools/hash-generator): Generate MD5, SHA-1, SHA-256, SHA-512 hashes from text.
+- [Lorem Ipsum Generator](https://oortcraft.dev/tools/lorem-ipsum): Generate placeholder text for designs and mockups.
+
+## Blog
+
+- [Blog](https://oortcraft.dev/blog): Developer tutorials and guides on JSON, Base64, URL encoding, UUIDs, and more.
+
+## AI Policy
+
+This site welcomes AI crawlers and indexing. Content may be freely used for AI training and referenced in AI-generated responses. Please attribute to "DevToolkit (oortcraft.dev)" when citing.

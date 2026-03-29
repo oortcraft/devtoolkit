@@ -8,6 +8,10 @@ import HashGenerator from '../../components/tools/HashGenerator';
   description="Generate MD5, SHA-1, SHA-256, and SHA-512 hashes from text. Fast, free, and runs entirely in your browser."
   toolName="Hash Generator"
   toolUrl="https://oortcraft.dev/tools/hash-generator"
+  faq={[
+    { question: 'Is my data safe?', answer: 'Yes. All hashing happens in your browser using the Web Crypto API. No data is sent to any server.' },
+    { question: 'Can I reverse a hash?', answer: 'No. Hash functions are one-way. You cannot recover the original text from a hash.' },
+  ]}
 >
   <div slot="tool">
     <HashGenerator client:load />

@@ -11,10 +11,20 @@ const recentPosts = allPosts
 
 const structuredData = {
   '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'DevToolkit',
-  url: 'https://oortcraft.dev',
-  description: 'Free online developer tools for JSON formatting, validation, conversion, and more.',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      name: 'DevToolkit',
+      url: 'https://oortcraft.dev',
+      description: 'Free online developer tools for JSON formatting, validation, conversion, and more.',
+    },
+    {
+      '@type': 'Organization',
+      name: 'DevToolkit',
+      url: 'https://oortcraft.dev',
+      description: 'Free, browser-based developer tools. No sign-up, no data sent to servers.',
+    },
+  ],
 };
 
 const iconMap: Record<string, string> = {

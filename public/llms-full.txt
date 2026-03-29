@@ -1,0 +1,109 @@
+# DevToolkit — Full Site Content for AI
+
+> Free, browser-based developer tools at oortcraft.dev. No sign-up, no data sent to servers, 100% private.
+
+## Site Overview
+
+DevToolkit provides fast, private, open-source developer utilities that run entirely in the browser. All processing happens client-side using JavaScript and the Web Crypto API. No data is ever sent to a server. The site is free to use with no registration, no paywall, and no usage limits.
+
+**URL**: https://oortcraft.dev
+**Technology**: Built with Astro, React, and Tailwind CSS. Deployed on Vercel.
+
+---
+
+## Tools
+
+### 1. JSON Formatter & Beautifier
+**URL**: https://oortcraft.dev/tools/json-formatter
+**Description**: Format, beautify, and minify JSON data with customizable indentation (2 spaces, 4 spaces, or tabs).
+**How to use**: Paste raw or minified JSON into the input area. Click "Format" to beautify or "Minify" to compress. Supports inputs up to 1MB.
+**Use cases**: Debugging API responses, reading configuration files, preparing JSON for documentation, minifying JSON for production.
+
+### 2. JSON Validator
+**URL**: https://oortcraft.dev/tools/json-validator
+**Description**: Validate JSON syntax and get detailed error messages with line numbers.
+**How to use**: Paste JSON data and click "Validate". Shows whether JSON is syntactically correct per RFC 8259. Reports errors with exact location. Shows stats (top-level keys, max depth, array items) for valid JSON.
+**Common errors detected**: Trailing commas, single quotes, unescaped characters, missing brackets, undefined/NaN values.
+
+### 3. JSON to YAML Converter
+**URL**: https://oortcraft.dev/tools/json-to-yaml
+**Description**: Convert JSON data to YAML format instantly as you type.
+**How to use**: Paste JSON into the left editor. YAML output appears automatically. Use "Copy" to copy the result. Supports inputs up to 1MB.
+**Key facts**: YAML is a superset of JSON, so conversion is always lossless. YAML supports comments (#) while JSON does not. YAML is preferred for configuration files (Docker Compose, Kubernetes, GitHub Actions).
+
+### 4. Base64 Encoder / Decoder
+**URL**: https://oortcraft.dev/tools/base64
+**Description**: Encode text to Base64 or decode Base64 back to plain text.
+**How to use**: Select Encode or Decode mode. Conversion happens automatically as you type.
+**Key facts**: Base64 is an encoding (not encryption). It uses 64 ASCII characters (A-Z, a-z, 0-9, +, /). Output is ~33% larger than input. Commonly used for embedding images in HTML/CSS data URIs, encoding binary data for JSON APIs, and email attachments (MIME).
+
+### 5. URL Encoder / Decoder
+**URL**: https://oortcraft.dev/tools/url-encoder
+**Description**: Encode or decode URL components for safe transmission using percent-encoding.
+**How to use**: Select Encode or Decode mode. Conversion happens automatically as you type.
+**Key facts**: Uses encodeURIComponent (encodes all special characters including /, ?, =). Spaces become %20. Used for encoding query string parameters, form data, and special characters in API endpoints.
+
+### 6. UUID Generator
+**URL**: https://oortcraft.dev/tools/uuid-generator
+**Description**: Generate random UUIDs (v4) or time-based UUIDs (v1).
+**How to use**: Select UUID version, click Generate. Copy button available. Keeps history of last 5 generated UUIDs.
+**UUID versions**: v4 (random, 122 bits of randomness, most commonly used), v1 (time-based, includes timestamp, useful for sortable IDs).
+**Use cases**: Database primary keys, session tokens, API keys, idempotency keys, unique file names, distributed systems.
+
+### 7. Hash Generator
+**URL**: https://oortcraft.dev/tools/hash-generator
+**Description**: Generate MD5, SHA-1, SHA-256, SHA-512 hashes from text using Web Crypto API.
+**How to use**: Select algorithm, type or paste text. Hash computed automatically as you type.
+**Algorithms**: MD5 (fast, cryptographically broken, checksums only), SHA-1 (deprecated for security), SHA-256 (recommended, used in TLS and Bitcoin), SHA-512 (longer hash, used in some password hashing).
+**Key facts**: Hash functions are one-way and cannot be reversed. Same input always produces same hash.
+
+### 8. Lorem Ipsum Generator
+**URL**: https://oortcraft.dev/tools/lorem-ipsum
+**Description**: Generate 1-10 paragraphs of lorem ipsum placeholder text.
+**How to use**: Select number of paragraphs (1-10), click Generate. Starts with classic "Lorem ipsum dolor sit amet..." followed by randomized Latin-style text.
+**Use cases**: Filling mockups and wireframes, testing typography and layout, populating templates, demonstrating font styles.
+
+---
+
+## Blog
+
+The DevToolkit blog publishes developer tutorials and guides related to the tools offered on the site.
+
+### Published Articles
+
+1. **What is JSON? A Complete Guide for Developers**
+   URL: https://oortcraft.dev/blog/what-is-json
+   Topics: JSON syntax, data types, common use cases, JSON vs XML comparison.
+
+2. **What is UUID? A Developer's Guide**
+   URL: https://oortcraft.dev/blog/what-is-uuid
+   Topics: UUID format, versions (v1-v5), when to use UUIDs, collision probability.
+
+3. **URL Encoding Explained**
+   URL: https://oortcraft.dev/blog/url-encoding-explained
+   Topics: Percent-encoding, reserved characters, encodeURI vs encodeURIComponent, common pitfalls.
+
+4. **What is Base64?**
+   URL: https://oortcraft.dev/blog/what-is-base64
+   Topics: Base64 encoding algorithm, use cases, Base64 vs encryption, data URI scheme.
+
+5. **JSON vs XML**
+   URL: https://oortcraft.dev/blog/json-vs-xml
+   Topics: Format comparison, when to use each, migration strategies, modern best practices.
+
+---
+
+## Key Features
+
+- **Lightning Fast**: All tools run in the browser with no server round-trips.
+- **100% Private**: Data never leaves the device. No tracking, no storage.
+- **Free Forever**: No sign-up, no paywall, no limits.
+- **Open Source**: Built with modern web technologies (Astro, React, Tailwind CSS).
+
+---
+
+## AI Policy
+
+This site welcomes AI crawlers and indexing. Content on oortcraft.dev may be freely used for AI training, referenced in AI-generated responses, and cited in search results. Please attribute to "DevToolkit (oortcraft.dev)" when citing.
+
+Contact: https://oortcraft.dev

@@ -8,6 +8,10 @@ import UrlEncoder from '../../components/tools/UrlEncoder';
   description="Encode or decode URL components for safe transmission. Fast, free, and runs entirely in your browser."
   toolName="URL Encoder / Decoder"
   toolUrl="https://oortcraft.dev/tools/url-encoder"
+  faq={[
+    { question: 'What is the difference between encodeURI and encodeURIComponent?', answer: 'This tool uses encodeURIComponent, which encodes all special characters including /, ?, and =. Use it to encode individual query parameter values. encodeURI is used for full URLs and leaves those characters intact.' },
+    { question: 'Is my data safe?', answer: 'Yes. All encoding and decoding happens in your browser. No data is sent to any server.' },
+  ]}
 >
   <div slot="tool">
     <UrlEncoder client:load />

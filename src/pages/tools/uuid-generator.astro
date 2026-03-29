@@ -8,6 +8,10 @@ import UuidGenerator from '../../components/tools/UuidGenerator';
   description="Generate random UUIDs (v4) or time-based UUIDs (v1) instantly in your browser."
   toolName="UUID Generator"
   toolUrl="https://oortcraft.dev/tools/uuid-generator"
+  faq={[
+    { question: 'Are UUIDs truly unique?', answer: 'UUID v4 has 122 bits of randomness, making collisions astronomically unlikely. For practical purposes, you can treat them as globally unique.' },
+    { question: 'Is my data safe?', answer: 'Yes. All UUID generation happens in your browser using the Web Crypto API. No data is sent to any server.' },
+  ]}
 >
   <div slot="tool">
     <UuidGenerator client:load />

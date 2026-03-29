@@ -7,6 +7,11 @@ import JsonValidator from '../../components/tools/JsonValidator';
   description="Validate JSON syntax instantly in your browser. Get detailed error messages, line numbers, and structure statistics for free."
   toolName="JSON Validator"
   toolUrl="https://oortcraft.dev/tools/json-validator"
+  faq={[
+    { question: 'Is my data safe?', answer: 'Yes. All validation runs entirely in your browser using JavaScript. Your data never leaves your device and is never sent to a server.' },
+    { question: 'Does this validate JSON Schema?', answer: 'This tool validates JSON syntax only — it checks that the text is well-formed JSON. It does not validate against a JSON Schema definition. For schema validation you would need a dedicated JSON Schema validator.' },
+    { question: 'What is the maximum input size?', answer: 'The validator handles inputs up to 1MB. Larger inputs may cause performance issues in the browser.' },
+  ]}
 >
   <div slot="tool">
     <JsonValidator client:load />

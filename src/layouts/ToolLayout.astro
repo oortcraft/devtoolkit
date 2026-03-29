@@ -9,9 +9,10 @@ interface Props {
   description: string;
   toolName: string;
   toolUrl: string;
+  faq?: Array<{ question: string; answer: string }>;
 }
 
-const { title, description, toolName, toolUrl } = Astro.props;
+const { title, description, toolName, toolUrl, faq } = Astro.props;
 const currentSlug = Astro.url.pathname.replace(/^\/tools\//, '').replace(/\/$/, '');
 const currentTool = tools.find(t => t.slug === currentSlug);
 
@@ -26,15 +27,40 @@ const iconMap: Record<string, string> = {
   'lorem-ipsum': 'Aa',
 };
 
+const graphItems: Record<string, any>[] = [
+  {
+    '@type': 'WebApplication',
+    name: toolName,
+    url: toolUrl,
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: 'Any',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    description,
+  },
+  {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://oortcraft.dev' },
+      { '@type': 'ListItem', position: 2, name: 'Tools', item: 'https://oortcraft.dev/#tools' },
+      { '@type': 'ListItem', position: 3, name: toolName, item: toolUrl },
+    ],
+  },
+];
+
+if (faq && faq.length > 0) {
+  graphItems.push({
+    '@type': 'FAQPage',
+    mainEntity: faq.map(({ question, answer }) => ({
+      '@type': 'Question',
+      name: question,
+      acceptedAnswer: { '@type': 'Answer', text: answer },
+    })),
+  });
+}
+
 const structuredData = {
   '@context': 'https://schema.org',
-  '@type': 'WebApplication',
-  name: toolName,
-  url: toolUrl,
-  applicationCategory: 'DeveloperApplication',
-  operatingSystem: 'Any',
-  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-  description,
+  '@graph': graphItems,
 };
 ---
 

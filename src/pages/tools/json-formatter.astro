@@ -7,6 +7,10 @@ import JsonFormatter from '../../components/tools/JsonFormatter';
   description="Format, beautify, and minify JSON data online for free. Paste your JSON and get clean, indented output instantly."
   toolName="JSON Formatter & Beautifier"
   toolUrl="https://oortcraft.dev/tools/json-formatter"
+  faq={[
+    { question: 'Is my data safe?', answer: 'Yes. All formatting happens in your browser. No data is sent to any server.' },
+    { question: 'What is the maximum input size?', answer: 'The formatter supports inputs up to 1MB in size.' },
+  ]}
 >
   <div slot="tool">
     <JsonFormatter client:load />

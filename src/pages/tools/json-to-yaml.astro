@@ -7,6 +7,12 @@ import JsonToYaml from '../../components/tools/JsonToYaml';
   description="Convert JSON to YAML format instantly in your browser. Free, fast, and private — no data is sent to any server."
   toolName="JSON to YAML Converter"
   toolUrl="https://oortcraft.dev/tools/json-to-yaml"
+  faq={[
+    { question: 'Is my data safe?', answer: 'Yes. The conversion happens entirely in your browser using JavaScript. No data is sent to any server at any time.' },
+    { question: 'Does YAML support everything JSON supports?', answer: 'Yes. YAML is a superset of JSON, meaning every valid JSON document is also valid YAML. Converting from JSON to YAML is always lossless — no data is changed or lost.' },
+    { question: 'Can I convert YAML back to JSON?', answer: 'This tool converts JSON to YAML only. For the reverse direction, look for a YAML to JSON converter.' },
+    { question: 'What is the maximum input size?', answer: 'The converter supports inputs up to 1MB in size.' },
+  ]}
 >
   <div slot="tool">
     <JsonToYaml client:load />

@@ -8,6 +8,11 @@ import Base64Tool from '../../components/tools/Base64Tool';
   description="Encode text to Base64 or decode Base64 back to plain text. Fast, free, and runs entirely in your browser."
   toolName="Base64 Encoder / Decoder"
   toolUrl="https://oortcraft.dev/tools/base64"
+  faq={[
+    { question: 'Is Base64 encryption?', answer: 'No. Base64 is an encoding, not encryption. Anyone can decode Base64 without a key. Never use Base64 to protect sensitive data.' },
+    { question: 'Why does Base64 make data larger?', answer: 'Base64 uses 4 characters to represent every 3 bytes of data, resulting in roughly 33% size increase. This trade-off is accepted when binary data must be transmitted through text-only channels.' },
+    { question: 'Is my data safe?', answer: 'Yes. All encoding and decoding happens in your browser. No data is sent to any server.' },
+  ]}
 >
   <div slot="tool">
     <Base64Tool client:load />

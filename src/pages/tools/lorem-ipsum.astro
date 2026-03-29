@@ -8,6 +8,10 @@ import LoremIpsumGenerator from '../../components/tools/LoremIpsumGenerator';
   description="Generate lorem ipsum placeholder text for your designs, mockups, and prototypes. Choose 1 to 10 paragraphs."
   toolName="Lorem Ipsum Generator"
   toolUrl="https://oortcraft.dev/tools/lorem-ipsum"
+  faq={[
+    { question: 'Why not use real text?', answer: 'Real text can distract reviewers from evaluating the design itself. Lorem ipsum lets stakeholders focus on layout, typography, and visual hierarchy without reading the content.' },
+    { question: 'Is the generated text random?', answer: 'Each paragraph is composed of randomized sentences from a curated set of Latin-style text, so you get different output each time you click Generate.' },
+  ]}
 >
   <div slot="tool">
     <LoremIpsumGenerator client:load />
