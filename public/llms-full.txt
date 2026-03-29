@@ -87,6 +87,18 @@ DevToolkit provides fast, private, open-source developer utilities that run enti
 **How to use**: Enter any color value (HEX, RGB, or HSL format). All three format outputs update in real-time with a color preview swatch. Copy any format with one click.
 **Supported formats**: HEX (3/6/8 digit), RGB (rgb(r, g, b)), HSL (hsl(h, s%, l%)), CSS named colors.
 
+### 13. Timestamp Converter
+**URL**: https://oortcraft.dev/tools/timestamp-converter
+**Description**: Convert Unix timestamps to human-readable dates and vice versa.
+**How to use**: Enter a Unix timestamp (seconds or milliseconds) to see ISO 8601, UTC, local time, and relative time. Use the reverse section to convert a date string back to a Unix timestamp. Click "Now" to use the current time.
+**Key facts**: Unix time counts seconds since January 1, 1970 (epoch). Supports both seconds and milliseconds. All conversion happens client-side.
+
+### 14. Cron Expression Builder
+**URL**: https://oortcraft.dev/tools/cron-builder
+**Description**: Build, test, and understand cron expressions with a visual editor.
+**How to use**: Enter a cron expression or use preset buttons (Every minute, Every 5 min, Every hour, etc.). See a human-readable description and the next 5 scheduled run times. Supports standard 5-field cron syntax and special strings (@hourly, @daily, @weekly, @monthly, @yearly).
+**Cron fields**: minute (0-59), hour (0-23), day of month (1-31), month (1-12), day of week (0-6).
+
 ---
 
 ## Blog
@@ -130,6 +142,14 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
 9. **Color Formats Explained: HEX, RGB, and HSL**
    URL: https://oortcraft.dev/blog/color-formats-guide
    Topics: Color representation, HEX/RGB/HSL formats, when to use each, accessibility, CSS color functions.
+
+10. **Unix Timestamps Explained: Epoch Time for Developers**
+    URL: https://oortcraft.dev/blog/unix-timestamp-guide
+    Topics: Unix time, epoch, seconds vs milliseconds, Y2038 problem, JavaScript/Python examples.
+
+11. **Cron Expressions Explained: A Complete Guide**
+    URL: https://oortcraft.dev/blog/cron-expression-guide
+    Topics: Cron syntax, five-field format, special characters, common patterns, crontab, timezone considerations.
 
 ---
 

@@ -18,6 +18,8 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 - [Regex Tester](https://oortcraft.dev/tools/regex-tester): Test regular expressions with real-time matching and highlighting.
 - [Diff Checker](https://oortcraft.dev/tools/diff-checker): Compare two texts and see differences highlighted line by line.
 - [Color Converter](https://oortcraft.dev/tools/color-converter): Convert colors between HEX, RGB, and HSL formats instantly.
+- [Timestamp Converter](https://oortcraft.dev/tools/timestamp-converter): Convert Unix timestamps to human-readable dates and vice versa.
+- [Cron Expression Builder](https://oortcraft.dev/tools/cron-builder): Build, test, and understand cron expressions with a visual editor.
 
 ## Blog
 
