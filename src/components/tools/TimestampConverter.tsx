@@ -94,6 +94,7 @@ function TimestampConverterInner() {
               value={tsInput}
               onChange={(e) => handleTsChange(e.target.value, isMillis)}
               placeholder="e.g. 1711699200"
+              aria-label="Unix timestamp input"
               spellCheck={false}
               className={[
                 'w-full rounded-md border px-3 py-2 font-mono text-[14px] outline-none transition-colors',
@@ -114,6 +115,7 @@ function TimestampConverterInner() {
           <button
             type="button"
             onClick={handleNow}
+            aria-label="Get current timestamp"
             className="shrink-0 rounded-md border border-[var(--color-input)] bg-[var(--color-secondary)] px-4 py-2 text-[13px] font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-accent)]"
           >
             Now
@@ -128,6 +130,7 @@ function TimestampConverterInner() {
                   key={unit}
                   type="button"
                   onClick={() => handleMillisToggle(unit === 'ms')}
+                  aria-label={unit === 'ms' ? 'Milliseconds' : 'Seconds'}
                   className={[
                     'px-3 py-2 text-[13px] font-medium transition-colors',
                     active

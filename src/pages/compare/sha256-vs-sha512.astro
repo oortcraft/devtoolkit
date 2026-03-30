@@ -1,0 +1,146 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: 'SHA-256 vs SHA-512: Which Hash Algorithm Should You Use?',
+  description: 'A detailed comparison of SHA-256 and SHA-512 covering output size, performance, security, and real-world use cases.',
+  url: 'https://oortcraft.dev/compare/sha256-vs-sha512',
+  author: { '@type': 'Organization', name: 'DevToolkit', url: 'https://oortcraft.dev' },
+  breadcrumb: {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://oortcraft.dev' },
+      { '@type': 'ListItem', position: 2, name: 'Compare', item: 'https://oortcraft.dev/compare/sha256-vs-sha512' },
+    ],
+  },
+  mainEntity: {
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'Is SHA-512 more secure than SHA-256?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Both are considered cryptographically secure as of 2026. SHA-512 has a larger output (512 bits vs 256 bits), which provides a higher theoretical collision resistance (2^256 vs 2^128). However, for most applications, SHA-256 provides more than sufficient security.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'Which is faster, SHA-256 or SHA-512?',
+        acceptedAnswer: { '@type': 'Answer', text: 'On 64-bit systems, SHA-512 is typically 30-50% faster than SHA-256 because it processes 64-bit words natively. On 32-bit systems, SHA-256 is faster. In browsers via Web Crypto API, performance depends on the underlying implementation.' },
+      },
+    ],
+  },
+};
+---
+
+<BaseLayout
+  title="SHA-256 vs SHA-512: Complete Comparison | DevToolkit"
+  description="Compare SHA-256 and SHA-512 hash algorithms — output size, performance benchmarks, security analysis, and when to use each."
+>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  <div class="mx-auto max-w-4xl px-4 py-6 sm:px-10 sm:py-12">
+    <nav class="mb-4 text-sm text-[var(--color-muted-foreground)]" aria-label="Breadcrumb">
+      <ol class="flex items-center gap-1.5">
+        <li><a href="/" class="hover:text-[var(--color-foreground)]">Home</a></li>
+        <li>/</li>
+        <li><a href="/tools" class="hover:text-[var(--color-foreground)]">Tools</a></li>
+        <li>/</li>
+        <li class="text-[var(--color-foreground)]">SHA-256 vs SHA-512</li>
+      </ol>
+    </nav>
+
+    <article class="prose prose-slate max-w-none">
+      <h1>SHA-256 vs SHA-512: Which Hash Algorithm Should You Use?</h1>
+
+      <p>SHA-256 and SHA-512 are both members of the SHA-2 (Secure Hash Algorithm 2) family, designed by the NSA and published by NIST in 2001. They are the most widely used cryptographic hash functions today, but they differ in output size, internal structure, and performance characteristics. This comparison helps you choose the right algorithm for your use case.</p>
+
+      <div class="not-prose my-8 flex flex-wrap gap-3">
+        <a href="/tools/hash-generator" class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90">Try Hash Generator →</a>
+      </div>
+
+      <h2>Quick Comparison Table</h2>
+
+      <div class="not-prose my-6 overflow-x-auto">
+        <table class="w-full border-collapse rounded-lg border border-[var(--color-border)] text-sm">
+          <thead>
+            <tr class="bg-[var(--color-secondary)]">
+              <th class="border border-[var(--color-border)] px-4 py-3 text-left font-semibold">Feature</th>
+              <th class="border border-[var(--color-border)] px-4 py-3 text-left font-semibold">SHA-256</th>
+              <th class="border border-[var(--color-border)] px-4 py-3 text-left font-semibold">SHA-512</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Output Size</td><td class="border border-[var(--color-border)] px-4 py-2.5">256 bits (32 bytes)</td><td class="border border-[var(--color-border)] px-4 py-2.5">512 bits (64 bytes)</td></tr>
+            <tr class="bg-[var(--color-secondary)]/50"><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Hex Output Length</td><td class="border border-[var(--color-border)] px-4 py-2.5">64 characters</td><td class="border border-[var(--color-border)] px-4 py-2.5">128 characters</td></tr>
+            <tr><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Internal Word Size</td><td class="border border-[var(--color-border)] px-4 py-2.5">32-bit words</td><td class="border border-[var(--color-border)] px-4 py-2.5">64-bit words</td></tr>
+            <tr class="bg-[var(--color-secondary)]/50"><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Block Size</td><td class="border border-[var(--color-border)] px-4 py-2.5">512 bits</td><td class="border border-[var(--color-border)] px-4 py-2.5">1024 bits</td></tr>
+            <tr><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Rounds</td><td class="border border-[var(--color-border)] px-4 py-2.5">64</td><td class="border border-[var(--color-border)] px-4 py-2.5">80</td></tr>
+            <tr class="bg-[var(--color-secondary)]/50"><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Collision Resistance</td><td class="border border-[var(--color-border)] px-4 py-2.5">2<sup>128</sup></td><td class="border border-[var(--color-border)] px-4 py-2.5">2<sup>256</sup></td></tr>
+            <tr><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Performance (64-bit CPU)</td><td class="border border-[var(--color-border)] px-4 py-2.5">Slower</td><td class="border border-[var(--color-border)] px-4 py-2.5">~30-50% faster</td></tr>
+            <tr class="bg-[var(--color-secondary)]/50"><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Performance (32-bit CPU)</td><td class="border border-[var(--color-border)] px-4 py-2.5">Faster</td><td class="border border-[var(--color-border)] px-4 py-2.5">Slower</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>How SHA-256 Works</h2>
+
+      <p>SHA-256 processes input data in 512-bit (64-byte) blocks. It initializes eight 32-bit hash values, then performs 64 rounds of compression using bitwise operations, modular addition, and logical functions. The result is a 256-bit (32-byte) digest, typically represented as a 64-character hexadecimal string.</p>
+
+      <p>SHA-256 is the backbone of modern internet security. It secures TLS/SSL certificates, powers the Bitcoin blockchain's proof-of-work, verifies software package integrity (npm, pip, apt), and forms the basis of HMAC-SHA256 used in JWTs and API authentication.</p>
+
+      <h2>How SHA-512 Works</h2>
+
+      <p>SHA-512 uses the same Merkle-Damgard construction as SHA-256 but operates on 1024-bit blocks with 64-bit words. It runs 80 rounds (versus SHA-256's 64) and produces a 512-bit (64-byte) digest — a 128-character hex string. Because it uses 64-bit arithmetic natively, SHA-512 is actually faster than SHA-256 on modern 64-bit processors.</p>
+
+      <p>SHA-512 is used in applications requiring higher security margins: Ed25519 digital signatures, some password hashing schemes (SHA-512/256), DNSSEC validation, and high-security government and financial systems following FIPS 180-4 requirements.</p>
+
+      <h2>Performance: When SHA-512 Wins</h2>
+
+      <p>On 64-bit systems (which includes virtually all modern servers, desktops, and smartphones), SHA-512 is paradoxically faster than SHA-256. This is because SHA-512 operates on 64-bit words natively, while SHA-256 uses 32-bit words that require extra operations on a 64-bit CPU. Benchmarks typically show SHA-512 running 30-50% faster for large inputs.</p>
+
+      <p>However, for small inputs (under 128 bytes), the difference is negligible. And on 32-bit embedded systems (IoT, microcontrollers), SHA-256 is significantly faster because its 32-bit word operations match the hardware.</p>
+
+      <h2>Security: Both Are Secure</h2>
+
+      <p>As of 2026, neither SHA-256 nor SHA-512 has been broken. Both provide well beyond the minimum 112-bit security level recommended by NIST. SHA-256 offers 128-bit collision resistance, and SHA-512 offers 256-bit collision resistance. For context, breaking 128-bit collision resistance would require approximately 3.4 × 10<sup>38</sup> operations — well beyond any current or foreseeable computing capability, including quantum computers using Grover's algorithm (which halves the effective bit security).</p>
+
+      <h2>When to Use SHA-256</h2>
+
+      <ul>
+        <li><strong>TLS certificates and HTTPS</strong> — industry standard, universally supported</li>
+        <li><strong>Blockchain and cryptocurrency</strong> — Bitcoin, Ethereum 2.0 use SHA-256</li>
+        <li><strong>File integrity checksums</strong> — shorter hash is easier to display and compare</li>
+        <li><strong>JWTs and HMAC</strong> — HS256 is the most common JWT signing algorithm</li>
+        <li><strong>Embedded/IoT systems</strong> — better performance on 32-bit hardware</li>
+        <li><strong>Interoperability</strong> — when working with systems that expect SHA-256</li>
+      </ul>
+
+      <h2>When to Use SHA-512</h2>
+
+      <ul>
+        <li><strong>Password hashing derivatives</strong> — bcrypt/scrypt sometimes use SHA-512 internally</li>
+        <li><strong>Digital signatures</strong> — Ed25519 uses SHA-512</li>
+        <li><strong>Maximum security margin</strong> — government/defense requiring FIPS 180-4 compliance</li>
+        <li><strong>High-throughput hashing on 64-bit servers</strong> — faster for large file processing</li>
+        <li><strong>DNSSEC</strong> — some configurations use SHA-512 for zone signing</li>
+      </ul>
+
+      <h2>FAQ</h2>
+
+      <h3>Is SHA-512 more secure than SHA-256?</h3>
+      <p>Both are considered cryptographically secure as of 2026. SHA-512 has a larger output (512 bits vs 256 bits), which provides a higher theoretical collision resistance (2<sup>256</sup> vs 2<sup>128</sup>). However, for most applications, SHA-256 provides more than sufficient security. The practical difference only matters in extremely high-security contexts.</p>
+
+      <h3>Which is faster, SHA-256 or SHA-512?</h3>
+      <p>On 64-bit systems, SHA-512 is typically 30-50% faster than SHA-256 because it processes 64-bit words natively. On 32-bit systems, SHA-256 is faster. In browsers via the Web Crypto API, performance depends on the underlying implementation but generally follows the same pattern.</p>
+
+      <h3>Can I use SHA-256 for password hashing?</h3>
+      <p>Raw SHA-256 should <strong>never</strong> be used for password hashing — it's too fast, making brute-force attacks feasible. Use dedicated password hashing algorithms like bcrypt, scrypt, or Argon2, which are intentionally slow and include salting.</p>
+
+      <div class="not-prose my-8 flex flex-wrap gap-3">
+        <a href="/tools/hash-generator" class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90">Try Hash Generator →</a>
+        <a href="/blog/sha256-vs-sha512" class="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-secondary)]">Read Full Guide →</a>
+      </div>
+    </article>
+  </div>
+</BaseLayout>

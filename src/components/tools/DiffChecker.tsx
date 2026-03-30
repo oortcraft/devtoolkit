@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { computeDiff, computeStats } from '../../lib/diff-utils';
 import ToolErrorBoundary from './ToolErrorBoundary';
+import CopyButton from './CopyButton';
 
 const textareaClass = [
   'w-full resize-none rounded-md border p-3 font-mono text-[13px] leading-relaxed outline-none transition-colors',
@@ -27,6 +28,7 @@ function DiffCheckerInner() {
         <button
           type="button"
           onClick={() => { setTextA(''); setTextB(''); }}
+          aria-label="Clear both text fields"
           className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
         >
           Clear
@@ -34,6 +36,7 @@ function DiffCheckerInner() {
         <button
           type="button"
           onClick={() => { const tmp = textA; setTextA(textB); setTextB(tmp); }}
+          aria-label="Swap original and modified text"
           className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
         >
           Swap
@@ -52,6 +55,7 @@ function DiffCheckerInner() {
             rows={10}
             placeholder="Paste original text here..."
             spellCheck={false}
+            aria-label="Original text"
             className={textareaClass}
             style={{ fontFamily: "'JetBrains Mono', monospace" }}
           />
@@ -66,6 +70,7 @@ function DiffCheckerInner() {
             rows={10}
             placeholder="Paste modified text here..."
             spellCheck={false}
+            aria-label="Modified text"
             className={textareaClass}
             style={{ fontFamily: "'JetBrains Mono', monospace" }}
           />
@@ -94,9 +99,16 @@ function DiffCheckerInner() {
         <div className="overflow-hidden rounded-md border border-[var(--color-input)]">
           <div className="flex items-center justify-between border-b border-[var(--color-input)] bg-[var(--color-secondary)] px-4 py-2">
             <p className="text-[13px] font-medium text-[var(--color-muted-foreground)]">Diff</p>
+            <CopyButton
+              text={diffLines.map((line) => {
+                const prefix = line.type === 'added' ? '+' : line.type === 'removed' ? '-' : ' ';
+                return `${prefix} ${line.content}`;
+              }).join('\n')}
+              label="Copy diff output"
+            />
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse font-mono text-[13px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            <table aria-label="Line-by-line diff comparison" className="w-full border-collapse font-mono text-[13px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               <thead className="sr-only">
                 <tr>
                   <th scope="col">Original line</th>

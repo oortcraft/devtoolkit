@@ -203,6 +203,94 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
     URL: https://oortcraft.dev/blog/html-entities-guide
     Topics: HTML entities, character encoding, named entities, numeric entities, UTF-8, XSS prevention, special characters.
 
+16. **How to Create Strong Passwords: A Developer's Guide**
+    URL: https://oortcraft.dev/blog/strong-password-guide
+    Topics: Password strength, common mistakes, brute-force attacks, entropy, password managers, best practices for 2026.
+
+17. **Naming Conventions in Programming: camelCase vs snake_case vs kebab-case**
+    URL: https://oortcraft.dev/blog/naming-conventions-guide
+    Topics: Naming conventions, camelCase, PascalCase, snake_case, kebab-case, SCREAMING_SNAKE_CASE, language-specific conventions.
+
+18. **Base64 Encoding in JavaScript, Python & Go: Practical Examples**
+    URL: https://oortcraft.dev/blog/base64-encoding-examples
+    Topics: Base64 encoding/decoding, JavaScript (browser & Node.js), Python, Go, copy-paste-ready code examples.
+
+19. **SHA-256 vs SHA-512: Which Hash Algorithm Should You Use?**
+    URL: https://oortcraft.dev/blog/sha256-vs-sha512
+    Topics: SHA-256, SHA-512, hash comparison, performance benchmarks, security considerations, real-world use cases.
+
+20. **YAML Tutorial for Beginners: Syntax, Examples & Best Practices**
+    URL: https://oortcraft.dev/blog/yaml-tutorial
+    Topics: YAML syntax, scalars, sequences, mappings, multi-line strings, anchors, Docker, Kubernetes, GitHub Actions.
+
+21. **UUID v1 vs v4 vs v7: Which UUID Version Should You Use?**
+    URL: https://oortcraft.dev/blog/uuid-versions-compared
+    Topics: UUID versions, v1 (time-based), v4 (random), v7 (sortable), database performance, distributed systems.
+
+22. **What is Lorem Ipsum? History, Purpose & Modern Usage**
+    URL: https://oortcraft.dev/blog/what-is-lorem-ipsum
+    Topics: Lorem Ipsum history, Cicero, placeholder text, web design, typography, modern alternatives.
+
+23. **What is Hashing? MD5, SHA-256, SHA-512 Explained**
+    URL: https://oortcraft.dev/blog/what-is-hashing
+    Topics: Cryptographic hash functions, MD5, SHA-1, SHA-256, SHA-512, one-way functions, collision resistance, code examples.
+
+---
+
+## Tool Categories
+
+Browse tools by category:
+
+1. **JSON Tools** — https://oortcraft.dev/tools/category/json
+   Format, validate, convert, and inspect JSON data. Includes JSON Formatter, JSON Validator, JSON to YAML Converter, and JSON Schema Validator.
+
+2. **Encoding Tools** — https://oortcraft.dev/tools/category/encoding
+   Encode and decode Base64, URLs, and HTML entities. All conversions use standard Web APIs and run client-side.
+
+3. **Generator Tools** — https://oortcraft.dev/tools/category/generator
+   Generate UUIDs (v4/v1), cryptographically secure passwords, and Lorem Ipsum placeholder text.
+
+4. **Security Tools** — https://oortcraft.dev/tools/category/security
+   Compute MD5/SHA-1/SHA-256/SHA-512 hashes and decode JWT tokens. Uses Web Crypto API.
+
+5. **Text Tools** — https://oortcraft.dev/tools/category/text
+   Test regex patterns, compare text diffs, preview Markdown, and convert between 8 string case formats.
+
+6. **CSS Tools** — https://oortcraft.dev/tools/category/css
+   Convert colors between HEX/RGB/HSL and minify CSS for production.
+
+7. **DevOps Tools** — https://oortcraft.dev/tools/category/devops
+   Build, test, and understand cron expressions with a visual editor.
+
+8. **Date & Time Tools** — https://oortcraft.dev/tools/category/date
+   Convert Unix timestamps to human-readable dates and vice versa.
+
+---
+
+## Comparisons
+
+In-depth comparisons between related tools and technologies:
+
+1. **SHA-256 vs SHA-512: Which Hash Algorithm Should You Use?**
+   URL: https://oortcraft.dev/compare/sha256-vs-sha512
+   Topics: Output size (256 vs 512 bits), performance on 32-bit vs 64-bit CPUs, collision resistance, real-world use cases (TLS, Bitcoin, Ed25519, DNSSEC).
+
+2. **Base64 vs URL Encoding: What's the Difference?**
+   URL: https://oortcraft.dev/compare/base64-vs-url-encoding
+   Topics: Binary transport vs URL safety, size overhead (33% vs variable), character sets, double-encoding pitfalls, Base64URL variant.
+
+3. **JSON vs YAML: Which Data Format Should You Use?**
+   URL: https://oortcraft.dev/compare/json-vs-yaml
+   Topics: Syntax comparison, comments support, multi-line strings, YAML superset relationship, Norway problem, API vs configuration use cases.
+
+4. **JSON Formatter vs JSON Validator: What's the Difference?**
+   URL: https://oortcraft.dev/compare/json-formatter-vs-validator
+   Topics: Formatting vs validation, when to use each, combined workflow, common JSON syntax errors, schema validation.
+
+5. **CSS Minifier vs CSS Beautifier: When to Compress, When to Expand**
+   URL: https://oortcraft.dev/compare/css-minifier-vs-beautifier
+   Topics: Minification savings (15-40%), Core Web Vitals impact, build tool integration, development workflow.
+
 ---
 
 ## Key Features

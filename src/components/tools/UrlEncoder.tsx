@@ -49,6 +49,7 @@ function UrlEncoderInner() {
             type="button"
             onClick={() => setMode('encode')}
             aria-pressed={mode === 'encode'}
+            aria-label="Encode mode"
             className={[
               'flex-1 rounded px-4 py-1.5 text-sm transition-all sm:flex-none',
               mode === 'encode'
@@ -62,6 +63,7 @@ function UrlEncoderInner() {
             type="button"
             onClick={() => setMode('decode')}
             aria-pressed={mode === 'decode'}
+            aria-label="Decode mode"
             className={[
               'flex-1 rounded px-4 py-1.5 text-sm transition-all sm:flex-none',
               mode === 'decode'
@@ -70,6 +72,22 @@ function UrlEncoderInner() {
             ].join(' ')}
           >
             Decode
+          </button>
+        </div>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => { setInput(''); setOutput(''); setError(undefined); }}
+            className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
+          >
+            Clear
+          </button>
+          <button
+            type="button"
+            onClick={() => { if (output) { setInput(output); setMode(mode === 'encode' ? 'decode' : 'encode'); } }}
+            className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
+          >
+            Swap
           </button>
         </div>
       </div>
@@ -86,6 +104,7 @@ function UrlEncoderInner() {
             language="text"
             placeholder={mode === 'encode' ? 'Type or paste text to encode...' : 'Paste URL-encoded string to decode...'}
             error={error}
+            aria-label="Text input"
           />
         </div>
         <div className="min-w-0 flex-1">
@@ -93,7 +112,7 @@ function UrlEncoderInner() {
             <p className="text-[13px] font-medium text-[var(--color-muted-foreground)]">{outputLabel}</p>
             <CopyButton text={output} />
           </div>
-          <CodeEditor value={output} language="text" readOnly placeholder="Output will appear here as you type" />
+          <CodeEditor value={output} language="text" readOnly placeholder="Output will appear here as you type" aria-label="Encoded/Decoded output" />
         </div>
       </div>
     </div>

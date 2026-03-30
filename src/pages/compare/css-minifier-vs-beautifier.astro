@@ -1,0 +1,130 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: 'CSS Minifier vs CSS Beautifier: When to Compress, When to Expand',
+  description: 'Compare CSS minification and beautification — what each does, when to use them, and their impact on performance and development workflow.',
+  url: 'https://oortcraft.dev/compare/css-minifier-vs-beautifier',
+  author: { '@type': 'Organization', name: 'DevToolkit', url: 'https://oortcraft.dev' },
+  breadcrumb: {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://oortcraft.dev' },
+      { '@type': 'ListItem', position: 2, name: 'Compare', item: 'https://oortcraft.dev/compare/css-minifier-vs-beautifier' },
+    ],
+  },
+};
+---
+
+<BaseLayout
+  title="CSS Minifier vs Beautifier: When to Use Each | DevToolkit"
+  description="CSS Minifier vs CSS Beautifier — understand when to compress CSS for production and when to expand it for development and debugging."
+>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  <div class="mx-auto max-w-4xl px-4 py-6 sm:px-10 sm:py-12">
+    <nav class="mb-4 text-sm text-[var(--color-muted-foreground)]" aria-label="Breadcrumb">
+      <ol class="flex items-center gap-1.5">
+        <li><a href="/" class="hover:text-[var(--color-foreground)]">Home</a></li>
+        <li>/</li>
+        <li><a href="/tools" class="hover:text-[var(--color-foreground)]">Tools</a></li>
+        <li>/</li>
+        <li class="text-[var(--color-foreground)]">CSS Minifier vs Beautifier</li>
+      </ol>
+    </nav>
+
+    <article class="prose prose-slate max-w-none">
+      <h1>CSS Minifier vs CSS Beautifier: When to Compress, When to Expand</h1>
+
+      <p>CSS minification and CSS beautification are inverse operations that serve different stages of the development lifecycle. Minification strips whitespace, comments, and redundant characters to reduce file size for production. Beautification adds indentation and formatting to make CSS readable for development and debugging. Understanding when to apply each operation is essential for an efficient front-end workflow.</p>
+
+      <div class="not-prose my-8 flex flex-wrap gap-3">
+        <a href="/tools/css-minifier" class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90">Try CSS Minifier →</a>
+      </div>
+
+      <h2>Quick Comparison Table</h2>
+
+      <div class="not-prose my-6 overflow-x-auto">
+        <table class="w-full border-collapse rounded-lg border border-[var(--color-border)] text-sm">
+          <thead>
+            <tr class="bg-[var(--color-secondary)]">
+              <th class="border border-[var(--color-border)] px-4 py-3 text-left font-semibold">Feature</th>
+              <th class="border border-[var(--color-border)] px-4 py-3 text-left font-semibold">CSS Minifier</th>
+              <th class="border border-[var(--color-border)] px-4 py-3 text-left font-semibold">CSS Beautifier</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Purpose</td><td class="border border-[var(--color-border)] px-4 py-2.5">Reduce file size for production</td><td class="border border-[var(--color-border)] px-4 py-2.5">Improve readability for development</td></tr>
+            <tr class="bg-[var(--color-secondary)]/50"><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Removes Comments</td><td class="border border-[var(--color-border)] px-4 py-2.5">Yes</td><td class="border border-[var(--color-border)] px-4 py-2.5">No (preserves)</td></tr>
+            <tr><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Removes Whitespace</td><td class="border border-[var(--color-border)] px-4 py-2.5">Yes (all unnecessary)</td><td class="border border-[var(--color-border)] px-4 py-2.5">No (adds structured whitespace)</td></tr>
+            <tr class="bg-[var(--color-secondary)]/50"><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Typical Savings</td><td class="border border-[var(--color-border)] px-4 py-2.5">15-40% smaller</td><td class="border border-[var(--color-border)] px-4 py-2.5">30-100% larger (vs minified)</td></tr>
+            <tr><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Changes Behavior?</td><td class="border border-[var(--color-border)] px-4 py-2.5">No (functionally identical)</td><td class="border border-[var(--color-border)] px-4 py-2.5">No (functionally identical)</td></tr>
+            <tr class="bg-[var(--color-secondary)]/50"><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">When to Use</td><td class="border border-[var(--color-border)] px-4 py-2.5">Before deployment</td><td class="border border-[var(--color-border)] px-4 py-2.5">During development/debugging</td></tr>
+            <tr><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Build Tool Equivalent</td><td class="border border-[var(--color-border)] px-4 py-2.5">cssnano, clean-css, esbuild</td><td class="border border-[var(--color-border)] px-4 py-2.5">Prettier, stylelint --fix</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>What CSS Minification Does</h2>
+
+      <p>CSS minification applies several transformations to reduce file size without changing how the browser interprets the styles. These include removing all comments (both single-line and multi-line), eliminating unnecessary whitespace (newlines, tabs, extra spaces), removing trailing semicolons before closing braces (the last declaration in a rule doesn't need one), shortening color values (#ffffff to #fff), removing units from zero values (0px to 0), and collapsing redundant properties where safe.</p>
+
+      <p>The impact on page performance is significant. A 50KB CSS file typically minifies to 30-35KB, and with Gzip compression on top, the transfer size drops even further. For sites with multiple CSS files, minification combined with bundling can save hundreds of milliseconds in page load time — directly impacting Core Web Vitals scores (LCP, FCP) and SEO rankings.</p>
+
+      <h3>When to Minify</h3>
+      <ul>
+        <li><strong>Production deployments</strong> — always serve minified CSS in production</li>
+        <li><strong>Performance optimization</strong> — reducing CSS size improves Core Web Vitals</li>
+        <li><strong>Email templates</strong> — email clients have CSS size limits</li>
+        <li><strong>Third-party widget CSS</strong> — minimize the footprint of embeddable widgets</li>
+        <li><strong>Critical CSS inlining</strong> — above-the-fold CSS should be as small as possible</li>
+      </ul>
+
+      <h2>What CSS Beautification Does</h2>
+
+      <p>CSS beautification (also called "pretty-printing" or "formatting") takes compressed or poorly-formatted CSS and transforms it into a consistently structured, readable format. Each rule gets its own block, properties are indented inside selectors, declarations are placed on separate lines, and consistent spacing is applied around colons, semicolons, and braces.</p>
+
+      <p>Beautification is the essential first step when working with CSS you didn't write — inherited codebases, third-party stylesheets, or CSS extracted from browser DevTools. It's also used to enforce consistent formatting across a team when combined with tools like Prettier and pre-commit hooks.</p>
+
+      <h3>When to Beautify</h3>
+      <ul>
+        <li><strong>Debugging minified CSS</strong> — expand production CSS to find and fix issues</li>
+        <li><strong>Reading third-party styles</strong> — make vendor CSS readable for customization</li>
+        <li><strong>Code review</strong> — consistently formatted CSS is easier to review</li>
+        <li><strong>Learning</strong> — understanding CSS structure is easier with proper formatting</li>
+        <li><strong>Team standardization</strong> — enforce consistent style across contributors</li>
+      </ul>
+
+      <h2>The Development Workflow</h2>
+
+      <p>A typical front-end workflow uses both operations at different stages. During development, you write and edit beautified CSS with comments, clear indentation, and logical organization. Your build tool (Vite, webpack, esbuild) automatically minifies CSS for production, often combined with other optimizations like autoprefixing, dead code elimination, and critical CSS extraction.</p>
+
+      <p>When debugging production issues, you reverse the process: grab the minified CSS from the browser DevTools, beautify it to make it readable, identify the problem, fix it in your source code, and let the build process minify it again for deployment.</p>
+
+      <h2>Performance Impact</h2>
+
+      <p>CSS minification directly impacts Core Web Vitals, which Google uses as a ranking factor. Smaller CSS files mean faster First Contentful Paint (FCP) and Largest Contentful Paint (LCP). The impact is most significant on mobile connections where bandwidth is limited. A 20KB reduction in CSS size can shave 100-200ms off paint times on 3G connections.</p>
+
+      <p>Modern build tools like Vite (used by Astro, the framework behind DevToolkit) handle minification automatically in production builds. For one-off minification needs — quick checks, email templates, or ad-hoc optimization — an online tool like our <a href="/tools/css-minifier">CSS Minifier</a> is faster than setting up a build pipeline.</p>
+
+      <h2>FAQ</h2>
+
+      <h3>Does minification break CSS?</h3>
+      <p>No. CSS minification only removes characters that have no effect on how the browser interprets the stylesheet. The minified and original versions render identically in every browser. However, comments are permanently removed — if you need comments preserved, use source maps.</p>
+
+      <h3>Should I minify CSS manually or use a build tool?</h3>
+      <p>For ongoing projects, always use a build tool (cssnano, esbuild, or your framework's built-in minification). Manual minification with an online tool is useful for one-off tasks, quick experiments, or when you don't have a build pipeline.</p>
+
+      <h3>How much does minification save?</h3>
+      <p>Typical savings range from 15-40% before Gzip compression. After Gzip (which most servers apply automatically), the difference between minified and non-minified CSS is smaller (5-15%) because Gzip is already good at compressing whitespace. However, minification still helps because it removes comments and redundant syntax that Gzip can't eliminate.</p>
+
+      <div class="not-prose my-8 flex flex-wrap gap-3">
+        <a href="/tools/css-minifier" class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90">Try CSS Minifier →</a>
+        <a href="/blog/css-minification-explained" class="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-secondary)]">Read CSS Minification Guide →</a>
+        <a href="/tools/category/css" class="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-secondary)]">All CSS Tools →</a>
+      </div>
+    </article>
+  </div>
+</BaseLayout>

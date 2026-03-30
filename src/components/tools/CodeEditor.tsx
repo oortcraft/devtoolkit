@@ -7,6 +7,8 @@ interface CodeEditorProps {
   readOnly?: boolean;
   error?: string;
   placeholder?: string;
+  'aria-label'?: string;
+  id?: string;
 }
 
 export default function CodeEditor({
@@ -16,6 +18,8 @@ export default function CodeEditor({
   readOnly = false,
   error,
   placeholder,
+  'aria-label': ariaLabel,
+  id,
 }: CodeEditorProps) {
   const lineCount = value ? value.split('\n').length : 1;
   const rows = Math.min(30, Math.max(10, lineCount + 1));
@@ -24,6 +28,7 @@ export default function CodeEditor({
     <div className="flex w-full flex-col gap-1">
       <div className="relative">
         <textarea
+          id={id}
           data-language={language}
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
@@ -31,6 +36,7 @@ export default function CodeEditor({
           rows={rows}
           placeholder={placeholder}
           spellCheck={false}
+          aria-label={ariaLabel}
           className={[
             'w-full resize-none rounded-md border p-3 font-mono text-[13px] leading-relaxed outline-none transition-colors',
             readOnly

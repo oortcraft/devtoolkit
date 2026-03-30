@@ -1,0 +1,133 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { tools } from '../../../lib/tools';
+import { categories, getCategoryBySlug } from '../../../lib/categories';
+import { getCollection } from 'astro:content';
+
+export function getStaticPaths() {
+  return categories.map((cat) => ({
+    params: { category: cat.slug },
+  }));
+}
+
+const { category: slug } = Astro.params;
+const cat = getCategoryBySlug(slug!)!;
+const categoryTools = tools.filter((t) => t.category.toLowerCase() === slug);
+const allPosts = await getCollection('blog');
+const relatedPosts = allPosts.filter((p) => cat.relatedBlogSlugs.includes(p.slug));
+const allCategories = categories;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: cat.name,
+  description: cat.description,
+  url: `https://oortcraft.dev/tools/category/${slug}`,
+  isPartOf: { '@type': 'WebSite', name: 'DevToolkit', url: 'https://oortcraft.dev' },
+  breadcrumb: {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://oortcraft.dev' },
+      { '@type': 'ListItem', position: 2, name: 'Tools', item: 'https://oortcraft.dev/tools' },
+      { '@type': 'ListItem', position: 3, name: cat.name, item: `https://oortcraft.dev/tools/category/${slug}` },
+    ],
+  },
+};
+---
+
+<BaseLayout
+  title={`${cat.name} — Free Online ${cat.name} | DevToolkit`}
+  description={cat.description}
+>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  <div class="mx-auto max-w-7xl px-4 py-6 sm:px-10 sm:py-12">
+    <!-- Breadcrumb -->
+    <nav class="mb-4 text-sm text-[var(--color-muted-foreground)]" aria-label="Breadcrumb">
+      <ol class="flex items-center gap-1.5">
+        <li><a href="/" class="hover:text-[var(--color-foreground)]">Home</a></li>
+        <li>/</li>
+        <li><a href="/tools" class="hover:text-[var(--color-foreground)]">Tools</a></li>
+        <li>/</li>
+        <li class="text-[var(--color-foreground)]">{cat.name}</li>
+      </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="mb-8 flex flex-col gap-2">
+      <h1 class="text-2xl font-bold text-[var(--color-foreground)] sm:text-[32px]">{cat.name}</h1>
+      <p class="text-sm text-[var(--color-muted-foreground)] sm:text-base">{cat.description}</p>
+    </div>
+
+    <!-- Category Navigation -->
+    <div class="mb-6 flex flex-wrap gap-2">
+      <a
+        href="/tools"
+        class="rounded-full px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm bg-[var(--color-secondary)] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+      >
+        All Tools
+      </a>
+      {allCategories.map((c) => (
+        <a
+          href={`/tools/category/${c.slug}`}
+          class:list={[
+            'rounded-full px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm',
+            c.slug === slug
+              ? 'bg-[var(--color-foreground)] text-[var(--color-background)]'
+              : 'bg-[var(--color-secondary)] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]',
+          ]}
+        >
+          {c.name.replace(' Tools', '')} ({tools.filter((t) => t.category.toLowerCase() === c.slug).length})
+        </a>
+      ))}
+    </div>
+
+    <!-- Tool Cards -->
+    <div class="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+      {categoryTools.map((tool) => (
+        <a
+          href={`/tools/${tool.slug}`}
+          class="group flex flex-col gap-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4 transition-all hover:shadow-md sm:gap-3 sm:p-5"
+        >
+          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-secondary)] sm:h-10 sm:w-10">
+            <span class="font-mono text-xs font-semibold text-[var(--color-foreground)] sm:text-sm">
+              {tool.icon}
+            </span>
+          </div>
+          <h2 class="text-[15px] font-semibold text-[var(--color-foreground)] sm:text-base">{tool.name}</h2>
+          <p class="text-[13px] leading-relaxed text-[var(--color-muted-foreground)] sm:text-sm">{tool.description}</p>
+          <span class="text-[13px] font-medium text-[var(--color-primary)] sm:text-sm">Open tool →</span>
+        </a>
+      ))}
+    </div>
+
+    <!-- About This Category -->
+    <div class="mt-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-5 sm:p-8">
+      <h2 class="mb-3 text-lg font-semibold text-[var(--color-foreground)] sm:text-xl">About {cat.name}</h2>
+      <p class="text-sm leading-relaxed text-[var(--color-muted-foreground)] sm:text-base">{cat.longDescription}</p>
+    </div>
+
+    <!-- Related Blog Posts -->
+    {relatedPosts.length > 0 && (
+      <div class="mt-10">
+        <h2 class="mb-4 text-lg font-semibold text-[var(--color-foreground)] sm:text-xl">Related Articles</h2>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {relatedPosts.map((post) => (
+            <a
+              href={`/blog/${post.slug}`}
+              class="group flex flex-col gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4 transition-all hover:shadow-md sm:p-5"
+            >
+              <h3 class="text-[15px] font-semibold text-[var(--color-foreground)] group-hover:text-[var(--color-primary)] sm:text-base">
+                {post.data.title}
+              </h3>
+              <p class="text-[13px] leading-relaxed text-[var(--color-muted-foreground)] sm:text-sm">
+                {post.data.description}
+              </p>
+              <span class="text-[13px] font-medium text-[var(--color-primary)] sm:text-sm">Read article →</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</BaseLayout>

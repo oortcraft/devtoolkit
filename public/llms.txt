@@ -27,6 +27,25 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 - [Password Generator](https://oortcraft.dev/tools/password-generator): Generate strong, random passwords with customizable length and character options.
 - [String Case Converter](https://oortcraft.dev/tools/case-converter): Convert text between camelCase, PascalCase, snake_case, kebab-case, and more.
 
+## Tool Categories
+
+- [JSON Tools](https://oortcraft.dev/tools/category/json): Format, validate, convert, and inspect JSON data.
+- [Encoding Tools](https://oortcraft.dev/tools/category/encoding): Encode and decode Base64, URLs, and HTML entities.
+- [Generator Tools](https://oortcraft.dev/tools/category/generator): Generate UUIDs, passwords, and placeholder text.
+- [Security Tools](https://oortcraft.dev/tools/category/security): Hash data and decode JWTs.
+- [Text Tools](https://oortcraft.dev/tools/category/text): Test regex, compare diffs, preview Markdown, convert case.
+- [CSS Tools](https://oortcraft.dev/tools/category/css): Convert colors and minify stylesheets.
+- [DevOps Tools](https://oortcraft.dev/tools/category/devops): Build and understand cron expressions.
+- [Date & Time Tools](https://oortcraft.dev/tools/category/date): Convert Unix timestamps to dates.
+
+## Comparisons
+
+- [SHA-256 vs SHA-512](https://oortcraft.dev/compare/sha256-vs-sha512): Output size, performance, security, and use cases.
+- [Base64 vs URL Encoding](https://oortcraft.dev/compare/base64-vs-url-encoding): Purpose, output format, and when to use each.
+- [JSON vs YAML](https://oortcraft.dev/compare/json-vs-yaml): Syntax, readability, and use cases for APIs vs config.
+- [JSON Formatter vs Validator](https://oortcraft.dev/compare/json-formatter-vs-validator): Formatting vs validation and when to use each.
+- [CSS Minifier vs Beautifier](https://oortcraft.dev/compare/css-minifier-vs-beautifier): When to compress and when to expand CSS.
+
 ## Blog
 
 - [Blog](https://oortcraft.dev/blog): Developer tutorials and guides on JSON, Base64, URL encoding, UUIDs, Markdown, CSS, and more.

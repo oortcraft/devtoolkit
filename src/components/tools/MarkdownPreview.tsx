@@ -51,11 +51,13 @@ function MarkdownPreviewInner() {
   return (
     <div className="flex flex-col gap-4">
       {/* Mobile tab bar */}
-      <div className="flex rounded-md bg-[var(--color-secondary)] p-1 sm:hidden">
+      <div role="tablist" className="flex rounded-md bg-[var(--color-secondary)] p-1 sm:hidden">
         {(['edit', 'preview'] as const).map((tab) => (
           <button
             key={tab}
             type="button"
+            role="tab"
+            aria-selected={mobileTab === tab}
             onClick={() => setMobileTab(tab)}
             className={[
               'flex-1 rounded px-3 py-1.5 text-sm capitalize transition-all',
@@ -78,6 +80,7 @@ function MarkdownPreviewInner() {
             <button
               type="button"
               onClick={() => setInput('')}
+              aria-label="Clear input"
               className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
             >
               Clear
@@ -89,6 +92,7 @@ function MarkdownPreviewInner() {
             language="markdown"
             placeholder={PLACEHOLDER}
             error={error}
+            aria-label="Markdown input"
           />
         </div>
 
@@ -98,7 +102,7 @@ function MarkdownPreviewInner() {
             <p className="text-[13px] font-medium text-[var(--color-muted-foreground)]">Preview</p>
             <CopyButton text={output} />
           </div>
-          <div className="min-h-[200px] rounded-md border border-[var(--color-input)] bg-[var(--color-secondary)] p-4 overflow-auto">
+          <div aria-live="polite" className="min-h-[200px] rounded-md border border-[var(--color-input)] bg-[var(--color-secondary)] p-4 overflow-auto">
             {output ? (
               <div
                 className="prose-markdown text-[var(--color-foreground)] text-sm"

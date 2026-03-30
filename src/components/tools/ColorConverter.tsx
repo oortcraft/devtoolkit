@@ -30,9 +30,10 @@ function ColorConverterInner() {
           ].join(' ')}
           spellCheck={false}
           autoComplete="off"
+          aria-label="Color value input in HEX, RGB, or HSL format"
         />
         {result.error && input && (
-          <p className="mt-1.5 text-xs text-[var(--color-destructive)]">{result.error}</p>
+          <p className="mt-1.5 text-xs text-[var(--color-destructive)]" aria-live="polite">{result.error}</p>
         )}
       </div>
 
@@ -54,7 +55,7 @@ function ColorConverterInner() {
           <div className="rounded-md border border-[var(--color-input)] bg-[var(--color-secondary)]">
             <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-input)]">
               <p className="text-[13px] font-medium text-[var(--color-muted-foreground)]">HEX</p>
-              <CopyButton text={result.hex} />
+              <CopyButton text={result.hex} label="Copy HEX value" />
             </div>
             <div className="px-4 py-3">
               <p className="font-mono text-sm text-[var(--color-foreground)]">{result.hex}</p>
@@ -65,7 +66,7 @@ function ColorConverterInner() {
           <div className="rounded-md border border-[var(--color-input)] bg-[var(--color-secondary)]">
             <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-input)]">
               <p className="text-[13px] font-medium text-[var(--color-muted-foreground)]">RGB</p>
-              <CopyButton text={result.rgb} />
+              <CopyButton text={result.rgb} label="Copy RGB value" />
             </div>
             <div className="px-4 py-3">
               <p className="font-mono text-sm text-[var(--color-foreground)]">{result.rgb}</p>
@@ -76,7 +77,7 @@ function ColorConverterInner() {
           <div className="rounded-md border border-[var(--color-input)] bg-[var(--color-secondary)]">
             <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-input)]">
               <p className="text-[13px] font-medium text-[var(--color-muted-foreground)]">HSL</p>
-              <CopyButton text={result.hsl} />
+              <CopyButton text={result.hsl} label="Copy HSL value" />
             </div>
             <div className="px-4 py-3">
               <p className="font-mono text-sm text-[var(--color-foreground)]">{result.hsl}</p>

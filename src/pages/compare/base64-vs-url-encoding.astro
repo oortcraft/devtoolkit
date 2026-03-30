@@ -1,0 +1,132 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: 'Base64 vs URL Encoding: What\'s the Difference?',
+  description: 'Understand the key differences between Base64 encoding and URL encoding — when to use each, how they work, and common mistakes.',
+  url: 'https://oortcraft.dev/compare/base64-vs-url-encoding',
+  author: { '@type': 'Organization', name: 'DevToolkit', url: 'https://oortcraft.dev' },
+  breadcrumb: {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://oortcraft.dev' },
+      { '@type': 'ListItem', position: 2, name: 'Compare', item: 'https://oortcraft.dev/compare/base64-vs-url-encoding' },
+    ],
+  },
+};
+---
+
+<BaseLayout
+  title="Base64 vs URL Encoding: When to Use Each | DevToolkit"
+  description="Compare Base64 encoding and URL (percent) encoding — purpose, output format, size overhead, and real-world use cases for developers."
+>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  <div class="mx-auto max-w-4xl px-4 py-6 sm:px-10 sm:py-12">
+    <nav class="mb-4 text-sm text-[var(--color-muted-foreground)]" aria-label="Breadcrumb">
+      <ol class="flex items-center gap-1.5">
+        <li><a href="/" class="hover:text-[var(--color-foreground)]">Home</a></li>
+        <li>/</li>
+        <li><a href="/tools" class="hover:text-[var(--color-foreground)]">Tools</a></li>
+        <li>/</li>
+        <li class="text-[var(--color-foreground)]">Base64 vs URL Encoding</li>
+      </ol>
+    </nav>
+
+    <article class="prose prose-slate max-w-none">
+      <h1>Base64 vs URL Encoding: What's the Difference?</h1>
+
+      <p>Base64 encoding and URL encoding (percent-encoding) are two fundamentally different encoding schemes that developers frequently encounter. Despite both being called "encoding," they serve different purposes, produce different outputs, and are used in different contexts. Understanding when to use each prevents data corruption, security issues, and interoperability bugs.</p>
+
+      <div class="not-prose my-8 flex flex-wrap gap-3">
+        <a href="/tools/base64" class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90">Try Base64 Tool →</a>
+        <a href="/tools/url-encoder" class="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-secondary)]">Try URL Encoder →</a>
+      </div>
+
+      <h2>Quick Comparison Table</h2>
+
+      <div class="not-prose my-6 overflow-x-auto">
+        <table class="w-full border-collapse rounded-lg border border-[var(--color-border)] text-sm">
+          <thead>
+            <tr class="bg-[var(--color-secondary)]">
+              <th class="border border-[var(--color-border)] px-4 py-3 text-left font-semibold">Feature</th>
+              <th class="border border-[var(--color-border)] px-4 py-3 text-left font-semibold">Base64</th>
+              <th class="border border-[var(--color-border)] px-4 py-3 text-left font-semibold">URL Encoding</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Purpose</td><td class="border border-[var(--color-border)] px-4 py-2.5">Represent binary data as ASCII text</td><td class="border border-[var(--color-border)] px-4 py-2.5">Make special characters safe in URLs</td></tr>
+            <tr class="bg-[var(--color-secondary)]/50"><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Character Set</td><td class="border border-[var(--color-border)] px-4 py-2.5">A-Z, a-z, 0-9, +, /, =</td><td class="border border-[var(--color-border)] px-4 py-2.5">Unreserved chars + %XX hex codes</td></tr>
+            <tr><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Size Overhead</td><td class="border border-[var(--color-border)] px-4 py-2.5">~33% larger</td><td class="border border-[var(--color-border)] px-4 py-2.5">0-300% (depends on content)</td></tr>
+            <tr class="bg-[var(--color-secondary)]/50"><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Handles Binary</td><td class="border border-[var(--color-border)] px-4 py-2.5">Yes (primary purpose)</td><td class="border border-[var(--color-border)] px-4 py-2.5">No (text only)</td></tr>
+            <tr><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Reversible</td><td class="border border-[var(--color-border)] px-4 py-2.5">Yes (lossless)</td><td class="border border-[var(--color-border)] px-4 py-2.5">Yes (lossless)</td></tr>
+            <tr class="bg-[var(--color-secondary)]/50"><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">Standard</td><td class="border border-[var(--color-border)] px-4 py-2.5">RFC 4648</td><td class="border border-[var(--color-border)] px-4 py-2.5">RFC 3986</td></tr>
+            <tr><td class="border border-[var(--color-border)] px-4 py-2.5 font-medium">JS Function</td><td class="border border-[var(--color-border)] px-4 py-2.5">btoa() / atob()</td><td class="border border-[var(--color-border)] px-4 py-2.5">encodeURIComponent()</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>What Is Base64 Encoding?</h2>
+
+      <p>Base64 encoding converts arbitrary binary data into a string of ASCII characters using a 64-character alphabet (A-Z, a-z, 0-9, +, /), with = for padding. It was designed to transport binary data through text-only channels like email (MIME), XML, and JSON. Every 3 bytes of input become 4 characters of output, resulting in a consistent ~33% size increase.</p>
+
+      <p>Common use cases include embedding images in HTML/CSS via data URIs (<code>data:image/png;base64,...</code>), encoding binary attachments in email (MIME), transmitting binary data in JSON API payloads, storing binary data in text-only databases, and encoding credentials in HTTP Basic Authentication headers.</p>
+
+      <h2>What Is URL Encoding?</h2>
+
+      <p>URL encoding (percent-encoding) replaces unsafe characters in URLs with a percent sign followed by two hex digits representing the character's ASCII code. For example, a space becomes <code>%20</code>, an ampersand becomes <code>%26</code>, and a forward slash becomes <code>%2F</code>. Characters that are "unreserved" (A-Z, a-z, 0-9, -, _, ., ~) are left unchanged.</p>
+
+      <p>URL encoding is required whenever you include user input in query parameters (<code>?search=hello%20world</code>), form data submitted via GET or POST (<code>application/x-www-form-urlencoded</code>), path segments containing special characters, and fragment identifiers with non-ASCII characters.</p>
+
+      <h2>Key Differences Explained</h2>
+
+      <h3>1. Purpose: Binary Transport vs URL Safety</h3>
+      <p>Base64 solves the problem of moving binary data (images, files, encrypted blobs) through text-only channels. URL encoding solves the problem of including special characters in URLs without breaking the URL structure. They solve completely different problems.</p>
+
+      <h3>2. Size Impact</h3>
+      <p>Base64 always adds exactly 33% overhead regardless of input content. URL encoding's overhead varies wildly: plain ASCII text passes through with zero overhead, but CJK characters or binary data can triple or quadruple in size because each byte becomes a 3-character <code>%XX</code> sequence.</p>
+
+      <h3>3. Common Mistake: Double Encoding</h3>
+      <p>A frequent bug is Base64-encoding data and then URL-encoding the result (or vice versa). This produces garbled output. If you need to include Base64 data in a URL, use Base64URL encoding (RFC 4648 §5), which replaces <code>+</code> with <code>-</code> and <code>/</code> with <code>_</code>, and omits padding — making the output URL-safe without additional percent-encoding.</p>
+
+      <h2>When to Use Each</h2>
+
+      <h3>Use Base64 When:</h3>
+      <ul>
+        <li>Embedding binary data (images, fonts) in HTML/CSS</li>
+        <li>Sending binary payloads through JSON APIs</li>
+        <li>Encoding email attachments (MIME)</li>
+        <li>Storing binary data in text fields (databases, config files)</li>
+        <li>HTTP Basic Authentication (<code>Authorization: Basic base64(user:pass)</code>)</li>
+      </ul>
+
+      <h3>Use URL Encoding When:</h3>
+      <ul>
+        <li>Building query strings with user input</li>
+        <li>Submitting HTML forms via GET</li>
+        <li>Constructing redirect URLs with parameters</li>
+        <li>Including special characters in REST API paths</li>
+        <li>Encoding non-ASCII characters in URLs (internationalized domain names)</li>
+      </ul>
+
+      <h2>FAQ</h2>
+
+      <h3>Can I use Base64 in URLs?</h3>
+      <p>Standard Base64 uses <code>+</code>, <code>/</code>, and <code>=</code>, which have special meaning in URLs. Use Base64URL encoding instead, which substitutes these characters with URL-safe alternatives (<code>-</code>, <code>_</code>, no padding).</p>
+
+      <h3>Is Base64 encryption?</h3>
+      <p>No. Base64 is encoding, not encryption. It provides zero security — anyone can decode it instantly. Never use Base64 to "hide" sensitive data like passwords or API keys.</p>
+
+      <h3>Does URL encoding handle Unicode?</h3>
+      <p>Yes. JavaScript's <code>encodeURIComponent()</code> first converts the string to UTF-8 bytes, then percent-encodes each byte. So the emoji "😀" becomes <code>%F0%9F%98%80</code> (4 UTF-8 bytes, each percent-encoded).</p>
+
+      <div class="not-prose my-8 flex flex-wrap gap-3">
+        <a href="/tools/base64" class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90">Try Base64 Tool →</a>
+        <a href="/tools/url-encoder" class="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-secondary)]">Try URL Encoder →</a>
+        <a href="/blog/what-is-base64" class="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-secondary)]">Read Base64 Guide →</a>
+      </div>
+    </article>
+  </div>
+</BaseLayout>
