@@ -35,7 +35,7 @@ function QrCodeGeneratorInner() {
       const dataUrl = await generateQrDataUrl(input, { errorCorrectionLevel: errorLevel, margin: 2, width: 512 });
       const a = document.createElement('a');
       a.href = dataUrl; a.download = 'qrcode.png'; a.click();
-    } catch {}
+    } catch { setError('Failed to generate PNG. Try a shorter input.'); }
   };
 
   return (

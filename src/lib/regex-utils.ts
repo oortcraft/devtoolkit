@@ -34,17 +34,17 @@ export function testRegex(pattern: string, flags: string, testString: string): R
     // Guard against infinite loops from zero-width matches
     let lastIndex = -1;
     while ((m = regex.exec(testString)) !== null) {
-      if (regex.lastIndex === lastIndex) {
-        regex.lastIndex++;
-        continue;
-      }
-      lastIndex = regex.lastIndex;
       matches.push({
         index: m.index,
         match: m[0],
         groups: m.groups ?? null,
         subgroups: m.slice(1),
       });
+      if (regex.lastIndex === lastIndex) {
+        regex.lastIndex++;
+      }
+      lastIndex = regex.lastIndex;
+      if (matches.length > 10000) break;
     }
   } else {
     const m = regex.exec(testString);

@@ -82,7 +82,7 @@ function Base64ToolInner() {
           </button>
           <button
             type="button"
-            onClick={() => { if (output) { setInput(output); } }}
+            onClick={() => { if (output) { setInput(output); setMode(mode === 'encode' ? 'decode' : 'encode'); } }}
             className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
           >
             Swap

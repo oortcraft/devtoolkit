@@ -10,7 +10,7 @@ function LoremIpsumInner() {
 
   useEffect(() => {
     setOutput(generateLoremIpsum(count));
-  }, []);
+  }, [count]);
 
   const handleGenerate = () => {
     setOutput(generateLoremIpsum(count));
