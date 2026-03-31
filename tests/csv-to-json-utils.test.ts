@@ -3,60 +3,93 @@ import { csvToJson } from '../src/lib/csv-to-json-utils';
 
 describe('csvToJson - with header', () => {
   it('converts basic CSV with header row', () => {
-    const csv = 'name,age\nAlice,30\nBob,25';
-    const { result, error, rows } = csvToJson(csv, { header: true, typeInference: false });
-    expect(error).toBeUndefined();
-    expect(rows).toBe(2);
-    const data = JSON.parse(result!);
-    expect(data[0]).toMatchObject({ name: 'Alice', age: '30' });
-    expect(data[1]).toMatchObject({ name: 'Bob', age: '25' });
+    const result = csvToJson('name,age\nAlice,30\nBob,25', { header: true, typeInference: true });
+    expect(result.error).toBeUndefined();
+    const data = JSON.parse(result.result!);
+    expect(data).toHaveLength(2);
+    expect(data[0].name).toBe('Alice');
   });
 
-  it('applies type inference when enabled', () => {
-    const csv = 'name,age\nAlice,30';
-    const { result } = csvToJson(csv, { header: true, typeInference: true });
-    const data = JSON.parse(result!);
-    expect(typeof data[0].age).toBe('number');
+  it('handles quoted fields with commas', () => {
+    const result = csvToJson('name,address\nAlice,"123 Main St, Suite 4"', { header: true, typeInference: false });
+    expect(result.error).toBeUndefined();
+    const data = JSON.parse(result.result!);
+    expect(data[0].address).toBe('123 Main St, Suite 4');
+  });
+
+  it('handles multiple rows', () => {
+    const csv = 'a,b\n1,2\n3,4\n5,6';
+    const result = csvToJson(csv, { header: true, typeInference: true });
+    expect(result.rows).toBe(3);
+  });
+
+  it('handles empty cells', () => {
+    const result = csvToJson('name,age\nAlice,\n,25', { header: true, typeInference: false });
+    expect(result.error).toBeUndefined();
+    const data = JSON.parse(result.result!);
+    expect(data[0].age).toBe('');
+    expect(data[1].name).toBe('');
+  });
+
+  it('infers numeric types correctly', () => {
+    const result = csvToJson('name,age,score\nAlice,30,95.5', { header: true, typeInference: true });
+    const data = JSON.parse(result.result!);
     expect(data[0].age).toBe(30);
+    expect(data[0].score).toBe(95.5);
   });
 
-  it('handles CSV with commas inside quoted fields', () => {
-    const csv = 'name,city\n"Smith, John","New York"';
-    const { result, error } = csvToJson(csv, { header: true, typeInference: false });
-    expect(error).toBeUndefined();
-    const data = JSON.parse(result!);
-    expect(data[0].name).toBe('Smith, John');
+  it('infers boolean types correctly', () => {
+    const result = csvToJson('name,active\nAlice,true\nBob,false', { header: true, typeInference: true });
+    const data = JSON.parse(result.result!);
+    expect(data[0].active).toBe(true);
+    expect(data[1].active).toBe(false);
   });
 });
 
 describe('csvToJson - without header', () => {
-  it('converts CSV without header to array of arrays', () => {
-    const csv = 'Alice,30\nBob,25';
-    const { result, error, rows } = csvToJson(csv, { header: false, typeInference: false });
-    expect(error).toBeUndefined();
-    expect(rows).toBe(2);
-    const data = JSON.parse(result!);
-    expect(data[0]).toEqual(['Alice', '30']);
+  it('converts CSV without header row', () => {
+    const result = csvToJson('Alice,30\nBob,25', { header: false, typeInference: false });
+    expect(result.error).toBeUndefined();
+    const data = JSON.parse(result.result!);
+    expect(Array.isArray(data[0])).toBe(true);
+  });
+
+  it('returns row count', () => {
+    const result = csvToJson('a,b\nc,d\ne,f', { header: false, typeInference: false });
+    expect(result.rows).toBe(3);
   });
 });
 
 describe('csvToJson - edge cases', () => {
-  it('returns error for empty string', () => {
-    const { error } = csvToJson('', { header: true, typeInference: false });
-    expect(error).toBeDefined();
+  it('rejects input larger than 1MB', () => {
+    const largeInput = 'a,b\n' + 'x,y\n'.repeat(300_000);
+    const result = csvToJson(largeInput, { header: true, typeInference: false });
+    expect(result.error).toContain('1MB');
   });
 
-  it('returns error for input exceeding 1MB', () => {
-    const { error } = csvToJson('a'.repeat(1_100_000), { header: true, typeInference: false });
-    expect(error).toContain('exceeds 1MB');
+  it('returns error for empty input', () => {
+    const result = csvToJson('', { header: true, typeInference: false });
+    expect(result.error).toBeDefined();
   });
 
-  it('handles multi-row CSV correctly', () => {
-    const csv = 'id,value\n1,a\n2,b\n3,c';
-    const { result, rows, error } = csvToJson(csv, { header: true, typeInference: false });
-    expect(error).toBeUndefined();
-    expect(rows).toBe(3);
-    const data = JSON.parse(result!);
-    expect(data).toHaveLength(3);
+  it('handles tab-separated values', () => {
+    const result = csvToJson('name\tage\nAlice\t30', { header: true, typeInference: true });
+    expect(result.error).toBeUndefined();
+    const data = JSON.parse(result.result!);
+    expect(data[0].name).toBe('Alice');
+  });
+
+  it('handles single column CSV with explicit delimiter', () => {
+    const result = csvToJson('name,\nAlice,\nBob,', { header: true, typeInference: false });
+    expect(result.error).toBeUndefined();
+    const data = JSON.parse(result.result!);
+    expect(data).toHaveLength(2);
+  });
+
+  it('handles quoted fields with newlines', () => {
+    const result = csvToJson('name,bio\nAlice,"line1\nline2"', { header: true, typeInference: false });
+    expect(result.error).toBeUndefined();
+    const data = JSON.parse(result.result!);
+    expect(data[0].bio).toContain('line1');
   });
 });

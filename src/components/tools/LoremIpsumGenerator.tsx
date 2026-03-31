@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { generateLoremIpsum } from '../../lib/hash-utils';
+import { generateLoremIpsum } from '../../lib/lorem-ipsum-utils';
 import CodeEditor from './CodeEditor';
 import CopyButton from './CopyButton';
 import ToolErrorBoundary from './ToolErrorBoundary';

@@ -68,6 +68,38 @@ describe('parseColor - named colors', () => {
   });
 });
 
+describe('parseColor - hsl clamping warning', () => {
+  it('warns when hue exceeds 360', () => {
+    const result = parseColor('hsl(400, 50%, 50%)');
+    expect(result.error).toBeUndefined();
+    expect(result.warning).toContain('H: 400→360');
+  });
+
+  it('warns when saturation exceeds 100', () => {
+    const result = parseColor('hsl(120, 150%, 50%)');
+    expect(result.error).toBeUndefined();
+    expect(result.warning).toContain('S: 150→100');
+  });
+
+  it('warns when lightness exceeds 100', () => {
+    const result = parseColor('hsl(120, 50%, 200%)');
+    expect(result.error).toBeUndefined();
+    expect(result.warning).toContain('L: 200→100');
+  });
+
+  it('warns for multiple out-of-range values', () => {
+    const result = parseColor('hsl(400, 150%, 200%)');
+    expect(result.warning).toContain('H: 400→360');
+    expect(result.warning).toContain('S: 150→100');
+    expect(result.warning).toContain('L: 200→100');
+  });
+
+  it('no warning for valid HSL values', () => {
+    const result = parseColor('hsl(120, 50%, 50%)');
+    expect(result.warning).toBeUndefined();
+  });
+});
+
 describe('parseColor - invalid input', () => {
   it('returns error for empty input', () => {
     const result = parseColor('');

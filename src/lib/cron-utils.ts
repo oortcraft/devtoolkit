@@ -272,10 +272,19 @@ function expandValues(field: string, min: number, max: number): number[] {
   return Array.from(result).sort((a, b) => a - b);
 }
 
+export interface NextRunsResult {
+  dates: Date[];
+  incomplete?: boolean;
+}
+
 export function getNextRuns(expr: string, count: number): Date[] {
+  return getNextRunsWithStatus(expr, count).dates;
+}
+
+export function getNextRunsWithStatus(expr: string, count: number): NextRunsResult {
   const expanded = expandSpecial(expr);
   const validation = validateCron(expanded);
-  if (!validation.valid) return [];
+  if (!validation.valid) return { dates: [], incomplete: true };
 
   const [minuteF, hourF, dayF, monthF, weekdayF] = expanded.trim().split(/\s+/);
 
@@ -373,5 +382,8 @@ export function getNextRuns(expr: string, count: number): Date[] {
     }
   }
 
-  return results;
+  return {
+    dates: results,
+    incomplete: results.length < count ? true : undefined,
+  };
 }

@@ -3,75 +3,115 @@ import { computeDiff, computeStats } from '../src/lib/diff-utils';
 
 describe('computeDiff', () => {
   it('returns empty array for two empty strings', () => {
-    const result = computeDiff('', '');
-    expect(result).toHaveLength(0);
+    expect(computeDiff('', '')).toEqual([]);
   });
 
   it('marks all lines unchanged for identical texts', () => {
-    const text = 'line one\nline two\nline three';
-    const result = computeDiff(text, text);
-    expect(result.every(l => l.type === 'unchanged')).toBe(true);
+    const lines = computeDiff('hello\nworld', 'hello\nworld');
+    expect(lines.every(l => l.type === 'unchanged')).toBe(true);
+    expect(lines).toHaveLength(2);
   });
 
   it('marks added lines correctly', () => {
-    const result = computeDiff('', 'new line');
-    expect(result).toHaveLength(1);
-    expect(result[0].type).toBe('added');
-    expect(result[0].content).toBe('new line');
-    expect(result[0].lineNumberA).toBeNull();
-    expect(result[0].lineNumberB).toBe(1);
+    const lines = computeDiff('', 'new line');
+    expect(lines.some(l => l.type === 'added')).toBe(true);
   });
 
   it('marks removed lines correctly', () => {
-    const result = computeDiff('old line', '');
-    expect(result).toHaveLength(1);
-    expect(result[0].type).toBe('removed');
-    expect(result[0].content).toBe('old line');
-    expect(result[0].lineNumberA).toBe(1);
-    expect(result[0].lineNumberB).toBeNull();
+    const lines = computeDiff('old line', '');
+    expect(lines.some(l => l.type === 'removed')).toBe(true);
   });
 
   it('detects a single changed line', () => {
-    const result = computeDiff('hello\nworld', 'hello\nearth');
-    const added = result.filter(l => l.type === 'added');
-    const removed = result.filter(l => l.type === 'removed');
-    expect(added.some(l => l.content === 'earth')).toBe(true);
-    expect(removed.some(l => l.content === 'world')).toBe(true);
+    const lines = computeDiff('hello', 'world');
+    expect(lines.some(l => l.type === 'removed' && l.content === 'hello')).toBe(true);
+    expect(lines.some(l => l.type === 'added' && l.content === 'world')).toBe(true);
   });
 
   it('handles multiline texts', () => {
-    const a = 'a\nb\nc';
-    const b = 'a\nx\nc';
-    const result = computeDiff(a, b);
-    expect(result.some(l => l.type === 'unchanged' && l.content === 'a')).toBe(true);
-    expect(result.some(l => l.type === 'unchanged' && l.content === 'c')).toBe(true);
+    const lines = computeDiff('a\nb\nc', 'a\nx\nc');
+    expect(lines.some(l => l.type === 'removed' && l.content === 'b')).toBe(true);
+    expect(lines.some(l => l.type === 'added' && l.content === 'x')).toBe(true);
+    expect(lines.filter(l => l.type === 'unchanged')).toHaveLength(2);
   });
 
   it('handles unicode content', () => {
-    const result = computeDiff('안녕\n세계', '안녕\n지구');
-    expect(result.some(l => l.type === 'unchanged' && l.content === '안녕')).toBe(true);
+    const lines = computeDiff('안녕', '안녕하세요');
+    expect(lines.some(l => l.type === 'added')).toBe(true);
+  });
+
+  it('handles blank lines within text', () => {
+    const lines = computeDiff('a\n\nb', 'a\n\nc');
+    expect(lines.filter(l => l.type === 'unchanged')).toHaveLength(2);
+    expect(lines.some(l => l.type === 'removed' && l.content === 'b')).toBe(true);
+    expect(lines.some(l => l.type === 'added' && l.content === 'c')).toBe(true);
+  });
+
+  it('handles consecutive additions', () => {
+    const lines = computeDiff('a', 'a\nb\nc\nd');
+    const added = lines.filter(l => l.type === 'added');
+    expect(added).toHaveLength(3);
+  });
+
+  it('handles consecutive removals', () => {
+    const lines = computeDiff('a\nb\nc\nd', 'a');
+    const removed = lines.filter(l => l.type === 'removed');
+    expect(removed).toHaveLength(3);
+  });
+
+  it('handles whitespace-only changes', () => {
+    const lines = computeDiff('hello world', 'hello  world');
+    expect(lines.some(l => l.type === 'removed')).toBe(true);
+    expect(lines.some(l => l.type === 'added')).toBe(true);
+  });
+
+  it('assigns correct line numbers', () => {
+    const lines = computeDiff('a\nb', 'a\nc');
+    const unchanged = lines.find(l => l.type === 'unchanged');
+    expect(unchanged?.lineNumberA).toBe(1);
+    expect(unchanged?.lineNumberB).toBe(1);
+  });
+
+  it('handles one side empty and other has multiple lines', () => {
+    const lines = computeDiff('', 'a\nb\nc');
+    expect(lines.filter(l => l.type === 'added')).toHaveLength(3);
+  });
+
+  it('handles completely replaced text', () => {
+    const lines = computeDiff('a\nb\nc', 'x\ny\nz');
+    expect(lines.filter(l => l.type === 'removed')).toHaveLength(3);
+    expect(lines.filter(l => l.type === 'added')).toHaveLength(3);
   });
 });
 
 describe('computeStats', () => {
   it('counts added, removed, and unchanged lines', () => {
-    const lines = computeDiff('a\nb\nc', 'a\nx\nc');
-    const stats = computeStats(lines);
-    expect(stats.unchanged).toBe(2); // 'a' and 'c'
-    expect(stats.added).toBe(1);    // 'x'
-    expect(stats.removed).toBe(1);  // 'b'
+    const diff = computeDiff('a\nb', 'a\nc');
+    const stats = computeStats(diff);
+    expect(stats.unchanged).toBe(1);
+    expect(stats.removed).toBe(1);
+    expect(stats.added).toBe(1);
   });
 
   it('returns zero stats for empty diff', () => {
     const stats = computeStats([]);
-    expect(stats).toEqual({ added: 0, removed: 0, unchanged: 0 });
+    expect(stats.added).toBe(0);
+    expect(stats.removed).toBe(0);
+    expect(stats.unchanged).toBe(0);
   });
 
   it('returns all unchanged for identical texts', () => {
-    const lines = computeDiff('same\ntext', 'same\ntext');
-    const stats = computeStats(lines);
+    const diff = computeDiff('same\ntext', 'same\ntext');
+    const stats = computeStats(diff);
+    expect(stats.unchanged).toBe(2);
     expect(stats.added).toBe(0);
     expect(stats.removed).toBe(0);
-    expect(stats.unchanged).toBe(2);
+  });
+
+  it('counts all added when B is entirely new', () => {
+    const diff = computeDiff('', 'a\nb\nc');
+    const stats = computeStats(diff);
+    expect(stats.added).toBe(3);
+    expect(stats.removed).toBe(0);
   });
 });

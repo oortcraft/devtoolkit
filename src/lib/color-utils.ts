@@ -3,6 +3,7 @@ export interface ColorResult {
   rgb: string;
   hsl: string;
   error?: string;
+  warning?: string;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -148,15 +149,26 @@ export function parseColor(input: string): ColorResult {
   // HSL: hsl(h, s%, l%)
   const hslMatch = trimmed.match(/^hsla?\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)%?\s*,\s*(\d+(?:\.\d+)?)%?/);
   if (hslMatch) {
-    const h = clamp(Math.round(parseFloat(hslMatch[1])), 0, 360);
-    const s = clamp(Math.round(parseFloat(hslMatch[2])), 0, 100);
-    const l = clamp(Math.round(parseFloat(hslMatch[3])), 0, 100);
+    const rawH = Math.round(parseFloat(hslMatch[1]));
+    const rawS = Math.round(parseFloat(hslMatch[2]));
+    const rawL = Math.round(parseFloat(hslMatch[3]));
+    const h = clamp(rawH, 0, 360);
+    const s = clamp(rawS, 0, 100);
+    const l = clamp(rawL, 0, 100);
+    const clamped: string[] = [];
+    if (rawH !== h) clamped.push(`H: ${rawH}→${h}`);
+    if (rawS !== s) clamped.push(`S: ${rawS}→${s}`);
+    if (rawL !== l) clamped.push(`L: ${rawL}→${l}`);
     const { r, g, b } = hslToRgb(h, s, l);
-    return {
+    const result: ColorResult = {
       hex: rgbToHex(r, g, b).toUpperCase(),
       rgb: `rgb(${r}, ${g}, ${b})`,
       hsl: `hsl(${h}, ${s}%, ${l}%)`,
     };
+    if (clamped.length > 0) {
+      result.warning = `HSL values clamped: ${clamped.join(', ')}`;
+    }
+    return result;
   }
 
   // CSS named colors

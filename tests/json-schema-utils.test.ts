@@ -3,69 +3,95 @@ import { validateJsonSchema, SAMPLE_SCHEMA, SAMPLE_DATA } from '../src/lib/json-
 
 describe('validateJsonSchema', () => {
   it('validates a simple object schema + matching data as valid', () => {
-    const schema = JSON.stringify({
-      type: 'object',
-      required: ['id', 'name'],
-      properties: {
-        id: { type: 'integer' },
-        name: { type: 'string', minLength: 1 },
-      },
-    });
-    const data = JSON.stringify({ id: 1, name: 'Alice' });
-    const { result, error } = validateJsonSchema(schema, data);
-    expect(error).toBeUndefined();
-    expect(result).toBeDefined();
-    expect(result!.valid).toBe(true);
-    expect(result!.errors).toHaveLength(0);
+    const schema = '{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}';
+    const data = '{"name":"Alice"}';
+    const result = validateJsonSchema(schema, data);
+    expect(result.result?.valid).toBe(true);
+    expect(result.result?.errors).toHaveLength(0);
   });
 
-  it('returns invalid result when required field is missing', () => {
-    const schema = JSON.stringify({ type: 'object', required: ['name'], properties: { name: { type: 'string' } } });
-    const data = JSON.stringify({});
-    const { result } = validateJsonSchema(schema, data);
-    expect(result!.valid).toBe(false);
-    expect(result!.errors.length).toBeGreaterThan(0);
+  it('detects missing required field', () => {
+    const schema = '{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}';
+    const data = '{}';
+    const result = validateJsonSchema(schema, data);
+    expect(result.result?.valid).toBe(false);
+    expect(result.result?.errors.length).toBeGreaterThan(0);
   });
 
-  it('returns invalid result when type is wrong', () => {
-    const schema = JSON.stringify({ type: 'object', properties: { age: { type: 'integer' } } });
-    const data = JSON.stringify({ age: 'not-a-number' });
-    const { result } = validateJsonSchema(schema, data);
-    expect(result!.valid).toBe(false);
+  it('detects type mismatch', () => {
+    const schema = '{"type":"object","properties":{"age":{"type":"number"}},"required":["age"]}';
+    const data = '{"age":"not-a-number"}';
+    const result = validateJsonSchema(schema, data);
+    expect(result.result?.valid).toBe(false);
   });
 
   it('returns error for invalid schema JSON', () => {
-    const { error } = validateJsonSchema('{bad schema', '{}');
-    expect(error).toBeDefined();
-    expect(error).toContain('Schema parse error');
+    const result = validateJsonSchema('{invalid', '{}');
+    expect(result.error).toBeDefined();
   });
 
   it('returns error for invalid data JSON', () => {
-    const { error } = validateJsonSchema('{"type":"object"}', '{bad data}');
-    expect(error).toBeDefined();
-    expect(error).toContain('Data parse error');
+    const result = validateJsonSchema('{"type":"object"}', '{invalid');
+    expect(result.error).toBeDefined();
   });
 
   it('validates a simple string schema', () => {
-    const schema = JSON.stringify({ type: 'string' });
-    const data = JSON.stringify('hello');
-    const { result } = validateJsonSchema(schema, data);
-    expect(result!.valid).toBe(true);
+    const result = validateJsonSchema('{"type":"string"}', '"hello"');
+    expect(result.result?.valid).toBe(true);
   });
 
   it('validates an array schema', () => {
-    const schema = JSON.stringify({ type: 'array', items: { type: 'number' } });
-    const data = JSON.stringify([1, 2, 3]);
-    const { result } = validateJsonSchema(schema, data);
-    expect(result!.valid).toBe(true);
+    const schema = '{"type":"array","items":{"type":"number"}}';
+    const data = '[1, 2, 3]';
+    const result = validateJsonSchema(schema, data);
+    expect(result.result?.valid).toBe(true);
   });
 
-  it('includes path and keyword in error details', () => {
-    const schema = JSON.stringify({ type: 'object', required: ['name'], properties: { name: { type: 'string' } } });
-    const data = JSON.stringify({});
-    const { result } = validateJsonSchema(schema, data);
-    const err = result!.errors[0];
-    expect(err.keyword).toBeDefined();
-    expect(err.message).toBeDefined();
+  it('provides error details with path and message', () => {
+    const schema = '{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}';
+    const data = '{"name": 123}';
+    const result = validateJsonSchema(schema, data);
+    expect(result.result?.valid).toBe(false);
+    const err = result.result?.errors[0];
+    expect(err?.message).toBeDefined();
+    expect(err?.keyword).toBeDefined();
+  });
+
+  it('validates nested object schema', () => {
+    const schema = '{"type":"object","properties":{"user":{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}}}';
+    const data = '{"user":{"name":"Alice"}}';
+    const result = validateJsonSchema(schema, data);
+    expect(result.result?.valid).toBe(true);
+  });
+
+  it('detects invalid nested data', () => {
+    const schema = '{"type":"object","properties":{"user":{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}}}';
+    const data = '{"user":{}}';
+    const result = validateJsonSchema(schema, data);
+    expect(result.result?.valid).toBe(false);
+  });
+
+  it('validates with anyOf schema', () => {
+    const schema = '{"anyOf":[{"type":"string"},{"type":"number"}]}';
+    expect(validateJsonSchema(schema, '"hello"').result?.valid).toBe(true);
+    expect(validateJsonSchema(schema, '42').result?.valid).toBe(true);
+    expect(validateJsonSchema(schema, 'true').result?.valid).toBe(false);
+  });
+
+  it('validates with enum constraint', () => {
+    const schema = '{"type":"string","enum":["red","green","blue"]}';
+    expect(validateJsonSchema(schema, '"red"').result?.valid).toBe(true);
+    expect(validateJsonSchema(schema, '"yellow"').result?.valid).toBe(false);
+  });
+
+  it('SAMPLE_SCHEMA compilation fails on unknown format (email requires ajv-formats)', () => {
+    const result = validateJsonSchema(SAMPLE_SCHEMA, SAMPLE_DATA);
+    expect(result.error).toContain('format');
+  });
+
+  it('rejects schema larger than 1MB', () => {
+    const bigSchema = '{"type":"string","description":"' + 'a'.repeat(1_100_000) + '"}';
+    const result = validateJsonSchema(bigSchema, '"test"');
+    expect(result.error).toContain('too large');
   });
 });

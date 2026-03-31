@@ -12,8 +12,8 @@ export function getRelativeTime(date: Date): string {
   const diffMin = Math.round(diffSec / 60);
   const diffHour = Math.round(diffMin / 60);
   const diffDay = Math.round(diffHour / 24);
-  const diffMonth = Math.round(diffDay / 30);
-  const diffYear = Math.round(diffDay / 365);
+  const diffMonth = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
+  const diffYear = now.getFullYear() - date.getFullYear();
 
   if (Math.abs(diffSec) < 5) return 'just now';
   if (Math.abs(diffSec) < 60) return diffSec > 0 ? `${diffSec} seconds ago` : `in ${Math.abs(diffSec)} seconds`;

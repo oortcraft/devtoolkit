@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateCron, parseCron, getNextRuns } from '../src/lib/cron-utils';
+import { validateCron, parseCron, getNextRuns, getNextRunsWithStatus } from '../src/lib/cron-utils';
 
 describe('validateCron', () => {
   it('validates the "every minute" expression', () => {
@@ -113,5 +113,19 @@ describe('getNextRuns', () => {
     const now = Date.now();
     const runs = getNextRuns('* * * * *', 3);
     runs.forEach(d => expect(d.getTime()).toBeGreaterThan(now));
+  });
+});
+
+describe('getNextRunsWithStatus', () => {
+  it('returns incomplete flag for invalid expression', () => {
+    const result = getNextRunsWithStatus('invalid', 5);
+    expect(result.dates).toHaveLength(0);
+    expect(result.incomplete).toBe(true);
+  });
+
+  it('returns no incomplete flag for common expressions', () => {
+    const result = getNextRunsWithStatus('* * * * *', 3);
+    expect(result.dates).toHaveLength(3);
+    expect(result.incomplete).toBeUndefined();
   });
 });

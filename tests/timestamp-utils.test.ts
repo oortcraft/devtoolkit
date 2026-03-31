@@ -78,4 +78,19 @@ describe('getRelativeTime', () => {
     const result = getRelativeTime(future);
     expect(result).toContain('in');
   });
+
+  it('calculates months accurately using calendar months', () => {
+    // 2 calendar months ago (not 30-day approximation)
+    const twoMonthsAgo = new Date();
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+    const result = getRelativeTime(twoMonthsAgo);
+    expect(result).toBe('2 months ago');
+  });
+
+  it('calculates years accurately using calendar years', () => {
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const result = getRelativeTime(twoYearsAgo);
+    expect(result).toBe('2 years ago');
+  });
 });
