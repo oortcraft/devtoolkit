@@ -295,6 +295,18 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
     URL: https://oortcraft.dev/blog/jsonpath-tutorial
     Topics: JSONPath syntax, dot/bracket notation, wildcards, recursive descent, filter expressions, jsonpath-plus, JSONPath vs jq.
 
+30. **Common Regex Patterns: 20+ Examples for Everyday Development**
+    URL: https://oortcraft.dev/blog/common-regex-patterns
+    Topics: Email, URL, IP, phone validation patterns, data extraction, text processing, security patterns, JavaScript and Python regex examples.
+
+31. **Password Entropy Explained: How Strong Is Your Password**
+    URL: https://oortcraft.dev/blog/password-entropy-explained
+    Topics: Shannon entropy, entropy formula, brute-force crack times, length vs complexity, dictionary attacks, rainbow tables, CSPRNG generation.
+
+32. **Crontab Cheat Sheet: 30+ Cron Job Examples**
+    URL: https://oortcraft.dev/blog/crontab-cheat-sheet
+    Topics: Cron syntax, special characters, common schedules, backup/monitoring/deployment examples, special strings, crontab management commands.
+
 ---
 
 ## Tool Categories

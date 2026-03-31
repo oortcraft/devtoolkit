@@ -1,0 +1,424 @@
+---
+title: "Crontab Cheat Sheet: 30+ Cron Job Examples"
+description: "30+ cron job examples for backups, monitoring, and deployments. Master the five-field syntax, special characters, and crontab management."
+pubDate: "2026-04-01"
+tags: ["cron", "devops", "cheatsheet", "scheduling"]
+relatedTools: ["cron-builder"]
+---
+
+Cron syntax looks cryptic at first glance, but it follows a simple five-field pattern that unlocks powerful automation once you understand it. Whether you need to run daily backups, check system health, deploy code, or process data, cron is the Unix-standard tool that gets the job done.
+
+This cheat sheet gives you the five-field format, special characters, and 30+ production-ready examples you can copy, paste, and adapt to your infrastructure.
+
+Use our [Cron Expression Builder](/tools/cron-builder) to validate and test cron expressions interactively.
+
+## Cron Syntax Basics
+
+A cron expression has five fields, in this exact order:
+
+```
+┌───────────── minute (0–59)
+│ ┌───────────── hour (0–23)
+│ │ ┌───────────── day of month (1–31)
+│ │ │ ┌───────────── month (1–12)
+│ │ │ │ ┌───────────── day of week (0–7, where 0 and 7 are Sunday)
+│ │ │ │ │
+* * * * *
+```
+
+Each field accepts specific values, ranges, lists, and step intervals. The order is strict — minute always comes first, weekday always last.
+
+| Field | Values | Example |
+|---|---|---|
+| Minute | 0–59 | `30` (at minute 30) |
+| Hour | 0–23 | `14` (2 PM) |
+| Day of month | 1–31 | `15` (15th of the month) |
+| Month | 1–12 | `3` (March) |
+| Day of week | 0–7 (0,7=Sunday) | `1` (Monday) |
+
+## Quick Reference Table: Special Characters
+
+| Operator | Meaning | Example |
+|---|---|---|
+| `*` | Every value | `* * * * *` = every minute |
+| `/` | Step/interval | `*/5 * * * *` = every 5 minutes |
+| `-` | Range | `9-17` = hours 9 through 17 |
+| `,` | List | `1,3,5` = specific values |
+
+## Common Schedules
+
+Here are the schedules you'll use most often:
+
+```bash
+# Every minute
+* * * * *
+
+# Every 5 minutes
+*/5 * * * *
+
+# Every 15 minutes
+*/15 * * * *
+
+# Every 30 minutes
+*/30 * * * *
+
+# Every hour (at minute 0)
+0 * * * *
+
+# Every 2 hours
+0 */2 * * *
+
+# Every day at midnight
+0 0 * * *
+
+# Every day at 2 AM
+0 2 * * *
+
+# Every day at 6 PM
+0 18 * * *
+
+# Every weekday at 9 AM
+0 9 * * 1-5
+
+# Every Monday at 9 AM
+0 9 * * 1
+
+# Every Monday and Friday at 9 AM
+0 9 * * 1,5
+
+# First day of the month at midnight
+0 0 1 * *
+
+# Midnight every Sunday
+0 0 * * 0
+
+# Every 6 hours
+0 */6 * * *
+
+# Twice daily at 8 AM and 8 PM
+0 8,20 * * *
+
+# Business hours: weekdays 9 AM to 5 PM, every hour
+0 9-17 * * 1-5
+```
+
+## Real-World Examples by Category
+
+### Backup & Maintenance
+
+**Daily database backup at 2 AM**
+```bash
+0 2 * * * /usr/local/bin/backup-db.sh >> /var/log/backup.log 2>&1
+```
+Runs every day at 2 AM (UTC). The `2>&1` redirects error output to the log file so you can debug failures. Store backups to an S3 bucket or remote NAS inside the script.
+
+**Weekly full backup on Sunday at 3 AM**
+```bash
+0 3 * * 0 /opt/scripts/full-backup.sh
+```
+Runs once a week on Sunday. Use for slow, resource-intensive backups that don't need to run daily.
+
+**Rotate log files monthly on the 1st**
+```bash
+0 0 1 * * /usr/sbin/logrotate /etc/logrotate.conf
+```
+Runs on the first of every month at midnight. Prevents log files from consuming all disk space.
+
+**Clear temp directory every 6 hours**
+```bash
+0 */6 * * * find /tmp -type f -mtime +7 -delete
+```
+Removes files in `/tmp` older than 7 days, runs every 6 hours. Adjust the mtime threshold based on your retention needs.
+
+**Compress old logs weekly on Saturday at 1 AM**
+```bash
+0 1 * * 6 gzip /var/log/app/*.log
+```
+Compresses uncompressed logs every Saturday morning before your backup job runs.
+
+### Monitoring & Alerts
+
+**Health check every 5 minutes**
+```bash
+*/5 * * * * /usr/bin/python3 /opt/scripts/health_check.py >> /var/log/health.log 2>&1
+```
+Runs every 5 minutes. The script should test API endpoints, database connectivity, or service status and log failures with timestamps.
+
+**Check disk space every hour**
+```bash
+0 * * * * /usr/local/bin/check-disk-space.sh
+```
+Runs at the top of every hour. Script should email an alert if usage exceeds 85%.
+
+**Monitor certificate expiry daily at 9 AM**
+```bash
+0 9 * * * /usr/local/bin/check-ssl-certs.sh
+```
+Sends email alerts for certificates expiring within 30 days. Run daily to catch renewal deadlines.
+
+**Memory usage check every 30 minutes**
+```bash
+*/30 * * * * free -h >> /var/log/memory.log
+```
+Logs free memory every 30 minutes. Use to identify memory leaks or resource-intensive processes.
+
+**Uptime status every weekday at 6 PM**
+```bash
+0 18 * * 1-5 /opt/scripts/send-uptime-report.sh
+```
+Runs at 6 PM on weekdays. Great for a daily systems report to send to stakeholders.
+
+### Deployment & CI/CD
+
+**Auto-deploy from Git every 30 minutes**
+```bash
+*/30 * * * * cd /var/www/myapp && git pull origin main && npm install && npm run build
+```
+Polls your Git repository every 30 minutes. Restart the web server after a successful build (add to script).
+
+**Clear cache every night at 3 AM**
+```bash
+0 3 * * * redis-cli FLUSHDB
+```
+Runs at 3 AM daily. Flushes Redis cache to free memory and ensure fresh data on next request.
+
+**Rebuild static assets every 2 hours**
+```bash
+0 */2 * * * /opt/scripts/rebuild-assets.sh && systemctl restart nginx
+```
+Regenerates CSS, JavaScript, and images every 2 hours, then reloads Nginx. Prevents stale assets in production.
+
+**Deploy to staging on weekday nights at 11 PM**
+```bash
+0 23 * * 1-5 /opt/scripts/deploy-staging.sh
+```
+Runs Monday–Friday at 11 PM, giving your QA team a fresh staging build each morning.
+
+**Production deployment on specific day (e.g., Tuesday) at 2 AM**
+```bash
+0 2 * * 2 /opt/scripts/deploy-production.sh
+```
+Runs only on Tuesdays at 2 AM. Limits deployments to once per week for predictability.
+
+### Data Processing
+
+**ETL job every night at 1 AM**
+```bash
+0 1 * * * /usr/bin/python3 /opt/etl/daily-load.py
+```
+Runs at 1 AM. Extract data from source systems, transform, and load into data warehouse. Log all steps.
+
+**Generate daily report at 6 AM**
+```bash
+0 6 * * * /usr/bin/node /app/generate-report.js | mail -s "Daily Report" admin@example.com
+```
+Generates a report and emails it. Runs at 6 AM so recipients see it first thing.
+
+**Sync data from external API every 4 hours**
+```bash
+0 */4 * * * /opt/scripts/sync-external-data.sh
+```
+Pulls latest data from a partner API every 4 hours. Add locking to prevent overlapping runs.
+
+**Weekly analytics aggregate on Sunday at 2 AM**
+```bash
+0 2 * * 0 /opt/scripts/weekly-aggregate.sh
+```
+Computes rolling averages, trends, and summaries once a week when traffic is low.
+
+**Hourly metric collection during business hours**
+```bash
+0 9-17 * * 1-5 /opt/scripts/collect-metrics.sh
+```
+Collects performance metrics every hour, Monday–Friday, 9 AM–5 PM. Skips weekends and nights.
+
+**Database cleanup every Sunday at 4 AM**
+```bash
+0 4 * * 0 /usr/bin/mysql -u root -p$MYSQL_PASSWORD -e "DELETE FROM audit_log WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY);"
+```
+Purges audit logs older than 90 days every Sunday. Keeps the database lean.
+
+## Special Strings
+
+Most cron implementations recognize shorthand strings as aliases for common schedules:
+
+| String | Equivalent | Meaning |
+|---|---|---|
+| `@yearly` / `@annually` | `0 0 1 1 *` | Once a year on January 1st at midnight |
+| `@monthly` | `0 0 1 * *` | First day of the month at midnight |
+| `@weekly` | `0 0 * * 0` | Every Sunday at midnight |
+| `@daily` / `@midnight` | `0 0 * * *` | Every day at midnight |
+| `@hourly` | `0 * * * *` | Every hour at minute 0 |
+| `@reboot` | (special) | Once at system startup |
+
+Use these when you want readability over precision:
+
+```bash
+# Instead of: 0 0 1 1 *
+@yearly /usr/local/bin/new-year-job.sh
+
+# Instead of: 0 0 * * 0
+@weekly /opt/scripts/cleanup.sh
+
+# Runs once when the system boots
+@reboot /opt/scripts/start-service.sh
+```
+
+## Crontab Management Commands
+
+### List your crontab entries
+```bash
+crontab -l
+```
+Shows all scheduled jobs for the current user.
+
+### Edit your crontab
+```bash
+crontab -e
+```
+Opens your crontab in the default editor (usually vim or nano). Changes are saved and loaded automatically by crond.
+
+### Remove your entire crontab
+```bash
+crontab -r
+```
+Deletes all cron jobs for the current user. Ask before running this.
+
+### Edit another user's crontab (as root)
+```bash
+sudo crontab -u username -e
+```
+Root can edit any user's crontab. Useful for system-level jobs.
+
+### View cron logs
+```bash
+# Linux
+sudo tail -f /var/log/cron
+
+# macOS
+log stream --predicate 'process == "cron"'
+
+# Via journalctl (modern Linux)
+sudo journalctl -u cron -f
+```
+Watch cron activity in real time. Invaluable for debugging failed jobs.
+
+### Create a crontab from a file
+```bash
+crontab /path/to/crontab.txt
+```
+Bulk-import jobs from a file instead of editing interactively.
+
+## Common Mistakes & Gotchas
+
+### Forgetting Full Paths
+
+**Mistake:**
+```bash
+*/5 * * * * python3 backup.py
+```
+Cron doesn't have your shell's PATH, so `python3` may not be found, and the job fails silently.
+
+**Fix:**
+```bash
+*/5 * * * * /usr/bin/python3 /opt/backup.py
+```
+Use absolute paths for every command. Find them with `which python3`.
+
+### Missing Output Redirection
+
+**Mistake:**
+```bash
+0 2 * * * /usr/local/bin/backup.sh
+```
+If the script prints anything, cron emails it to the local user (usually root). If email isn't configured, output is lost.
+
+**Fix:**
+```bash
+0 2 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1
+```
+Redirect stdout and stderr to a log file. The `2>&1` combines error output with standard output.
+
+### Timezone Confusion
+
+**Mistake:**
+```bash
+0 9 * * 1-5 /opt/scripts/morning-job.sh
+```
+If your server is in UTC but you expect 9 AM in New York, the job runs at the wrong time.
+
+**Fix:**
+```bash
+CRON_TZ=America/New_York
+0 9 * * 1-5 /opt/scripts/morning-job.sh
+```
+Add `CRON_TZ` at the top of your crontab. Most modern cron implementations support it.
+
+### Jobs Running Simultaneously
+
+**Mistake:**
+```bash
+*/5 * * * * /opt/scripts/long-job.sh
+```
+If the job takes 10 minutes but runs every 5 minutes, two instances overlap and corrupt data.
+
+**Fix:**
+```bash
+*/5 * * * * /usr/bin/flock -n /tmp/job.lock /opt/scripts/long-job.sh
+```
+Use `flock` to acquire a lock. If the lock is held, the job skips that run. Or increase the interval to be longer than the job's runtime.
+
+### Day-of-Month vs. Day-of-Week Logic
+
+**Mistake:**
+```bash
+0 0 15 * 1 /opt/scripts/biweekly-job.sh
+```
+You expect this to run on the 15th if it's a Monday. It actually runs on the 15th **OR** every Monday (OR semantics).
+
+**Fix:**
+```bash
+0 0 15 * * [ $(date +\%u) -eq 1 ] && /opt/scripts/biweekly-job.sh
+```
+Add logic inside the script to check both conditions. Or use separate cron jobs for each condition.
+
+## Frequently Asked Questions
+
+### How do I run a cron job every N minutes?
+
+Use the step operator with the minute field: `*/N * * * * command`. For example, `*/10 * * * *` runs every 10 minutes. The job runs at minutes 0, 10, 20, 30, etc.
+
+### Why did my cron job not run?
+
+Check three things: (1) Verify the job exists with `crontab -l`, (2) Check the cron logs at `/var/log/cron` or `journalctl -u cron`, (3) Run the command manually to see if it actually works. Most failures are due to missing full paths or permission errors.
+
+### How do I run a cron job at a specific time only once?
+
+You can't do this with cron alone — cron is for recurring schedules. Instead, use `at` command for one-time jobs: `echo "command" | at 2:30 PM tomorrow`. Or use a background task scheduled via your application code.
+
+### What's the difference between day-of-month and day-of-week?
+
+If both are non-wildcard (e.g., `0 0 15 * 1`), cron uses OR semantics: it runs on the 15th **or** every Monday. If you want the intersection (run only when the 15th is a Monday), check the date inside your script.
+
+### How do I test a cron expression before adding it to production?
+
+Paste the expression into the [Cron Expression Builder](/tools/cron-builder). It shows the next five run times and a plain-English description. Also run the command manually to ensure it works outside of cron.
+
+### Can I use environment variables in cron?
+
+Yes, define them at the top of your crontab:
+
+```bash
+PATH=/usr/bin:/bin
+SHELL=/bin/bash
+MYSQL_PASSWORD=secret
+0 2 * * * /opt/scripts/backup.sh
+```
+
+All environment variables are available to the job. This is safer than hardcoding credentials in the script.
+
+## Conclusion
+
+Cron is a powerful and battle-tested scheduling tool. The five-field format—minute, hour, day, month, weekday—combined with `*`, `/`, `-`, and `,` operators handles 99% of recurring tasks. Use the examples in this cheat sheet as starting points, always test before deploying, and remember the gotchas: use full paths, redirect output, and mind the timezone.
+
+Build and validate cron expressions with our [Cron Expression Builder](/tools/cron-builder) — paste an expression and get instant feedback on timing and next run dates.
