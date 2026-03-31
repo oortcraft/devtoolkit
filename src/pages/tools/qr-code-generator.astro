@@ -1,0 +1,41 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import QrCodeGenerator from '../../components/tools/QrCodeGenerator';
+---
+
+<ToolLayout
+  title="QR Code Generator — Free Online QR Code Maker"
+  description="Generate QR codes from text, URLs, or any data. Download as SVG or PNG. Choose error correction level. All processing happens in your browser."
+  toolName="QR Code Generator"
+  toolUrl="https://oortcraft.dev/tools/qr-code-generator"
+  faq={[
+    { question: 'What data can I encode?', answer: 'Any text, URL, email address, phone number, or WiFi credentials up to 4,296 characters.' },
+    { question: 'What are error correction levels?', answer: 'L (7%), M (15%), Q (25%), H (30%) — higher levels make QR codes more resilient to damage but larger.' },
+    { question: 'What formats can I download?', answer: 'SVG (vector, scalable) and PNG (512×512 raster image).' },
+    { question: 'Is my data safe?', answer: 'Yes. All QR code generation happens in your browser. No data is sent to any server.' },
+  ]}
+>
+  <div slot="tool">
+    <QrCodeGenerator client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the QR Code Generator</h2>
+    <p>Type or paste any text, URL, or data in the input field. A QR code is generated in real time. Use the error correction selector to adjust resilience, then download as SVG or PNG.</p>
+    <h2>Error Correction Levels</h2>
+    <ul>
+      <li><strong>L (Low, 7%)</strong> — Smallest QR code, minimal damage recovery</li>
+      <li><strong>M (Medium, 15%)</strong> — Default, good balance of size and resilience</li>
+      <li><strong>Q (Quartile, 25%)</strong> — Good for printed codes</li>
+      <li><strong>H (High, 30%)</strong> — Maximum resilience, largest QR code</li>
+    </ul>
+    <h2>FAQ</h2>
+    <h3>What data can I encode?</h3>
+    <p>Any text, URL, email address, phone number, or WiFi credentials up to 4,296 characters.</p>
+    <h3>What are error correction levels?</h3>
+    <p>L (7%), M (15%), Q (25%), H (30%) — higher levels make QR codes more resilient to damage but larger.</p>
+    <h3>What formats can I download?</h3>
+    <p>SVG (vector, scalable) and PNG (512×512 raster image).</p>
+    <h3>Is my data safe?</h3>
+    <p>Yes. All QR code generation happens in your browser. No data is sent to any server.</p>
+  </Fragment>
+</ToolLayout>

@@ -1,0 +1,226 @@
+---
+title: "YAML Validation Best Practices: Avoiding Common Pitfalls"
+description: "Learn how to write valid YAML and avoid the most common syntax errors. Covers indentation, types, multi-document files, and YAML vs JSON tradeoffs."
+pubDate: "2026-03-31"
+tags: ["yaml", "configuration", "devops", "best-practices"]
+relatedTools: ["yaml-validator", "json-to-yaml"]
+---
+
+YAML has become the dominant configuration language for modern infrastructure. Kubernetes manifests, GitHub Actions workflows, Docker Compose files, Ansible playbooks, and most CI/CD systems are all written in YAML. Its human-readable syntax is a genuine strength, but YAML's flexibility also makes it one of the easiest formats to get subtly wrong. A single space in the wrong place silently changes the meaning of a document — or breaks a deployment entirely.
+
+This guide covers the most common YAML pitfalls and the practices that prevent them.
+
+## Why YAML Validation Matters
+
+Unlike JSON, YAML has no official schema validation built into the format itself. A YAML file can be syntactically valid but semantically wrong — correctly parsed, but with values that have the wrong type, wrong structure, or unexpected defaults.
+
+In practice, YAML errors surface in two ways:
+
+1. **Parse errors** — the file is not valid YAML at all. The parser throws an exception and your tool refuses to run.
+2. **Type coercion surprises** — the file parses without error, but a value is interpreted as a different type than you intended (a string becomes a boolean, a number becomes a string, etc.).
+
+Both are preventable. Catching them before deployment — rather than during a production rollout — is the difference between a five-minute fix and a one-hour incident.
+
+## Indentation: Spaces Only, Consistent Width
+
+YAML uses indentation to express structure. The rules are strict:
+
+- **Tabs are never allowed.** YAML 1.1 and 1.2 both prohibit tab characters as indentation. If your editor inserts tabs, the file will fail to parse.
+- **Indentation must be consistent within a block.** Two spaces, four spaces, and even one space are all valid — but you cannot mix indentation widths within the same level of a document.
+- **Child nodes must be indented further than their parent.** The exact amount does not matter as long as it is greater.
+
+```yaml
+# Valid — 2-space indentation
+server:
+  host: localhost
+  port: 8080
+
+# Valid — 4-space indentation
+server:
+    host: localhost
+    port: 8080
+
+# Invalid — mixed indentation within the same block
+server:
+  host: localhost
+    port: 8080  # Error: unexpected indentation
+```
+
+Most editors can be configured to insert spaces instead of tabs and to show whitespace characters. For YAML files, both settings are worth enabling.
+
+## The Norway Problem (Boolean Coercion)
+
+YAML 1.1, which most tools used until recently, treated a surprising range of values as booleans. The most famous example is the country code `NO` — parsed as the boolean `false`.
+
+YAML 1.1 boolean values (all case-insensitive):
+
+```
+true values:  y, yes, true, on
+false values: n, no, false, off
+```
+
+This means that a configuration like:
+
+```yaml
+country: NO     # Parsed as false, not the string "NO"
+feature: yes    # Parsed as true, not the string "yes"
+debug: on       # Parsed as true
+```
+
+YAML 1.2 (released in 2009) narrowed boolean values to only `true` and `false`. However, many parsers — including PyYAML prior to version 6.0 and many Go-based tools — still default to YAML 1.1 behavior.
+
+**The fix is always quoting ambiguous strings:**
+
+```yaml
+country: "NO"
+feature: "yes"
+debug: "on"
+```
+
+When in doubt, quote any string value that could be misread as a boolean, null, or number. Quotes are always safe; omitting them sometimes is not.
+
+## Null Values
+
+YAML has three representations for null: the literal `null`, the tilde `~`, and an empty value. All three parse identically.
+
+```yaml
+# All three are equivalent
+value1: null
+value2: ~
+value3:
+```
+
+The empty value is the most dangerous — it is easy to accidentally create a null when you meant to write an empty string. If you need an empty string, quote it:
+
+```yaml
+name: ""   # Empty string
+name:      # null — different!
+```
+
+## Multiline Strings
+
+YAML offers two multiline string styles: literal block (`|`) and folded block (`>`). Choosing the wrong one changes how newlines are handled.
+
+**Literal block (`|`)** preserves newlines as-is. Use this for shell scripts, file contents, and any text where line breaks are meaningful.
+
+```yaml
+script: |
+  #!/bin/bash
+  echo "Hello"
+  exit 0
+```
+
+**Folded block (`>`)** replaces single newlines with spaces, preserving only blank lines as paragraph breaks. Use this for long prose descriptions where you want soft-wrapped text.
+
+```yaml
+description: >
+  This is a long description that
+  will be joined into a single line.
+
+  This paragraph is preserved because
+  it follows a blank line.
+```
+
+Both styles also support **chomping indicators** that control whether a trailing newline is kept:
+
+- `|` or `>` — keep one trailing newline (default)
+- `|-` or `>-` — strip all trailing newlines
+- `|+` or `>+` — keep all trailing newlines
+
+In CI/CD contexts, the difference between `|` and `|-` can affect scripts that are sensitive to trailing newlines.
+
+## YAML vs JSON: When to Use Which
+
+YAML is a superset of JSON — any valid JSON is valid YAML. This means you can always fall back to JSON syntax inside a YAML file if needed. The practical tradeoffs are:
+
+| Concern | YAML | JSON |
+|---|---|---|
+| Human readability | High | Medium |
+| Comments | Supported (`#`) | Not supported |
+| Schema validation tooling | Limited | Excellent (JSON Schema) |
+| Parsing ambiguity | Higher | Lower |
+| Whitespace sensitivity | Yes | No |
+| Multi-document support | Yes | No |
+
+Use YAML when humans write and maintain the files — configuration, CI workflows, infrastructure definitions. Use JSON when machines generate and consume the files — API payloads, package manifests, build artifacts — or when you need strict schema validation.
+
+For configurations that humans read but machines also need to validate strictly (like Kubernetes CRDs), YAML with a schema validator (such as `kubeconform` or `yamale`) gives you the best of both.
+
+## Multi-Document YAML Files
+
+A single YAML file can contain multiple documents, separated by `---` (document start marker) and optionally terminated by `...` (document end marker).
+
+```yaml
+---
+name: service-a
+replicas: 2
+---
+name: service-b
+replicas: 1
+```
+
+This is common in Kubernetes, where a single file might contain a Deployment, a Service, and a ConfigMap. The important rules:
+
+- Each `---` starts a new, independent document. Keys from the first document do not carry over to the second.
+- Parsers that load a single document (like Python's `yaml.safe_load`) will only read the first document. Use `yaml.safe_load_all` to iterate over all documents.
+- Some tools concatenate multi-document files without issue; others do not support them at all. Check your tool's documentation before relying on multi-document files in a pipeline.
+
+## YAML Anchors and Aliases
+
+YAML supports reuse through anchors (`&name`) and aliases (`*name`), which let you define a value once and reference it multiple times.
+
+```yaml
+defaults: &defaults
+  timeout: 30
+  retries: 3
+
+production:
+  <<: *defaults
+  host: prod.example.com
+
+staging:
+  <<: *defaults
+  host: staging.example.com
+```
+
+The `<<` merge key is a YAML extension (not part of the core spec) that merges the aliased mapping into the current one. It is widely supported but not universal. Be aware that:
+
+- Anchors only work within a single document. They cannot span the `---` separator.
+- Overly nested anchor structures are hard to read and debug. Prefer them for simple shared defaults, not complex nested structures.
+
+## Best Practices Checklist
+
+Before committing a YAML file, verify the following:
+
+- [ ] No tab characters used for indentation
+- [ ] Indentation is consistent (pick 2 or 4 spaces and stick to it)
+- [ ] Strings that could be misread as booleans (`yes`, `no`, `on`, `off`) are quoted
+- [ ] Empty string values are explicitly quoted (`""`) where an empty string is intended
+- [ ] The correct multiline style (`|` vs `>`) is used for each block string
+- [ ] Multi-document files use `---` separators correctly
+- [ ] The file has been validated with a linter before committing
+
+## Tools for YAML Validation
+
+The fastest way to catch YAML errors is to validate before committing. Use the [YAML Validator](/tools/yaml-validator) in your browser for quick spot-checks, or integrate a linter into your editor and CI pipeline.
+
+**yamllint** is the standard command-line linter for YAML files. It checks syntax and can enforce style rules like line length, indentation width, and key ordering:
+
+```bash
+pip install yamllint
+yamllint kubernetes/
+```
+
+For Kubernetes-specific files, **kubeconform** validates against the Kubernetes API schemas, catching semantic errors that yamllint cannot:
+
+```bash
+kubeconform -strict deployment.yaml
+```
+
+In GitHub Actions, both tools can be added as steps that run on every pull request, ensuring that invalid YAML never reaches a deployment environment.
+
+## Wrapping Up
+
+Most YAML bugs come from a small set of well-known issues: tabs, unexpected boolean coercion, wrong multiline style, and null versus empty string. Once you know where to look, they are easy to prevent. Validate early, quote ambiguous values, and use a linter in CI — those three habits eliminate the majority of YAML-related incidents.
+
+Use the [YAML Validator](/tools/yaml-validator) to check any YAML document instantly in your browser, or the [JSON to YAML converter](/tools/json-to-yaml) to move between formats without errors.

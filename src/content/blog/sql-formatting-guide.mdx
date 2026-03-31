@@ -1,0 +1,247 @@
+---
+title: "SQL Formatting Guide: Writing Clean, Readable Queries"
+description: "Master SQL formatting conventions. Learn keyword casing, indentation patterns, and dialect differences for PostgreSQL, MySQL, SQLite, and more."
+pubDate: "2026-03-31"
+tags: ["sql", "database", "formatting", "best-practices"]
+relatedTools: ["sql-formatter"]
+---
+
+SQL is one of the most widely written languages in software development, yet it also has some of the most inconsistent formatting conventions. A poorly formatted query is not just aesthetically unpleasant — it is harder to review in pull requests, harder to debug when something goes wrong, and harder for a new team member to understand at a glance. Good SQL formatting is a professional habit that pays off every time someone reads your query, including yourself six months later.
+
+## Why SQL Formatting Matters
+
+Unlike application code, SQL queries often live in multiple places: ORM migration files, raw query strings in application code, database view definitions, stored procedures, and analytics notebooks. Each of these contexts has different formatting pressures. In a migration file, the query will be reviewed in a pull request. In an analytics notebook, it will be read by colleagues who may not be software engineers. In a stored procedure, it may be maintained by a DBA who has never seen the rest of your codebase.
+
+Consistent formatting reduces the cognitive load of reading SQL across all these contexts. It also makes automated review tools and SQL linters more effective — a formatter can catch structural issues that a human reviewer might miss.
+
+## The Core Rule: Uppercase Keywords
+
+The single most universal SQL formatting convention is **uppercase SQL keywords**. `SELECT`, `FROM`, `WHERE`, `JOIN`, `ON`, `GROUP BY`, `ORDER BY`, `HAVING`, `LIMIT`, `INSERT`, `UPDATE`, `DELETE` — all uppercase.
+
+SQL is case-insensitive for keywords, so `select` and `SELECT` are equivalent to the parser. The uppercase convention exists purely for human readability: it creates a clear visual distinction between the language's reserved words and your own identifiers (table names, column names, aliases).
+
+```sql
+-- Good
+SELECT user_id, email, created_at
+FROM users
+WHERE active = true
+ORDER BY created_at DESC;
+
+-- Hard to read
+select user_id, email, created_at
+from users
+where active = true
+order by created_at desc;
+```
+
+Some teams also capitalize built-in functions: `COUNT()`, `MAX()`, `COALESCE()`, `DATE_TRUNC()`. This is a reasonable extension of the same principle, and most auto-formatters will apply it consistently.
+
+## Indentation and Clause Alignment
+
+The most common indentation style places each major clause on its own line, aligned at the left margin, with the clause's content indented or aligned to the right of the keyword.
+
+```sql
+SELECT
+    u.user_id,
+    u.email,
+    o.order_count
+FROM users u
+LEFT JOIN (
+    SELECT user_id, COUNT(*) AS order_count
+    FROM orders
+    GROUP BY user_id
+) o ON u.user_id = o.user_id
+WHERE u.active = true
+  AND u.created_at >= '2024-01-01'
+ORDER BY o.order_count DESC
+LIMIT 50;
+```
+
+Key patterns to notice:
+
+- **Each major clause starts at column 0.** `SELECT`, `FROM`, `LEFT JOIN`, `WHERE`, `ORDER BY`, `LIMIT` all start at the left edge.
+- **Column lists are indented.** Each selected column is on its own line, indented consistently (4 spaces is common).
+- **Continuation conditions align with the first condition.** `AND` and `OR` in a `WHERE` clause align with each other, not with the `W` in `WHERE`. Using `AND`/`OR` at the start of the line (rather than the end) makes it easier to comment out individual conditions.
+- **Subqueries are indented inside parentheses.** The opening `(` stays on the same line as the keyword that introduces the subquery.
+
+An alternative style right-aligns the keywords:
+
+```sql
+  SELECT u.user_id, u.email
+    FROM users u
+    JOIN orders o ON u.user_id = o.user_id
+   WHERE u.active = true
+ORDER BY u.created_at DESC;
+```
+
+This style creates a clean right-edge for all keywords, making the column name the first thing you read on each line. It is popular in some DBA communities but less common in application code.
+
+Neither style is objectively superior. What matters is picking one and applying it consistently across a codebase.
+
+## Joins
+
+Always use explicit `JOIN` syntax rather than comma-separated tables in `FROM`. The comma syntax (an implicit cross join filtered by `WHERE`) is harder to read and easier to accidentally turn into a cartesian product.
+
+```sql
+-- Good: explicit join
+SELECT u.email, p.name
+FROM users u
+INNER JOIN profiles p ON u.user_id = p.user_id;
+
+-- Avoid: implicit join
+SELECT u.email, p.name
+FROM users u, profiles p
+WHERE u.user_id = p.user_id;
+```
+
+For join conditions, always use the `ON` keyword and place each condition on a new line when joining on multiple columns:
+
+```sql
+LEFT JOIN order_items oi
+    ON o.order_id = oi.order_id
+   AND oi.status = 'fulfilled';
+```
+
+## Aliases
+
+Use short, meaningful aliases for tables — typically the table name's initial letters. Single-letter aliases (`u` for `users`, `o` for `orders`) are fine for short queries but become confusing in complex ones with many joins. For long queries, use two or three characters that clearly suggest the full table name.
+
+Always alias subqueries and CTEs with descriptive names:
+
+```sql
+WITH monthly_revenue AS (
+    SELECT
+        DATE_TRUNC('month', created_at) AS month,
+        SUM(amount) AS revenue
+    FROM orders
+    WHERE status = 'paid'
+    GROUP BY 1
+)
+SELECT
+    month,
+    revenue,
+    LAG(revenue) OVER (ORDER BY month) AS prev_month_revenue
+FROM monthly_revenue;
+```
+
+CTEs (Common Table Expressions, introduced by `WITH`) are one of the most powerful SQL formatting tools. They let you break a complex query into named, readable steps rather than nesting subqueries multiple levels deep.
+
+## Commas: Leading or Trailing
+
+One of the more heated debates in SQL formatting is where to put the comma between column names.
+
+**Trailing commas** (at the end of each line) match most other programming languages and feel natural to most developers:
+
+```sql
+SELECT
+    user_id,
+    email,
+    created_at
+FROM users;
+```
+
+**Leading commas** (at the start of each line, except the first) make it easy to comment out any column without needing to also remove a trailing comma from the previous line:
+
+```sql
+SELECT
+    user_id
+  , email
+  , created_at
+FROM users;
+```
+
+Both styles work. Most auto-formatters default to trailing commas. If your team uses a formatter, let the formatter decide — consistency matters more than which style you pick.
+
+## Dialect-Specific Conventions
+
+Standard SQL (ANSI SQL) is the theoretical foundation, but every database system has its own syntax extensions and formatting norms.
+
+**PostgreSQL** uses `::` for type casting and supports dollar-quoting for function bodies. The PostgreSQL community generally favors lowercase identifiers (without quoting) and standard ANSI joins.
+
+```sql
+-- PostgreSQL type casting
+SELECT created_at::DATE, amount::NUMERIC(10,2)
+FROM orders;
+
+-- PostgreSQL string functions
+SELECT UPPER(email), LENGTH(email)
+FROM users;
+```
+
+**MySQL** uses backticks to quote identifiers, which is necessary when a column or table name is a reserved word. MySQL also has `LIMIT offset, count` syntax in addition to the ANSI `LIMIT count OFFSET offset`.
+
+```sql
+-- MySQL identifier quoting
+SELECT `user_id`, `order`
+FROM `orders`
+LIMIT 10 OFFSET 20;
+```
+
+**SQLite** is permissive about types and has limited support for some ANSI SQL features. It uses `||` for string concatenation (not `CONCAT()`), and its date/time functions (`strftime`, `datetime`) differ from other dialects.
+
+**T-SQL (SQL Server)** uses square brackets for identifier quoting, `TOP` instead of `LIMIT`, and has its own windowing function syntax.
+
+```sql
+-- T-SQL
+SELECT TOP 10 [user_id], [email]
+FROM [users]
+ORDER BY [created_at] DESC;
+```
+
+When writing SQL that needs to be portable across dialects, avoid dialect-specific syntax in favor of ANSI SQL. When writing for a specific database, use its idiomatic style.
+
+## Common Anti-Patterns
+
+**`SELECT *`** — Selecting all columns works in ad hoc queries but is problematic in application code. It breaks when the table schema changes, fetches columns you do not need (wasting I/O and memory), and makes it impossible to tell from the query itself what data the code actually uses. Always name your columns explicitly.
+
+**Unqualified column names in joins** — When a query joins multiple tables, always prefix column references with the table alias. `SELECT user_id` is ambiguous when both `users` and `orders` have a `user_id` column; `SELECT u.user_id` is not.
+
+**Magic numbers** — `WHERE status = 3` is harder to read than `WHERE status = 3 -- 3 = cancelled`. Either use a comment or, better, use named constants in your application layer and pass them as parameters.
+
+**Deeply nested subqueries** — More than two levels of nesting makes a query nearly impossible to debug. Use CTEs to flatten the structure.
+
+## Before and After
+
+Here is a real-world example of the same query, unformatted and formatted:
+
+```sql
+-- Before
+select u.user_id,u.email,count(o.order_id) as total_orders,sum(o.amount) as total_spent from users u left join orders o on u.user_id=o.user_id where u.active=1 and u.created_at>='2024-01-01' group by u.user_id,u.email having count(o.order_id)>0 order by total_spent desc limit 100;
+
+-- After
+SELECT
+    u.user_id,
+    u.email,
+    COUNT(o.order_id) AS total_orders,
+    SUM(o.amount)     AS total_spent
+FROM users u
+LEFT JOIN orders o ON u.user_id = o.user_id
+WHERE u.active = true
+  AND u.created_at >= '2024-01-01'
+GROUP BY
+    u.user_id,
+    u.email
+HAVING COUNT(o.order_id) > 0
+ORDER BY total_spent DESC
+LIMIT 100;
+```
+
+The formatted version takes more vertical space, but every clause is immediately visible, the join condition is unambiguous, and the `HAVING` clause is clearly separate from the `WHERE` clause.
+
+## Automating SQL Formatting
+
+Manual formatting is error-prone and time-consuming. Automate it.
+
+**In your editor:** Most editors have SQL formatter plugins. For VS Code, `sql-formatter` and `Prettier` with a SQL plugin are both popular options. Configure them to format on save.
+
+**In CI/CD:** Add a formatting check to your pull request pipeline. If the SQL in a migration file or query file does not match the formatter's output, the check fails. This enforces consistency without requiring manual review.
+
+**At the query level:** Use the [SQL Formatter](/tools/sql-formatter) to clean up a query instantly in your browser before pasting it into a code review or documentation.
+
+## Wrapping Up
+
+Good SQL formatting is a force multiplier. It makes code reviews faster, debugging easier, and onboarding smoother. The specific choices — trailing vs. leading commas, 2 vs. 4 spaces, right-aligned vs. left-aligned keywords — matter less than making a choice and applying it consistently across the codebase.
+
+Start with uppercase keywords and explicit column names. Add a formatter to your editor. Let automation handle the rest.
+
+Use the [SQL Formatter](/tools/sql-formatter) to instantly clean and format any SQL query in your browser, with support for PostgreSQL, MySQL, SQLite, T-SQL, and more.

@@ -1,0 +1,205 @@
+---
+title: "Number Base Systems Explained: Binary, Octal, Decimal, and Hexadecimal"
+description: "A developer's guide to number base systems. Learn how binary, octal, decimal, and hexadecimal work, when to use each, and how to convert between them."
+pubDate: "2026-03-31"
+tags: ["number-systems", "binary", "hexadecimal", "programming-fundamentals"]
+relatedTools: ["base-converter"]
+---
+
+Number base systems are one of those foundational topics that experienced developers use every day without thinking about them. You read a hex color code, set a Unix file permission, or inspect a memory dump — and each of those tasks relies on a different base. This guide explains how the four most common bases work, when you will encounter each one, and how to convert between them.
+
+## What is a Number Base?
+
+All number systems use **positional notation**: the value of each digit depends on both the digit itself and its position in the number. In any base `n`, each position represents a power of `n`, increasing from right to left.
+
+The decimal number `4,096` breaks down as:
+
+```
+4 × 10³ + 0 × 10² + 9 × 10¹ + 6 × 10⁰
+= 4000 + 0 + 90 + 6
+= 4096
+```
+
+The same principle applies to every base. The only differences are how many digit symbols exist and what each position is worth.
+
+## Binary (Base 2)
+
+Binary uses exactly two digits: `0` and `1`. Each position represents a power of 2.
+
+```
+Binary: 1011
+= 1×2³ + 0×2² + 1×2¹ + 1×2⁰
+= 8 + 0 + 2 + 1
+= 11 (decimal)
+```
+
+Computers use binary because transistors have two stable states — on and off. A single binary digit is a **bit**. Eight bits form a **byte**, which can represent 256 distinct values (0 to 255, or `00000000` to `11111111` in binary).
+
+Where you encounter binary as a developer:
+
+- **Bitwise operations** — `&`, `|`, `^`, `~`, `<<`, `>>` in C, Java, JavaScript, Python, and most other languages work at the bit level
+- **Flags and bitmasks** — storing multiple boolean states in a single integer (e.g., Unix permissions, feature flags)
+- **Network subnets** — subnet masks like `255.255.255.0` are `11111111.11111111.11111111.00000000` in binary
+- **Bit manipulation puzzles** — common in coding interviews and embedded systems work
+
+```javascript
+// Checking if the 3rd bit (value 4) is set
+const flags = 0b0110; // binary literal in JavaScript
+const hasFlag = (flags & 0b0100) !== 0; // true
+```
+
+Most languages support binary literals with a `0b` prefix: `0b1011` in JavaScript, Python, and Rust.
+
+## Octal (Base 8)
+
+Octal uses digits 0 through 7. Each position represents a power of 8. You will encounter octal most often in Unix/Linux contexts.
+
+```
+Octal: 755
+= 7×8² + 5×8¹ + 5×8⁰
+= 448 + 40 + 5
+= 493 (decimal)
+```
+
+The primary use case for octal in modern development is **Unix file permissions**. The `chmod` command uses three octal digits to represent read, write, and execute permissions for owner, group, and others.
+
+Each digit is a sum of three bits:
+
+| Value | Binary | Meaning |
+|---|---|---|
+| 4 | 100 | Read |
+| 2 | 010 | Write |
+| 1 | 001 | Execute |
+
+So `chmod 755` means:
+- Owner: `7` = read + write + execute
+- Group: `5` = read + execute
+- Others: `5` = read + execute
+
+```bash
+chmod 755 script.sh  # rwxr-xr-x
+chmod 644 config.yml # rw-r--r--
+chmod 600 private.key # rw-------
+```
+
+In C and many shell scripts, an integer literal starting with `0` is octal: `0755` is not decimal 755, it is octal 755 (decimal 493). This is a frequent source of bugs when developers accidentally prefix a decimal number with a leading zero.
+
+## Decimal (Base 10)
+
+Decimal is the base humans use by default. It uses digits 0 through 9, with each position representing a power of 10.
+
+There is not much to explain about decimal beyond noting where it appears in developer contexts alongside other bases. You will usually convert to decimal for human-readable output — error codes, status codes, counts, and measurements are all displayed in decimal because humans read them.
+
+One practical note: most language standard libraries default to decimal when converting numbers to strings. `(255).toString()` in JavaScript returns `"255"`, not `"ff"`. You must explicitly request other bases: `(255).toString(16)` returns `"ff"`.
+
+## Hexadecimal (Base 16)
+
+Hexadecimal (hex) uses sixteen symbols: the digits 0–9 and the letters A–F (where A=10, B=11, C=12, D=13, E=14, F=15). Each position represents a power of 16.
+
+```
+Hex: 1F4
+= 1×16² + 15×16¹ + 4×16⁰
+= 256 + 240 + 4
+= 500 (decimal)
+```
+
+Hex is the base you will encounter most frequently as a developer, for several reasons.
+
+**Colors.** CSS hex colors represent red, green, and blue channels as two hex digits each. `#FF5733` is `FF` (255 red), `57` (87 green), `33` (51 blue). Each channel fits exactly in one byte (0–255), and two hex digits represent exactly one byte. This is no coincidence.
+
+**Memory addresses.** Debuggers and disassemblers display memory addresses in hex: `0x7fff5fbff8c0`. The `0x` prefix is the universal convention for a hex literal in C, C++, Python, JavaScript, and most other languages.
+
+**Cryptographic hashes.** SHA-256 produces 32 bytes of output, commonly displayed as 64 hex characters. MD5 produces 16 bytes, displayed as 32 hex characters.
+
+**UUIDs.** A UUID like `550e8400-e29b-41d4-a716-446655440000` is entirely composed of hex digits separated by hyphens.
+
+**Binary data in logs and protocols.** Network packets, TLS handshakes, and binary file formats are often dumped as hex for inspection.
+
+```python
+# Python hex literals and conversions
+color = 0xFF5733
+red   = (color >> 16) & 0xFF  # 255
+green = (color >> 8)  & 0xFF  # 87
+blue  =  color        & 0xFF  # 51
+
+# Format as hex string
+print(hex(255))          # '0xff'
+print(format(255, '02x'))  # 'ff'
+print(f"{255:#04x}")     # '0xff'
+```
+
+## Converting Between Bases
+
+### Decimal to Binary (repeated division)
+
+Divide the decimal number by 2 repeatedly. The remainders, read bottom-to-top, form the binary result.
+
+```
+45 ÷ 2 = 22 remainder 1
+22 ÷ 2 = 11 remainder 0
+11 ÷ 2 =  5 remainder 1
+ 5 ÷ 2 =  2 remainder 1
+ 2 ÷ 2 =  1 remainder 0
+ 1 ÷ 2 =  0 remainder 1
+
+Read remainders bottom-to-top: 101101
+45 (decimal) = 101101 (binary)
+```
+
+The same method works for any base — divide by the target base and collect remainders.
+
+### Binary to Hexadecimal (group by 4)
+
+Because 16 = 2⁴, you can convert between binary and hex without going through decimal. Group binary digits in sets of four from the right, then convert each group to its hex digit.
+
+```
+Binary: 1010 1111 0011
+Groups: 1010  1111  0011
+Hex:      A     F     3
+
+Result: AF3
+```
+
+This grouping trick makes hex a compact, human-readable shorthand for binary data — one hex digit represents exactly four bits.
+
+### Any Base to Decimal (sum of positional values)
+
+Multiply each digit by its positional value (the base raised to the position index) and sum the results. This is the general method shown at the start of this guide.
+
+For programmatic conversion, every major language has built-in support:
+
+```javascript
+// JavaScript
+parseInt("FF",   16); // 255 — hex to decimal
+parseInt("1011",  2); // 11  — binary to decimal
+parseInt("17",    8); // 15  — octal to decimal
+
+(255).toString(16); // "ff"  — decimal to hex
+(11).toString(2);   // "1011" — decimal to binary
+```
+
+```python
+# Python
+int("FF",   16) # 255
+int("1011",  2) # 11
+int("17",    8) # 15
+
+hex(255)   # '0xff'
+bin(11)    # '0b1011'
+oct(15)    # '0o17'
+```
+
+## Quick Reference Table
+
+| Base | Name | Digits | Prefix | Common use |
+|---|---|---|---|---|
+| 2 | Binary | 0–1 | `0b` | Bitwise ops, hardware, networking |
+| 8 | Octal | 0–7 | `0o` or `0` | Unix file permissions |
+| 10 | Decimal | 0–9 | (none) | Human-readable output |
+| 16 | Hexadecimal | 0–9, A–F | `0x` | Colors, hashes, addresses, UUIDs |
+
+## Wrapping Up
+
+Understanding number bases is not just theoretical knowledge. It makes you faster when reading memory dumps, more confident with bitwise operations, and less likely to be caught off guard by an octal literal in a legacy codebase. The conversions become second nature once you practice them a few times.
+
+Use the [Base Converter](/tools/base-converter) to instantly convert any number between binary, octal, decimal, and hexadecimal in your browser.

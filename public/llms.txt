@@ -26,14 +26,20 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 - [HTML Entity Encoder & Decoder](https://oortcraft.dev/tools/html-entity-encoder): Encode and decode HTML entities for safe web content.
 - [Password Generator](https://oortcraft.dev/tools/password-generator): Generate strong, random passwords with customizable length and character options.
 - [String Case Converter](https://oortcraft.dev/tools/case-converter): Convert text between camelCase, PascalCase, snake_case, kebab-case, and more.
+- [Base Converter](https://oortcraft.dev/tools/base-converter): Convert numbers between binary, octal, decimal, and hexadecimal bases.
+- [YAML Validator](https://oortcraft.dev/tools/yaml-validator): Validate YAML syntax and convert between YAML and JSON formats.
+- [SQL Formatter](https://oortcraft.dev/tools/sql-formatter): Format and beautify SQL queries with dialect-specific formatting.
+- [CSV to JSON Converter](https://oortcraft.dev/tools/csv-to-json): Convert CSV data to JSON format with automatic delimiter detection.
+- [QR Code Generator](https://oortcraft.dev/tools/qr-code-generator): Generate QR codes from text, URLs, or any data. Download as SVG or PNG.
+- [JSON Path Finder](https://oortcraft.dev/tools/jsonpath-finder): Query JSON data using JSONPath expressions with real-time results.
 
 ## Tool Categories
 
-- [JSON Tools](https://oortcraft.dev/tools/category/json): Format, validate, convert, and inspect JSON data.
-- [Encoding Tools](https://oortcraft.dev/tools/category/encoding): Encode and decode Base64, URLs, and HTML entities.
-- [Generator Tools](https://oortcraft.dev/tools/category/generator): Generate UUIDs, passwords, and placeholder text.
+- [JSON Tools](https://oortcraft.dev/tools/category/json): Format, validate, convert, query, and inspect JSON and YAML data.
+- [Encoding Tools](https://oortcraft.dev/tools/category/encoding): Encode and decode Base64, URLs, HTML entities, and number bases.
+- [Generator Tools](https://oortcraft.dev/tools/category/generator): Generate UUIDs, passwords, placeholder text, and QR codes.
 - [Security Tools](https://oortcraft.dev/tools/category/security): Hash data and decode JWTs.
-- [Text Tools](https://oortcraft.dev/tools/category/text): Test regex, compare diffs, preview Markdown, convert case.
+- [Text Tools](https://oortcraft.dev/tools/category/text): Test regex, compare diffs, preview Markdown, convert case, and format SQL.
 - [CSS Tools](https://oortcraft.dev/tools/category/css): Convert colors and minify stylesheets.
 - [DevOps Tools](https://oortcraft.dev/tools/category/devops): Build and understand cron expressions.
 - [Date & Time Tools](https://oortcraft.dev/tools/category/date): Convert Unix timestamps to dates.

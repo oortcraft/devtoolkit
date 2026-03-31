@@ -1,0 +1,38 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import YamlValidator from '../../components/tools/YamlValidator';
+---
+
+<ToolLayout
+  title="YAML Validator — Free Online YAML Syntax Checker"
+  description="Validate YAML syntax and convert YAML to JSON. Get detailed error messages with line numbers. All processing happens in your browser."
+  toolName="YAML Validator"
+  toolUrl="https://oortcraft.dev/tools/yaml-validator"
+  faq={[
+    { question: 'What can this tool do?', answer: 'Validate YAML syntax with detailed error messages, and convert YAML to JSON format.' },
+    { question: 'Does it support multi-document YAML?', answer: 'Yes. The validator can parse multi-document YAML files separated by ---.' },
+    { question: 'Is my data safe?', answer: 'Yes. All validation happens in your browser. No data is sent to any server.' },
+  ]}
+>
+  <div slot="tool">
+    <YamlValidator client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the YAML Validator</h2>
+    <p>Paste your YAML in the input field. Choose <strong>Validate</strong> mode to check syntax, or <strong>YAML → JSON</strong> mode to convert. Results update in real time as you type.</p>
+    <h2>Features</h2>
+    <ul>
+      <li><strong>Syntax Validation</strong> — Instant feedback with line numbers for errors</li>
+      <li><strong>YAML to JSON</strong> — Convert YAML to formatted JSON</li>
+      <li><strong>Multi-document Support</strong> — Handles YAML files with multiple documents</li>
+      <li><strong>Statistics</strong> — Shows key count, nesting depth, and document count</li>
+    </ul>
+    <h2>FAQ</h2>
+    <h3>What can this tool do?</h3>
+    <p>Validate YAML syntax with detailed error messages, and convert YAML to JSON format.</p>
+    <h3>Does it support multi-document YAML?</h3>
+    <p>Yes. The validator can parse multi-document YAML files separated by ---.</p>
+    <h3>Is my data safe?</h3>
+    <p>Yes. All validation happens in your browser. No data is sent to any server.</p>
+  </Fragment>
+</ToolLayout>

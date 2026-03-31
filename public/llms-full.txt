@@ -135,6 +135,42 @@ DevToolkit provides fast, private, open-source developer utilities that run enti
 **How to use**: Type or paste text in the input area, select the target case format from the pill selector, and the output updates in real-time. Copy the result with one click.
 **Key facts**: Automatically detects word boundaries from camelCase, PascalCase, snake_case, kebab-case, and space-separated text. Supports 8 case formats commonly used in programming.
 
+### 21. Base Converter
+**URL**: https://oortcraft.dev/tools/base-converter
+**Description**: Convert numbers between binary, octal, decimal, and hexadecimal bases.
+**How to use**: Select the input base (BIN, OCT, DEC, HEX), enter a number, and see all four base conversions in real-time. Prefixes like 0x, 0b, 0o are automatically stripped.
+**Key facts**: Uses BigInt for arbitrary precision — handles numbers of any size. Validates input characters for the selected base. All conversion happens client-side.
+
+### 22. YAML Validator
+**URL**: https://oortcraft.dev/tools/yaml-validator
+**Description**: Validate YAML syntax and convert between YAML and JSON formats.
+**How to use**: Paste YAML in the input area. Choose Validate mode for syntax checking with stats (keys, depth, documents), or YAML → JSON mode for conversion. Results update in real-time.
+**Key facts**: Supports multi-document YAML (--- separator). Shows line/column error info for invalid YAML. Uses js-yaml library for parsing.
+
+### 23. SQL Formatter
+**URL**: https://oortcraft.dev/tools/sql-formatter
+**Description**: Format and beautify SQL queries with dialect-specific formatting.
+**How to use**: Paste SQL in the input, select a dialect (Standard, PostgreSQL, MySQL, SQLite, T-SQL, PL/SQL), then click Format or Minify.
+**Key facts**: Supports 6 SQL dialects. Uses the sql-formatter library. Uppercase keywords, proper indentation. Minify mode collapses whitespace.
+
+### 24. CSV to JSON Converter
+**URL**: https://oortcraft.dev/tools/csv-to-json
+**Description**: Convert CSV data to JSON format with automatic delimiter detection.
+**How to use**: Paste CSV data. Toggle Header Row (uses first row as keys) and Type Inference (converts numbers/booleans). Conversion is real-time.
+**Key facts**: Auto-detects comma, semicolon, tab, and pipe delimiters. Uses PapaParse library. Shows row count. Handles quoted fields and escaped characters.
+
+### 25. QR Code Generator
+**URL**: https://oortcraft.dev/tools/qr-code-generator
+**Description**: Generate QR codes from text, URLs, or any data. Download as SVG or PNG.
+**How to use**: Enter text or URL, select error correction level (L/M/Q/H), and the QR code generates in real-time. Download as SVG (vector) or PNG (512×512).
+**Key facts**: Supports up to 4,296 characters. Four error correction levels. All generation is client-side using the qrcode library.
+
+### 26. JSON Path Finder
+**URL**: https://oortcraft.dev/tools/jsonpath-finder
+**Description**: Query JSON data using JSONPath expressions with real-time results.
+**How to use**: Paste JSON in the left panel, enter a JSONPath expression (e.g. $.store.books[*].title). Results update in real-time with match count. Quick-insert buttons for common expressions.
+**Key facts**: Uses the Goessner JSONPath specification via jsonpath-plus. Supports filters, recursive descent, array slicing. Shows match count.
+
 ---
 
 ## Blog
@@ -235,6 +271,30 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
     URL: https://oortcraft.dev/blog/what-is-hashing
     Topics: Cryptographic hash functions, MD5, SHA-1, SHA-256, SHA-512, one-way functions, collision resistance, code examples.
 
+24. **Number Base Systems Explained: Binary, Octal, Decimal, and Hexadecimal**
+    URL: https://oortcraft.dev/blog/number-base-systems-guide
+    Topics: Positional notation, binary, octal, hexadecimal, base conversion, Unix permissions, color codes, memory addresses.
+
+25. **YAML Validation Best Practices: Avoiding Common Pitfalls**
+    URL: https://oortcraft.dev/blog/yaml-validation-best-practices
+    Topics: YAML syntax, indentation, Norway problem, multiline strings, YAML vs JSON, multi-document YAML, validation tools.
+
+26. **SQL Formatting Guide: Writing Clean, Readable Queries**
+    URL: https://oortcraft.dev/blog/sql-formatting-guide
+    Topics: SQL formatting, keyword casing, indentation, dialect differences, PostgreSQL, MySQL, SQLite, T-SQL, anti-patterns.
+
+27. **CSV to JSON Conversion: Methods, Libraries, and Best Practices**
+    URL: https://oortcraft.dev/blog/csv-to-json-conversion
+    Topics: CSV parsing, JSON conversion, PapaParse, type inference, delimiter handling, header rows, edge cases.
+
+28. **QR Codes for Developers: Generation, Error Correction, and Best Practices**
+    URL: https://oortcraft.dev/blog/qr-code-guide
+    Topics: QR code anatomy, error correction levels, encoding modes, data capacity, SVG vs PNG, programmatic generation.
+
+29. **JSONPath Tutorial: Querying JSON Data Like a Pro**
+    URL: https://oortcraft.dev/blog/jsonpath-tutorial
+    Topics: JSONPath syntax, dot/bracket notation, wildcards, recursive descent, filter expressions, jsonpath-plus, JSONPath vs jq.
+
 ---
 
 ## Tool Categories
@@ -242,19 +302,19 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
 Browse tools by category:
 
 1. **JSON Tools** — https://oortcraft.dev/tools/category/json
-   Format, validate, convert, and inspect JSON data. Includes JSON Formatter, JSON Validator, JSON to YAML Converter, and JSON Schema Validator.
+   Format, validate, convert, and inspect JSON data. Includes JSON Formatter, JSON Validator, JSON to YAML Converter, JSON Schema Validator, YAML Validator, CSV to JSON Converter, and JSON Path Finder.
 
 2. **Encoding Tools** — https://oortcraft.dev/tools/category/encoding
-   Encode and decode Base64, URLs, and HTML entities. All conversions use standard Web APIs and run client-side.
+   Encode and decode Base64, URLs, HTML entities, and number bases. Includes Base Converter for binary/octal/decimal/hex.
 
 3. **Generator Tools** — https://oortcraft.dev/tools/category/generator
-   Generate UUIDs (v4/v1), cryptographically secure passwords, and Lorem Ipsum placeholder text.
+   Generate UUIDs (v4/v1), cryptographically secure passwords, Lorem Ipsum placeholder text, and QR codes.
 
 4. **Security Tools** — https://oortcraft.dev/tools/category/security
    Compute MD5/SHA-1/SHA-256/SHA-512 hashes and decode JWT tokens. Uses Web Crypto API.
 
 5. **Text Tools** — https://oortcraft.dev/tools/category/text
-   Test regex patterns, compare text diffs, preview Markdown, and convert between 8 string case formats.
+   Test regex patterns, compare text diffs, preview Markdown, convert between 8 string case formats, and format SQL queries.
 
 6. **CSS Tools** — https://oortcraft.dev/tools/category/css
    Convert colors between HEX/RGB/HSL and minify CSS for production.

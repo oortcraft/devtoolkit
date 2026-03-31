@@ -1,0 +1,51 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import SqlFormatter from '../../components/tools/SqlFormatter';
+---
+
+<ToolLayout
+  title="SQL Formatter — Free Online SQL Beautifier"
+  description="Format and beautify SQL queries with support for PostgreSQL, MySQL, SQLite, T-SQL, and PL/SQL dialects. All processing happens in your browser."
+  toolName="SQL Formatter"
+  toolUrl="https://oortcraft.dev/tools/sql-formatter"
+  faq={[
+    {
+      question: 'Which SQL dialects are supported?',
+      answer: 'SQL Formatter supports Standard SQL, PostgreSQL, MySQL, SQLite, T-SQL (Microsoft SQL Server), and PL/SQL (Oracle). Select your dialect from the toolbar before formatting to get dialect-specific keyword and syntax handling.',
+    },
+    {
+      question: 'What formatting options are available?',
+      answer: 'You can Format your SQL into readable, indented code with uppercase keywords and consistent spacing, or Minify it into a single compact line by collapsing all whitespace — useful for embedding SQL in configs or reducing payload size.',
+    },
+    {
+      question: 'Is my SQL data safe?',
+      answer: 'Yes. All formatting and minification happens entirely in your browser using JavaScript. No SQL is ever sent to a server, logged, or stored. Your queries remain completely private.',
+    },
+  ]}
+>
+  <div slot="tool">
+    <SqlFormatter client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the SQL Formatter</h2>
+    <p>Paste your SQL query in the left panel, select your target dialect, then click <strong>Format</strong> to beautify or <strong>Minify</strong> to compact. Use the copy button to grab the result. All processing happens in your browser with no server round-trips.</p>
+
+    <h2>Supported SQL Dialects</h2>
+    <ul>
+      <li><strong>Standard SQL</strong> — ANSI-compliant SQL for general use</li>
+      <li><strong>PostgreSQL</strong> — Optimized for PostgreSQL-specific syntax and functions</li>
+      <li><strong>MySQL</strong> — Handles MySQL and MariaDB dialect quirks</li>
+      <li><strong>SQLite</strong> — Lightweight dialect used in embedded applications</li>
+      <li><strong>T-SQL</strong> — Microsoft SQL Server and Azure SQL Database syntax</li>
+      <li><strong>PL/SQL</strong> — Oracle Database procedural SQL extensions</li>
+    </ul>
+
+    <h2>FAQ</h2>
+    <h3>Which SQL dialects are supported?</h3>
+    <p>SQL Formatter supports Standard SQL, PostgreSQL, MySQL, SQLite, T-SQL (Microsoft SQL Server), and PL/SQL (Oracle). Select your dialect from the toolbar before formatting to get dialect-specific keyword handling.</p>
+    <h3>What formatting options are available?</h3>
+    <p>Format produces readable, indented SQL with uppercase keywords. Minify collapses all whitespace into a single compact line — useful for configs or reducing payload size.</p>
+    <h3>Is my SQL data safe?</h3>
+    <p>Yes. All formatting happens entirely in your browser. No SQL is ever sent to a server, logged, or stored.</p>
+  </Fragment>
+</ToolLayout>

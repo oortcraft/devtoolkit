@@ -1,0 +1,50 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import CsvToJson from '../../components/tools/CsvToJson';
+---
+
+<ToolLayout
+  title="CSV to JSON Converter — Free Online Tool"
+  description="Convert CSV data to JSON format with automatic delimiter detection, header row support, and type inference. All processing happens in your browser."
+  toolName="CSV to JSON Converter"
+  toolUrl="https://oortcraft.dev/tools/csv-to-json"
+  faq={[
+    { question: 'What delimiters are supported?', answer: 'The converter automatically detects commas, tabs, semicolons, and pipes. You do not need to specify the delimiter manually.' },
+    { question: 'What does the Header Row option do?', answer: 'When Header Row is enabled, the first row of your CSV is treated as field names and each subsequent row becomes a JSON object with those keys. When disabled, each row is output as an array of values.' },
+    { question: 'Is my data safe?', answer: 'Yes. All conversion happens entirely in your browser using the PapaParse library. No data is sent to any server.' },
+  ]}
+>
+  <div slot="tool">
+    <CsvToJson client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the CSV to JSON Converter</h2>
+    <p>Paste or type your CSV data into the <strong>CSV Input</strong> field. The converter processes your data in real time and displays the result in the <strong>JSON Output</strong> panel. Click <strong>Copy</strong> to copy the JSON to your clipboard.</p>
+
+    <h2>Options</h2>
+    <ul>
+      <li><strong>Header Row</strong> — When enabled, the first row is used as JSON object keys. Disable this to get arrays instead of objects.</li>
+      <li><strong>Type Inference</strong> — When enabled, numbers, booleans, and null values are automatically converted to their native JSON types. Disable to keep all values as strings.</li>
+    </ul>
+
+    <h2>Features</h2>
+    <ul>
+      <li>Automatic delimiter detection (comma, tab, semicolon, pipe)</li>
+      <li>Header row support — outputs objects or arrays</li>
+      <li>Type inference for numbers, booleans, and nulls</li>
+      <li>Row count badge shows how many records were parsed</li>
+      <li>Handles up to 1MB of CSV data</li>
+      <li>100% client-side — your data never leaves the browser</li>
+    </ul>
+
+    <h2>FAQ</h2>
+    <h3>What delimiters are supported?</h3>
+    <p>The converter automatically detects commas, tabs, semicolons, and pipes. You do not need to specify the delimiter manually — PapaParse handles detection for you.</p>
+
+    <h3>What does the Header Row option do?</h3>
+    <p>When Header Row is enabled, the first row of your CSV is treated as field names and each subsequent row becomes a JSON object with those keys. When disabled, each row is output as an array of values.</p>
+
+    <h3>Is my data safe?</h3>
+    <p>Yes. All conversion happens entirely in your browser using the PapaParse library. No data is sent to any server.</p>
+  </Fragment>
+</ToolLayout>

@@ -1,0 +1,40 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import JsonPathFinder from '../../components/tools/JsonPathFinder';
+---
+
+<ToolLayout
+  title="JSON Path Finder — Free Online JSONPath Query Tool"
+  description="Query JSON data using JSONPath expressions with real-time results and match counting. All processing happens in your browser."
+  toolName="JSON Path Finder"
+  toolUrl="https://oortcraft.dev/tools/jsonpath-finder"
+  faq={[
+    { question: 'What is JSONPath?', answer: 'JSONPath is a query language for JSON, similar to XPath for XML. It lets you extract specific values from JSON data using expressions like $.store.books[*].title.' },
+    { question: 'Which JSONPath spec is used?', answer: 'This tool uses the Goessner JSONPath specification via jsonpath-plus library.' },
+    { question: 'Is my data safe?', answer: 'Yes. All querying happens in your browser. No data is sent to any server.' },
+  ]}
+>
+  <div slot="tool">
+    <JsonPathFinder client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the JSON Path Finder</h2>
+    <p>Paste JSON in the left panel and enter a JSONPath expression in the path field. Results update in real time. Use the quick-insert buttons for common expressions.</p>
+    <h2>JSONPath Syntax</h2>
+    <ul>
+      <li><code>$</code> — Root object</li>
+      <li><code>$.key</code> — Child property</li>
+      <li><code>$[0]</code> — Array index</li>
+      <li><code>$[*]</code> — All array elements</li>
+      <li><code>$..*</code> — Recursive descent (all values)</li>
+      <li><code>$[?(@.price &lt; 10)]</code> — Filter expression</li>
+    </ul>
+    <h2>FAQ</h2>
+    <h3>What is JSONPath?</h3>
+    <p>JSONPath is a query language for JSON, similar to XPath for XML. It lets you extract specific values from JSON data using expressions like <code>$.store.books[*].title</code>.</p>
+    <h3>Which JSONPath spec is used?</h3>
+    <p>This tool uses the Goessner JSONPath specification via the jsonpath-plus library.</p>
+    <h3>Is my data safe?</h3>
+    <p>Yes. All querying happens in your browser. No data is sent to any server.</p>
+  </Fragment>
+</ToolLayout>

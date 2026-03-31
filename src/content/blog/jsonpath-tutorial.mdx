@@ -1,0 +1,410 @@
+---
+title: "JSONPath Tutorial: Querying JSON Data Like a Pro"
+description: "Master JSONPath syntax for querying JSON data. Learn expressions, filters, recursive descent, and practical examples for API responses and config files."
+pubDate: "2026-03-31"
+tags: ["jsonpath", "json", "api", "data-querying"]
+relatedTools: ["jsonpath-finder", "json-formatter", "json-validator"]
+---
+
+JSON is everywhere in modern development: API responses, configuration files, log entries, database documents. As JSON structures grow more complex — nested objects, arrays of arrays, deeply embedded values — extracting the data you need requires more than a chain of property accesses. JSONPath is the query language built for this problem.
+
+If you know XPath for XML, JSONPath will feel immediately familiar. If you do not, this guide starts from first principles and builds up to practical examples that cover the patterns you will encounter most often.
+
+## What Is JSONPath?
+
+JSONPath is a query language for JSON, analogous to XPath for XML. It was first described by Stefan Goessner in 2007 and has since been formalized as RFC 9535 (published 2024). A JSONPath expression describes a path through a JSON document and returns the matching values.
+
+The core value proposition: instead of writing JavaScript like this to extract a set of values:
+
+```javascript
+const prices = response.store.books
+  .filter(book => book.price < 10)
+  .map(book => book.price);
+```
+
+You write a JSONPath expression:
+
+```
+$.store.books[?(@.price < 10)].price
+```
+
+Both approaches work. JSONPath shines when the query is data-driven (stored in config, sent by a client), when you need to run the same query across multiple tools and languages, or when the structure is complex enough that imperative code becomes hard to read.
+
+## Core Syntax
+
+Every JSONPath expression starts with `$`, which represents the root of the JSON document. Everything after `$` is a series of operators that navigate the document structure.
+
+### The Root and Dot Notation
+
+Given this JSON:
+
+```json
+{
+  "user": {
+    "name": "Alice",
+    "age": 30,
+    "address": {
+      "city": "San Francisco",
+      "zip": "94105"
+    }
+  }
+}
+```
+
+Access `name` with dot notation:
+
+```
+$.user.name
+```
+
+Result: `"Alice"`
+
+Access a nested value:
+
+```
+$.user.address.city
+```
+
+Result: `"San Francisco"`
+
+### Bracket Notation
+
+Bracket notation is equivalent to dot notation but required when a key contains spaces, special characters, or starts with a number:
+
+```
+$['user']['name']
+$['user']['address']['city']
+```
+
+Both notations can be mixed freely. Bracket notation also accepts single or double quotes around key names.
+
+### Array Access
+
+Given this JSON:
+
+```json
+{
+  "books": [
+    { "title": "Clean Code", "price": 35 },
+    { "title": "The Pragmatic Programmer", "price": 40 },
+    { "title": "Refactoring", "price": 45 }
+  ]
+}
+```
+
+Access the first element (zero-indexed):
+
+```
+$.books[0]
+```
+
+Result: `{ "title": "Clean Code", "price": 35 }`
+
+Access the last element:
+
+```
+$.books[-1]
+```
+
+Result: `{ "title": "Refactoring", "price": 45 }`
+
+Access a field from a specific array element:
+
+```
+$.books[1].title
+```
+
+Result: `"The Pragmatic Programmer"`
+
+## Wildcards
+
+The wildcard `*` matches all elements at a given level.
+
+Match all items in an array:
+
+```
+$.books[*]
+```
+
+Result: all three book objects.
+
+Match a field from every array element:
+
+```
+$.books[*].title
+```
+
+Result: `["Clean Code", "The Pragmatic Programmer", "Refactoring"]`
+
+Match all values of an object:
+
+```
+$.user.*
+```
+
+Result: all values of the `user` object.
+
+Wildcards are particularly useful when the keys are dynamic or unknown. They are the equivalent of `SELECT *` in SQL — useful for exploration but too broad for production queries where you know the exact structure.
+
+## Array Slicing
+
+JSONPath supports Python-style array slicing with the syntax `[start:end:step]`.
+
+```
+$.books[0:2]
+```
+
+Result: first two elements (index 0 and 1; end is exclusive).
+
+```
+$.books[::2]
+```
+
+Result: every second element (index 0, 2, 4...).
+
+```
+$.books[-2:]
+```
+
+Result: last two elements.
+
+Slicing is useful for pagination-style queries over large arrays, or when you need a fixed number of items from the start or end of a list.
+
+## Recursive Descent
+
+The `..` operator (recursive descent) searches all levels of the document, not just the current level. It is the most powerful — and most expensive — JSONPath operator.
+
+Given a deeply nested response:
+
+```json
+{
+  "department": {
+    "name": "Engineering",
+    "team": {
+      "name": "Backend",
+      "members": [
+        { "name": "Alice" },
+        { "name": "Bob" }
+      ]
+    }
+  }
+}
+```
+
+Find every `name` field anywhere in the document:
+
+```
+$..name
+```
+
+Result: `["Engineering", "Backend", "Alice", "Bob"]`
+
+The `..` operator descends into objects and arrays at all nesting levels. Use it when you do not know the exact depth at which a field appears, or when the same field name appears at multiple levels and you want all of them.
+
+**Performance note:** Recursive descent can be slow on very large documents because it must traverse the entire structure. On documents with thousands of nested nodes, prefer a more specific path if you know the structure.
+
+## Filter Expressions
+
+Filter expressions select array elements that match a condition. The syntax is `[?(<expression>)]`, where `@` refers to the current element being tested.
+
+Given the books array from earlier:
+
+Select books under $40:
+
+```
+$.books[?(@.price < 40)]
+```
+
+Result: `[{ "title": "Clean Code", "price": 35 }]`
+
+Select books with a specific title:
+
+```
+$.books[?(@.title == "Refactoring")]
+```
+
+Result: `[{ "title": "Refactoring", "price": 45 }]`
+
+Combine conditions with `&&` and `||`:
+
+```
+$.books[?(@.price >= 35 && @.price <= 40)]
+```
+
+Result: the first two books.
+
+Test for the existence of a field (books that have a `discount` field):
+
+```
+$.books[?(@.discount)]
+```
+
+Negate with `!`:
+
+```
+$.books[?(!@.discount)]
+```
+
+Filter expressions support standard comparison operators: `==`, `!=`, `<`, `<=`, `>`, `>=`. String comparisons work for equality and inequality. Some implementations also support `=~` for regex matching.
+
+## Practical Examples with API Responses
+
+JSONPath is most useful for extracting specific data from complex API responses. Here are patterns you will encounter regularly.
+
+**GitHub API: get all repository names from a search result**
+
+```json
+{
+  "items": [
+    { "full_name": "user/repo1", "stargazers_count": 150 },
+    { "full_name": "user/repo2", "stargazers_count": 42 }
+  ]
+}
+```
+
+```
+$.items[*].full_name
+```
+
+Result: `["user/repo1", "user/repo2"]`
+
+**Extract repositories with more than 100 stars:**
+
+```
+$.items[?(@.stargazers_count > 100)].full_name
+```
+
+Result: `["user/repo1"]`
+
+**Kubernetes API: get all pod names in a namespace**
+
+```json
+{
+  "items": [
+    { "metadata": { "name": "web-abc123", "namespace": "prod" } },
+    { "metadata": { "name": "worker-def456", "namespace": "prod" } }
+  ]
+}
+```
+
+```
+$.items[*].metadata.name
+```
+
+**Find all error messages in a nested log structure:**
+
+```
+$..error.message
+```
+
+This works regardless of how deep the `error` objects are nested.
+
+**Extract a value from a config file with fallback logic:**
+
+When querying configuration, filter expressions let you find the right environment block without knowing its array index:
+
+```json
+{
+  "environments": [
+    { "name": "production", "db_url": "postgres://prod-host/mydb" },
+    { "name": "staging",    "db_url": "postgres://stage-host/mydb" }
+  ]
+}
+```
+
+```
+$.environments[?(@.name == "production")].db_url
+```
+
+Result: `["postgres://prod-host/mydb"]`
+
+## JSONPath vs jq vs JSON Pointer
+
+Three tools often come up together when discussing JSON querying. They solve similar problems but have different design goals.
+
+**JSONPath** is a query language with a simple syntax designed for embedding in configuration files, APIs, and tools that accept user-supplied expressions. It is widely implemented across languages (Java, Python, JavaScript, Go, Ruby) and is now standardized as RFC 9535. The weakness is that implementations have historically varied in their support for advanced features like filter expressions and recursive descent.
+
+**jq** is a full-featured command-line JSON processor. It is a programming language for JSON transformation — you can filter, map, reduce, format, and generate JSON, not just query it. jq is the right tool for shell scripting and data pipeline work. Its syntax is more complex than JSONPath but far more expressive.
+
+**JSON Pointer** (RFC 6901) is not a query language but a reference syntax. A JSON Pointer like `/store/books/0/title` identifies exactly one value in a document — no wildcards, no filters, no multiple results. JSON Pointer is used in JSON Patch (RFC 6902) for specifying which parts of a document to update, and in JSON Schema `$ref` for referencing schema definitions.
+
+Choose JSONPath when you need a query that may return multiple results and you want cross-language compatibility. Choose jq for command-line data processing. Choose JSON Pointer when you need an unambiguous reference to a single value, especially in patch operations.
+
+## Using JSONPath in JavaScript
+
+The `jsonpath-plus` library is the most complete JSONPath implementation for JavaScript, supporting all core operators plus several extensions.
+
+Install it:
+
+```bash
+npm install jsonpath-plus
+```
+
+Basic usage:
+
+```javascript
+import { JSONPath } from 'jsonpath-plus';
+
+const data = {
+  store: {
+    books: [
+      { title: "Clean Code", price: 35 },
+      { title: "Refactoring", price: 45 }
+    ]
+  }
+};
+
+const titles = JSONPath({ path: '$.store.books[*].title', json: data });
+console.log(titles);
+// ['Clean Code', 'Refactoring']
+
+const affordable = JSONPath({ path: '$.store.books[?(@.price < 40)].title', json: data });
+console.log(affordable);
+// ['Clean Code']
+```
+
+Get the paths of matching nodes (not just values):
+
+```javascript
+const result = JSONPath({
+  path: '$..title',
+  json: data,
+  resultType: 'path'
+});
+console.log(result);
+// ["$['store']['books'][0]['title']", "$['store']['books'][1]['title']"]
+```
+
+For Node.js environments where you prefer not to add a dependency, the built-in approach is to evaluate a specific path with property access chaining or optional chaining:
+
+```javascript
+const title = data?.store?.books?.[0]?.title;
+```
+
+This works for fixed, known paths. JSONPath adds value when the path is dynamic, when you need multiple results, or when you want to run the same query on different documents.
+
+## FAQ
+
+**Does JSONPath modify data?**
+
+No. JSONPath is a read-only query language. It returns matching values but does not update the document. For updates, use JSON Patch (RFC 6902) or write imperative code.
+
+**Are JSONPath expressions safe to accept from users?**
+
+In general, no. Some implementations allow script expressions in filters, which creates code injection risks. If you accept JSONPath from untrusted input, use a library that restricts to safe filter expressions and does not evaluate arbitrary code. Review your library's security model before exposing JSONPath to user input.
+
+**Why does my expression work in one tool but not another?**
+
+JSONPath was not formally standardized until RFC 9535 in 2024. Before that, each library implemented its own interpretation. RFC 9535 resolves most ambiguities, but older libraries may not be compliant. When portability matters, test across target implementations and stick to core syntax: `$`, `.`, `[]`, `*`, `..`, and simple filter expressions.
+
+**How do I match a key whose name contains a dot?**
+
+Use bracket notation with quotes: `$['user.name']` matches the literal key `user.name`, while `$.user.name` navigates to `user` and then `name`. Bracket notation is required for keys containing dots, spaces, or other special characters.
+
+## Conclusion
+
+JSONPath is a concise, readable syntax for navigating JSON documents. The core operators — dot notation, array indexing, wildcards, recursive descent, and filter expressions — cover the vast majority of real-world querying needs. Once you understand these building blocks, you can construct queries for API responses, configuration files, and log data without writing imperative traversal code every time.
+
+The new RFC 9535 standardization means JSONPath will become more consistent across implementations going forward, making it a safer choice for cross-language projects.
+
+Ready to experiment? Use the [JSONPath Finder](/tools/jsonpath-finder) to test expressions against your own JSON data, or the [JSON Formatter](/tools/json-formatter) to explore and pretty-print the structure before writing your query.

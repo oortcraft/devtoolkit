@@ -1,0 +1,42 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import BaseConverter from '../../components/tools/BaseConverter';
+---
+
+<ToolLayout
+  title="Base Converter — Free Online Number Base Calculator"
+  description="Convert numbers between binary, octal, decimal, and hexadecimal. Supports arbitrary precision with BigInt. All conversion happens in your browser."
+  toolName="Base Converter"
+  toolUrl="https://oortcraft.dev/tools/base-converter"
+  faq={[
+    { question: 'What number bases are supported?', answer: 'Binary (base 2), Octal (base 8), Decimal (base 10), and Hexadecimal (base 16).' },
+    { question: 'Is there a size limit?', answer: 'The tool uses BigInt for arbitrary precision, so it can handle very large numbers. Input is limited to 1MB.' },
+    { question: 'Is my data safe?', answer: 'Yes. All conversion happens in your browser. No data is sent to any server.' },
+  ]}
+>
+  <div slot="tool">
+    <BaseConverter client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the Base Converter</h2>
+    <p>Select the input base (BIN, OCT, DEC, or HEX), then type or paste your number. The tool converts it to all four bases in real time. Common prefixes like <code>0x</code>, <code>0b</code>, and <code>0o</code> are automatically stripped.</p>
+
+    <h2>Supported Number Bases</h2>
+    <ul>
+      <li><strong>Binary (BIN)</strong> — Base 2, digits 0-1</li>
+      <li><strong>Octal (OCT)</strong> — Base 8, digits 0-7</li>
+      <li><strong>Decimal (DEC)</strong> — Base 10, digits 0-9</li>
+      <li><strong>Hexadecimal (HEX)</strong> — Base 16, digits 0-9, A-F</li>
+    </ul>
+
+    <h2>FAQ</h2>
+    <h3>What number bases are supported?</h3>
+    <p>Binary (base 2), Octal (base 8), Decimal (base 10), and Hexadecimal (base 16).</p>
+
+    <h3>Is there a size limit?</h3>
+    <p>The tool uses BigInt for arbitrary precision, so it can handle very large numbers. Input is limited to 1MB.</p>
+
+    <h3>Is my data safe?</h3>
+    <p>Yes. All conversion happens in your browser. No data is sent to any server.</p>
+  </Fragment>
+</ToolLayout>
