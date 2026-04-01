@@ -307,6 +307,10 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
     URL: https://oortcraft.dev/blog/crontab-cheat-sheet
     Topics: Cron syntax, special characters, common schedules, backup/monitoring/deployment examples, special strings, crontab management commands.
 
+33. **bcrypt vs scrypt vs Argon2: Password Hashing Compared**
+    URL: https://oortcraft.dev/blog/bcrypt-vs-scrypt-vs-argon2
+    Topics: Password hashing algorithms, bcrypt cost factors, scrypt memory-hardness, Argon2id, GPU attack resistance, OWASP recommendations, migration strategies, benchmark data.
+
 ---
 
 ## Tool Categories

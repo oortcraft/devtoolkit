@@ -54,7 +54,13 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 
 ## Blog
 
-- [Blog](https://oortcraft.dev/blog): Developer tutorials and guides on JSON, Base64, URL encoding, UUIDs, Markdown, CSS, and more.
+- [Blog](https://oortcraft.dev/blog): Developer tutorials and guides on JSON, Base64, URL encoding, UUIDs, Markdown, CSS, security, and more.
+
+### Recent Posts
+- [Common Regex Patterns: 20+ Examples for Everyday Development](https://oortcraft.dev/blog/common-regex-patterns)
+- [Password Entropy Explained: How Strong Is Your Password](https://oortcraft.dev/blog/password-entropy-explained)
+- [Crontab Cheat Sheet: 30+ Cron Job Examples](https://oortcraft.dev/blog/crontab-cheat-sheet)
+- [bcrypt vs scrypt vs Argon2: Password Hashing Compared](https://oortcraft.dev/blog/bcrypt-vs-scrypt-vs-argon2)
 
 ## AI Policy
 
