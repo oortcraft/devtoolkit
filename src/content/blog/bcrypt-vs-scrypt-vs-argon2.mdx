@@ -1,0 +1,417 @@
+---
+title: "bcrypt vs scrypt vs Argon2: Password Hashing Compared"
+description: "bcrypt, scrypt, and Argon2 benchmarked head-to-head. Adoption stats, memory costs, and a clear recommendation for which to use in 2026."
+pubDate: "2026-04-02"
+tags: ["security", "passwords", "hashing", "cryptography"]
+relatedTools: ["hash-generator", "password-generator"]
+contentType: "money"
+---
+
+Storing passwords as plain SHA-256 hashes is a critical vulnerability — an attacker with a modern GPU can crack 10 billion SHA-256 hashes per second. Password hashing algorithms like bcrypt, scrypt, and Argon2 were built specifically to make that kind of brute-force attack economically infeasible. Choosing the wrong one — or misconfiguring the right one — is the difference between a breach that costs you users and one that costs you nothing.
+
+## Why General-Purpose Hash Functions Fail for Passwords
+
+MD5, SHA-1, SHA-256, and SHA-512 are designed to be fast. For checksums and digital signatures, speed is exactly what you want. For password storage, speed is the enemy.
+
+On consumer hardware in 2026, an attacker can compute roughly:
+
+| Algorithm | Hashes/second (RTX 4090) |
+|---|---|
+| MD5 | ~164 billion |
+| SHA-256 | ~22 billion |
+| SHA-512 | ~7 billion |
+| bcrypt (cost 10) | ~20,000 |
+| scrypt (N=32768) | ~180,000 |
+| Argon2id (t=3, m=64MB) | ~1,200 |
+
+The difference between SHA-256 and Argon2id is roughly seven orders of magnitude — and that gap is intentional. Password hashing algorithms use configurable "work factors" so you can make them progressively harder as hardware improves.
+
+If you want a deeper grounding in what hash functions are and how they work internally, read [What is Hashing? MD5, SHA-256, SHA-512 Explained](/blog/what-is-hashing) first. For the mathematical basis of password strength, [Password Entropy Explained](/blog/password-entropy-explained) covers the numbers.
+
+## bcrypt
+
+bcrypt was published in 1999 by Niels Provos and David Mazières, based on the Blowfish cipher. It remains the most widely deployed password hashing algorithm — as of 2024, roughly **70% of sites using a recognized password hashing scheme use bcrypt** (source: HaveIBeenPwned corpus analysis).
+
+### How bcrypt works
+
+bcrypt runs the Blowfish key setup routine 2^cost times, where cost is an integer you control (typically 10–14). The work grows exponentially: cost 11 takes twice as long as cost 10, cost 12 takes four times as long, and so on.
+
+```javascript
+// Node.js — bcryptjs (pure JS) or bcrypt (native bindings)
+import bcrypt from "bcryptjs";
+
+// Hash a password — cost factor 12 is the 2026 baseline
+const hash = await bcrypt.hash("correct horse battery staple", 12);
+// "$2a$12$..." — 60-character string, salt embedded
+
+// Verify — always use the library's compare, never re-hash and compare strings
+const isValid = await bcrypt.compare("correct horse battery staple", hash);
+console.log(isValid); // true
+```
+
+```python
+# Python — bcrypt library
+import bcrypt
+
+password = b"correct horse battery staple"
+hashed = bcrypt.hashpw(password, bcrypt.gensalt(rounds=12))
+
+valid = bcrypt.checkpw(password, hashed)
+print(valid)  # True
+```
+
+### bcrypt's hard limits
+
+bcrypt truncates passwords at **72 bytes**. A 73-character password and a 72-character password that share the first 72 bytes are treated as identical. This is not theoretical — it has caused real auth bugs.
+
+The truncation problem is typically solved by pre-hashing the password with SHA-256 before passing it to bcrypt:
+
+```javascript
+import bcrypt from "bcryptjs";
+import { createHash } from "crypto";
+
+function prehash(password) {
+  // Base64-encode so the result is safe ASCII — avoids null byte issues
+  return createHash("sha256").update(password).digest("base64");
+}
+
+const hash = await bcrypt.hash(prehash("very long password..."), 12);
+const isValid = await bcrypt.compare(prehash("very long password..."), hash);
+```
+
+bcrypt is also **memory-light** — it uses about 4 KB of RAM regardless of the cost setting. This means an attacker can run bcrypt on thousands of GPU cores simultaneously with no memory bottleneck.
+
+### bcrypt adoption and performance
+
+| Cost factor | Hashes/sec (server CPU) | Time per hash | Recommended for |
+|---|---|---|---|
+| 10 | ~100 | ~10ms | High-traffic APIs |
+| 12 | ~25 | ~40ms | Web app logins |
+| 14 | ~6 | ~160ms | Admin panels, low-traffic |
+
+OWASP's 2023 recommendation is **cost factor 10 minimum**, with 12 preferred for new systems.
+
+## scrypt
+
+scrypt was designed by Colin Percival in 2009 and published in 2012. Its key innovation over bcrypt is **memory hardness** — it requires a configurable amount of RAM, not just CPU time. An attacker needs to either pay for the memory or accept severe parallelism restrictions. This makes GPU and ASIC attacks significantly more expensive.
+
+scrypt is parameterized by three values:
+
+- **N** — CPU and memory cost (must be a power of 2)
+- **r** — block size (affects memory bandwidth)
+- **p** — parallelization factor
+
+Memory usage is approximately `128 × N × r` bytes. With N=32768 and r=8, scrypt uses **32 MB of RAM per hash**.
+
+```javascript
+// Node.js — built into crypto module (no dependency needed)
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password) {
+  const salt = randomBytes(32).toString("hex");
+  // N=32768, r=8, p=1 — OWASP minimum; use N=65536 for new systems
+  const hash = await scryptAsync(password, salt, 64, { N: 32768, r: 8, p: 1 });
+  return `${salt}:${hash.toString("hex")}`;
+}
+
+async function verifyPassword(password, stored) {
+  const [salt, storedHash] = stored.split(":");
+  const hash = await scryptAsync(password, salt, 64, { N: 32768, r: 8, p: 1 });
+  // Use timingSafeEqual to prevent timing attacks
+  const { timingSafeEqual } = await import("crypto");
+  return timingSafeEqual(Buffer.from(storedHash, "hex"), hash);
+}
+```
+
+```python
+# Python 3.6+ — hashlib.scrypt
+import hashlib
+import os
+import secrets
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_bytes(32)
+    key = hashlib.scrypt(
+        password.encode(),
+        salt=salt,
+        n=32768,  # N
+        r=8,
+        p=1,
+        dklen=64,
+    )
+    return salt.hex() + ":" + key.hex()
+
+def verify_password(password: str, stored: str) -> bool:
+    salt_hex, stored_hash = stored.split(":")
+    salt = bytes.fromhex(salt_hex)
+    key = hashlib.scrypt(password.encode(), salt=salt, n=32768, r=8, p=1, dklen=64)
+    return secrets.compare_digest(key.hex(), stored_hash)
+```
+
+### scrypt's weakness
+
+scrypt's memory-hardness comes with a serious trade-off: the memory cost is **fixed and fully allocated up front**. A server handling 50 simultaneous login requests with N=65536 needs `50 × 64 MB = 3.2 GB` of RAM just for password verification. This makes scrypt impractical for high-concurrency systems without careful tuning.
+
+scrypt also lacks formal memory-hardness proofs — it provides sequential memory hardness but not parallel memory hardness, meaning attackers with specialized hardware can still parallelize some aspects of the computation.
+
+| Parameter set | RAM per hash | Time per hash (modern server) |
+|---|---|---|
+| N=16384, r=8, p=1 | 16 MB | ~15ms |
+| N=32768, r=8, p=1 | 32 MB | ~30ms |
+| N=65536, r=8, p=1 | 64 MB | ~60ms |
+| N=131072, r=8, p=1 | 128 MB | ~120ms |
+
+## Argon2
+
+Argon2 won the Password Hashing Competition in 2015 and is the current gold standard. It comes in three variants:
+
+- **Argon2d** — maximizes resistance to GPU attacks; vulnerable to side-channel timing attacks
+- **Argon2i** — resistant to side-channel attacks; weaker against GPU attacks
+- **Argon2id** — hybrid: uses Argon2i for the first pass and Argon2d for the rest. **This is the one you should use.**
+
+Argon2id is parameterized by:
+
+- **t** (time cost) — number of iterations
+- **m** (memory cost) — RAM in kilobytes
+- **p** (parallelism) — number of threads
+
+OWASP's 2024 recommendation: **t=3, m=64MB, p=4** as a minimum. For high-security applications: **t=4, m=128MB, p=4**.
+
+```javascript
+// Node.js — argon2 package (native bindings via node-gyp)
+import argon2 from "argon2";
+
+// Hash — Argon2id is the default variant
+const hash = await argon2.hash("correct horse battery staple", {
+  type: argon2.argon2id,
+  timeCost: 3,      // t
+  memoryCost: 65536, // m — in KB, so 64 MB
+  parallelism: 4,   // p
+});
+// "$argon2id$v=19$m=65536,t=3,p=4$..." — self-describing format
+
+// Verify — library handles parsing the parameters from the hash string
+const isValid = await argon2.verify(hash, "correct horse battery staple");
+console.log(isValid); // true
+```
+
+```python
+# Python — argon2-cffi
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
+
+ph = PasswordHasher(
+    time_cost=3,
+    memory_cost=65536,  # 64 MB in KiB
+    parallelism=4,
+    hash_len=32,
+    salt_len=16,
+)
+
+hash = ph.hash("correct horse battery staple")
+
+try:
+    ph.verify(hash, "correct horse battery staple")
+    valid = True
+except VerifyMismatchError:
+    valid = False
+
+# Argon2 also supports rehashing when parameters change
+if ph.check_needs_rehash(hash):
+    hash = ph.hash("correct horse battery staple")
+```
+
+### Argon2 adoption
+
+Argon2id has seen rapid adoption since its standardization in RFC 9106 (September 2021). As of 2025:
+
+- **Django** uses Argon2 as its recommended hasher (since Django 2.0)
+- **PHP** added `PASSWORD_ARGON2ID` in PHP 7.3
+- **Spring Security** added Argon2PasswordEncoder in 5.x
+- **1Password**, **Bitwarden**, and **Signal** all use Argon2id for master password derivation
+- NIST SP 800-63B (2024 revision) explicitly lists Argon2 as an approved algorithm
+
+Despite this momentum, adoption in production web apps remains lower than bcrypt — a 2024 survey of open-source PHP projects found only **12% using Argon2** vs **61% using bcrypt**. The gap is shrinking but bcrypt's 25-year head start means it will remain dominant for years.
+
+## Side-by-Side Comparison
+
+| Property | bcrypt | scrypt | Argon2id |
+|---|---|---|---|
+| Year introduced | 1999 | 2009 / 2012 | 2015 |
+| Memory hardness | No | Yes | Yes |
+| GPU resistance | Moderate | High | Very high |
+| Side-channel resistance | Moderate | Low | High |
+| Max password length | 72 bytes | Unlimited | Unlimited |
+| Self-describing hash | Yes | No | Yes |
+| Built-in salt | Yes | No (manual) | Yes |
+| OWASP recommended | Yes | Yes | Yes (preferred) |
+| RFC standard | No | RFC 7914 | RFC 9106 |
+| Language support | Excellent | Good | Good, improving |
+| Best use case | Legacy compatibility | Disk encryption, KDF | All new projects |
+
+## Common Mistakes
+
+### 1. Using cost factors from 2012 tutorials
+
+A bcrypt cost of 10 was appropriate in 2012. Hardware has improved roughly 32x since then. The OWASP recommendation as of 2024 is cost 10 as an absolute floor, with 12 recommended. If your system can tolerate 100–200ms login latency, cost 13–14 is defensible for sensitive applications.
+
+### 2. Not benchmarking on your production hardware
+
+A cost factor that takes 60ms on your MacBook M3 may take 300ms on an underpowered VPS. Always benchmark on the actual server before deploying. The target is 100–500ms per hash on the server — fast enough for users, slow enough to deter attackers.
+
+```javascript
+// Benchmark script — run on your actual server
+import { performance } from "perf_hooks";
+import argon2 from "argon2";
+
+async function benchmark(memoryCostKB, timeCost) {
+  const start = performance.now();
+  await argon2.hash("benchmark-password", {
+    type: argon2.argon2id,
+    memoryCost: memoryCostKB,
+    timeCost,
+    parallelism: 1,
+  });
+  return (performance.now() - start).toFixed(1) + "ms";
+}
+
+// Test multiple configurations
+for (const [m, t] of [[32768, 2], [65536, 3], [131072, 4]]) {
+  console.log(`m=${m}KB, t=${t}: ${await benchmark(m, t)}`);
+}
+```
+
+### 3. Storing the parameters outside the hash
+
+bcrypt and Argon2 embed all parameters (salt, cost, variant) directly in the hash string. scrypt does not — you must store N, r, p, and the salt alongside the hash. Losing these values means you cannot verify any existing passwords.
+
+### 4. Comparing hash strings with `===`
+
+Always use the library's `verify` or `compare` function. String equality is vulnerable to timing attacks — measuring how long the comparison takes can reveal partial information about the hash. All major password hashing libraries use constant-time comparison internally.
+
+### 5. Hashing passwords server-side after client-side hashing
+
+Some developers hash passwords in the browser before sending them over HTTPS, thinking it adds security. It does not — it just changes what value is stored as the effective password. The server must still apply a proper password hashing algorithm to whatever it receives. Client-side hashing without server-side hashing is strictly worse than server-side hashing alone.
+
+### 6. Ignoring migration paths
+
+Switching from bcrypt to Argon2id does not require forcing all users to reset their passwords. Migrate opportunistically: when a user successfully logs in with their old bcrypt hash, re-hash with Argon2id and replace the stored value. Within a few weeks, most active users will be on the new algorithm.
+
+```javascript
+async function migrateOnLogin(password, storedHash) {
+  // Detect algorithm from hash prefix
+  if (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$")) {
+    const bcryptValid = await bcrypt.compare(password, storedHash);
+    if (bcryptValid) {
+      // Silently upgrade to Argon2id
+      const newHash = await argon2.hash(password, {
+        type: argon2.argon2id,
+        memoryCost: 65536,
+        timeCost: 3,
+        parallelism: 4,
+      });
+      await db.updatePasswordHash(userId, newHash);
+    }
+    return bcryptValid;
+  }
+  // Already Argon2
+  return argon2.verify(storedHash, password);
+}
+```
+
+## Head-to-Head Comparison
+
+| Property | bcrypt | scrypt | Argon2id |
+|---|---|---|---|
+| Year introduced | 1999 | 2009 | 2015 |
+| Standardization | De facto standard | RFC 7914 | RFC 9106 |
+| Memory hardness | No | Yes (sequential only) | Yes (sequential + parallel) |
+| Side-channel resistance | Limited | No | Yes (hybrid mode) |
+| GPU attack resistance | Moderate (Blowfish tables) | High (memory-bound) | Highest (tunable memory + time) |
+| ASIC resistance | Low | Moderate | High |
+| OWASP recommended | Yes (cost 12+) | Yes (N=32768+) | **Preferred** (t=3, m=64MB, p=4) |
+| Default in Django 5.x | No | No | **Yes** (since Django 4.0) |
+| Default in PHP 8.x | **Yes** (PASSWORD_DEFAULT) | No | Supported (PASSWORD_ARGON2ID) |
+| Max password length | 72 bytes | Unlimited | Unlimited |
+| Hash output format | Self-describing ($2b$...) | Raw bytes (manual storage) | Self-describing ($argon2id$...) |
+| Concurrency impact | Low (~4 KB/hash) | High (16-128 MB/hash) | Medium-high (64 MB/hash, tunable) |
+| Ecosystem maturity | Excellent (25+ years) | Good (15+ years) | Good and growing (10+ years) |
+| npm weekly downloads | ~730K (bcryptjs) | ~45K (scrypt-js) | ~180K (argon2) |
+
+### Key Takeaways from the Data
+
+1. **Argon2id dominates on security properties** — it is the only algorithm with both memory-hardness and side-channel resistance in a single variant.
+2. **bcrypt wins on ecosystem maturity and simplicity** — 25 years of battle-testing, 72-byte limit is rarely a practical issue, and the ~4 KB memory footprint makes it trivial to run at high concurrency.
+3. **scrypt occupies an awkward middle ground** — memory-hard but lacking side-channel resistance, and the raw-bytes output format creates operational complexity that bcrypt and Argon2id avoid.
+4. **Adoption is shifting** — Django's switch to Argon2id as default in 4.0, combined with OWASP's explicit preference, signals the industry direction. npm download trends show Argon2 growing at ~40% year-over-year while bcryptjs has plateaued.
+
+## Which Should You Use in 2026?
+
+**New projects: Argon2id.** It is the OWASP preferred algorithm, an RFC standard, and the only one that is memory-hard with proven resistance to both GPU and side-channel attacks. Use `t=3, m=65536 (64MB), p=4` as your baseline — adjust based on your server benchmark.
+
+**Existing bcrypt systems: keep bcrypt, migrate opportunistically.** bcrypt at cost 12+ remains secure. The risk of a botched migration outweighs the security improvement for most applications. Implement the upgrade-on-login pattern and let the migration happen naturally.
+
+**scrypt: only for specific use cases.** scrypt is appropriate for disk encryption key derivation (where you control concurrency) or as a KDF in protocols that require it. Avoid it for web application password storage unless you have a specific reason — the memory allocation model is operationally painful.
+
+## Frequently Asked Questions
+
+### Is bcrypt still secure in 2026?
+
+Yes, bcrypt at cost factor 12 or higher remains secure for password storage in 2026. Its lack of memory-hardness means it is weaker than Argon2id against GPU attacks, but a properly configured bcrypt hash still requires thousands of dollars of compute to crack a single strong password. The primary risk is low cost factors (below 10) set years ago without subsequent increases.
+
+### What cost factor should I use for bcrypt?
+
+OWASP's 2024 recommendation is cost factor 10 as the absolute minimum, with 12 as the preferred default for new systems. If your server can handle the latency, cost 13 is a good target for 2026. Benchmark on your actual production hardware — the goal is 100–300ms per hash operation at your expected concurrency level.
+
+### Does Argon2id replace bcrypt?
+
+Argon2id is the recommended choice for all new projects. It provides stronger security guarantees than bcrypt, particularly against GPU-based attacks, due to its memory-hardness. However, bcrypt is not broken — migrating an existing system purely for algorithmic reasons is a low-priority operation compared to increasing the cost factor.
+
+### Why not use SHA-256 with a salt for passwords?
+
+SHA-256 is designed to be fast — a modern GPU can compute 22 billion SHA-256 hashes per second. Even with a unique salt per user, an attacker targeting a single user can iterate through millions of password candidates per second. Password hashing algorithms are deliberately slow and memory-intensive, reducing that rate to hundreds or thousands per second at most.
+
+### What is memory hardness and why does it matter?
+
+A memory-hard function requires a large, configurable amount of RAM to compute. This matters because GPU and ASIC attackers derive their advantage from massive parallelism — they can run thousands of hashing threads simultaneously. If each thread requires 64 MB of RAM, an attacker with 40 GB of GPU memory can only run ~600 threads in parallel instead of tens of thousands. Memory hardness trades cheap GPU parallelism for expensive RAM, leveling the playing field between defenders and attackers.
+
+### Can I hash passwords in the browser before sending them?
+
+Client-side hashing does not add meaningful security and can introduce bugs. The server must always apply a proper password hashing algorithm — bcrypt, scrypt, or Argon2id — to whatever credentials it receives. If you want to protect passwords in transit, use HTTPS (which you should already be doing). If you want to prevent the server from ever seeing the plaintext password, use a protocol like SRP (Secure Remote Password) instead of client-side hashing.
+
+## Quick Reference: Recommended Parameters
+
+Copy these into your project configuration:
+
+```javascript
+// Argon2id — new projects (OWASP 2024)
+{
+  type: "argon2id",
+  timeCost: 3,
+  memoryCost: 65536, // 64 MB
+  parallelism: 4,
+}
+
+// bcrypt — existing systems
+{
+  costFactor: 12, // minimum; use 13 if latency allows
+}
+
+// scrypt — specific use cases only
+{
+  N: 32768,  // minimum; prefer 65536
+  r: 8,
+  p: 1,
+}
+```
+
+Benchmark on your production hardware before deploying. The target is 100-300ms per hash at your expected peak concurrency.
+
+## Conclusion
+
+For any new application storing user passwords in 2026, Argon2id with OWASP-recommended parameters is the correct choice — it is memory-hard, side-channel resistant, standardized in RFC 9106, and supported by every major language ecosystem. For existing bcrypt systems, raise the cost factor to 12 and implement opportunistic migration.
+
+Try the [Hash Generator](/tools/hash-generator) to experiment with bcrypt, scrypt, and SHA hashing algorithms directly in your browser — it's free, requires no signup, and runs entirely client-side. Pair it with the [Password Generator](/tools/password-generator) to create strong test credentials when benchmarking your chosen configuration.
