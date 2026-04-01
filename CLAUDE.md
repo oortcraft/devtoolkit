@@ -34,7 +34,8 @@ Every proposal must include quantitative justification. "I think this would be u
 - [ ] If no measurable impact, deprioritize
 
 ### Blog Content
-- [ ] Use `blog-writer` agent (already monetization-aware)
+- [ ] Use `content-planner` agent for topic selection and keyword research
+- [ ] Use `blog-writer` agent for writing (already monetization-aware)
 - [ ] contentType classification required (money/traffic/linkbait)
 
 ### Bug Fix / Refactor
@@ -88,6 +89,19 @@ Every proposal must include quantitative justification. "I think this would be u
 - Tools need FAQ structured data (FAQPage schema) and WebApplication schema
 - `llms.txt` and `llms-full.txt` must stay in sync with actual tools and blog content
 - AI crawlers are explicitly allowed in `robots.txt`
+- Use `seo-analyst` agent for comprehensive SEO audits
+
+## Agents
+
+| Agent | Role | Delegates to |
+|-------|------|-------------|
+| `monetization-strategist` | 전략 결정 (뭘 할지, 왜) | content-planner, blog-writer, tool-developer, seo-analyst |
+| `content-planner` | 콘텐츠 기획 (뭘 쓸지) | blog-writer |
+| `blog-writer` | 블로그 작성 | — |
+| `tool-developer` | 도구 제안/설계 | executor (OMC 내장) |
+| `seo-analyst` | SEO 진단/최적화 | content-planner (피드백 루프) |
+
+All agent files: `.claude/agents/`
 
 ## Commit Style
 
