@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdSlot from '../../../components/AdSlot.astro';
 import { tools } from '../../../lib/tools';
 import { categories, getCategoryBySlug } from '../../../lib/categories';
 import { getCollection } from 'astro:content';
@@ -42,6 +43,7 @@ const jsonLd = {
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
   <div class="mx-auto max-w-7xl px-4 py-6 sm:px-10 sm:py-12">
+    <AdSlot position="header" />
     <!-- Breadcrumb -->
     <nav class="mb-4 text-sm text-[var(--color-muted-foreground)]" aria-label="Breadcrumb">
       <ol class="flex items-center gap-1.5">
@@ -129,5 +131,6 @@ const jsonLd = {
         </div>
       </div>
     )}
+    <AdSlot position="footer" />
   </div>
 </BaseLayout>

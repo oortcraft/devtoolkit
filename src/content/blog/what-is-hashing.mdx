@@ -4,6 +4,7 @@ description: "Learn what cryptographic hash functions are, how they work, and wh
 pubDate: "2026-03-20"
 tags: ["hashing", "security", "tutorial"]
 relatedTools: ["hash-generator"]
+contentType: "traffic"
 ---
 
 Every time you log in to a website, your password is not compared against a stored copy of itself — it is compared against a stored hash of itself. Every time you download software, the checksum printed on the download page is a hash. Every block in Bitcoin's blockchain is linked to the previous block via a hash. Every Git commit is identified by a hash of its contents. Every TLS certificate carries a hash-based signature. Hashing is one of the most foundational operations in all of computing, yet it is routinely misunderstood, misapplied, or confused with encryption. Developers reach for MD5 when they should use SHA-256, store password hashes without salts, or build authentication systems with plain hashes instead of HMAC. This guide explains exactly what hash functions are, how the major algorithms work internally, how their security was broken over time, and how to use them correctly in real applications.

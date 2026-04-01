@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdSlot from '../../components/AdSlot.astro';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -25,6 +26,7 @@ const jsonLd = {
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
   <div class="mx-auto max-w-4xl px-4 py-6 sm:px-10 sm:py-12">
+    <AdSlot position="header" />
     <nav class="mb-4 text-sm text-[var(--color-muted-foreground)]" aria-label="Breadcrumb">
       <ol class="flex items-center gap-1.5">
         <li><a href="/" class="hover:text-[var(--color-foreground)]">Home</a></li>
@@ -126,5 +128,6 @@ const jsonLd = {
         <a href="/tools/category/css" class="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-4 py-2.5 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-secondary)]">All CSS Tools →</a>
       </div>
     </article>
+    <AdSlot position="footer" />
   </div>
 </BaseLayout>

@@ -7,13 +7,47 @@ This is a monetization-focused developer tools site. Every decision should be ev
 
 ## Core Principles
 
-1. **Data-driven decisions** — Use Google Analytics, Search Console, and ad network dashboards to guide priorities. Never assume what works; measure it. Tool selection, blog topics, and feature work should be backed by keyword research and traffic data.
+1. **Design before code** — All new features, tools, and pages MUST be designed in Pencil MCP (`oortcraft-design.pen`) before writing code. Desktop (1440px) + Mobile (390px) designs required. Verify with screenshots before implementing.
 
-2. **Monetization first** — The site exists to generate revenue. Features that don't contribute to traffic, engagement, or conversion should be deprioritized. Current strategy: SEO-first + affiliate + ads (see `.claude/plans/` for full strategy).
+2. **Auto-deploy on push** — `git push origin main` triggers Vercel auto-deployment. There is no staging environment. Ensure `npm run build` passes (0 errors) before pushing.
 
-3. **Design before code** — All new features, tools, and pages MUST be designed in Pencil MCP (`oortcraft-design.pen`) before writing code. Desktop (1440px) + Mobile (390px) designs required. Verify with screenshots before implementing.
+## Monetization-First Framework
 
-4. **Auto-deploy on push** — `git push origin main` triggers Vercel auto-deployment. There is no staging environment. Ensure `npm run build` passes (0 errors) before pushing.
+### Strategic Alignment
+All work must align with the 5 principles in `.omc/plans/monetization-strategy.md`.
+Before proposing new work, check: does it serve the current milestone's priorities?
+Current milestone: 0-1K PV → 70% content, 20% SEO, 10% distribution.
+Use `monetization-strategist` agent for cross-cutting prioritization decisions.
+
+Every proposal must include quantitative justification. "I think this would be useful" is not sufficient — cite data.
+
+### New Tool Checklist
+- [ ] Estimated monthly search volume (Google Keyword Planner / Ahrefs free)
+- [ ] Number of competing free tools (top 3, what they lack)
+- [ ] Tool taxonomy: Commodity (traffic play) / Differentiator (retention) / Hub (internal linking)
+- [ ] Revenue path: ad impressions, affiliate potential, or conversion to other tools
+- [ ] Use `tool-developer` agent for full evaluation
+
+### New Feature Checklist
+- [ ] Which revenue metric does this improve? (traffic, engagement, conversion, retention)
+- [ ] Expected impact: quantify if possible (e.g., "+10% session duration", "enables affiliate for X")
+- [ ] If no measurable impact, deprioritize
+
+### Blog Content
+- [ ] Use `blog-writer` agent (already monetization-aware)
+- [ ] contentType classification required (money/traffic/linkbait)
+
+### Bug Fix / Refactor
+- [ ] Is this on a revenue-critical page? (homepage, top-traffic tools, ad-enabled pages)
+- [ ] Does it affect SEO output? (structured data, meta tags, sitemap, canonical URLs)
+- [ ] If neither, normal priority — no quantitative analysis needed
+
+### Quantitative Defaults
+- Search volume: cite source and number (e.g., "1,200/mo — Ahrefs")
+- CPC: cite if available (signals commercial intent)
+- Competition: "3 free tools exist, none have X feature"
+- Traffic projection: conservative estimate based on SERP position assumptions
+- Time-box: Review and calibrate these checklists after reaching 1,000 monthly sessions
 
 ## Tech Stack
 
