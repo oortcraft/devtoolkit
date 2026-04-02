@@ -20,11 +20,17 @@ const toolLinks = Object.fromEntries(
 
 const structuredData = {
   '@context': 'https://schema.org',
-  '@type': 'Article',
+  '@type': 'BlogPosting',
   headline: title,
   description,
+  image: 'https://oortcraft.dev/og-image.png',
   datePublished: pubDate.toISOString(),
   ...(updatedDate && { dateModified: updatedDate.toISOString() }),
+  author: {
+    '@type': 'Organization',
+    name: 'DevToolkit',
+    url: 'https://oortcraft.dev',
+  },
   publisher: {
     '@type': 'Organization',
     name: 'DevToolkit',

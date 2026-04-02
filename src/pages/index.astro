@@ -17,6 +17,11 @@ const structuredData = {
       name: 'DevToolkit',
       url: 'https://oortcraft.dev',
       description: 'Free online developer tools for JSON formatting, validation, conversion, and more.',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: 'https://oortcraft.dev/tools/',
+        'query-input': 'required name=search_term_string',
+      },
     },
     {
       '@type': 'Organization',
