@@ -29,6 +29,41 @@ import RegexTester from '../../components/tools/RegexTester';
       <li><strong>IPv4 address</strong> — <code>(\d{"{1,3}"}\.){"{3}"}\d{"{1,3}"}</code></li>
       <li><strong>Date (YYYY-MM-DD)</strong> — <code>\d{"{4}"}-\d{"{2}"}-\d{"{2}"}</code></li>
       <li><strong>Hex color</strong> — <code>#([a-fA-F0-9]{"{6}"}|[a-fA-F0-9]{"{3}"})</code></li>
+      <li><strong>Digits only</strong> — <code>^\d+$</code></li>
+      <li><strong>Whitespace (any)</strong> — <code>\s+</code></li>
+      <li><strong>Word boundary</strong> — <code>\bword\b</code></li>
+    </ul>
+    <h2>Regex Cheat Sheet</h2>
+    <h3>Anchors</h3>
+    <ul>
+      <li><code>^</code> — Start of string (or line in multiline mode)</li>
+      <li><code>$</code> — End of string (or line in multiline mode)</li>
+      <li><code>\b</code> — Word boundary</li>
+      <li><code>\B</code> — Not a word boundary</li>
+    </ul>
+    <h3>Quantifiers</h3>
+    <ul>
+      <li><code>*</code> — 0 or more</li>
+      <li><code>+</code> — 1 or more</li>
+      <li><code>?</code> — 0 or 1 (also makes quantifiers lazy)</li>
+      <li><code>{"{n}"}</code> — Exactly n times</li>
+      <li><code>{"{n,m}"}</code> — Between n and m times</li>
+    </ul>
+    <h3>Character Classes</h3>
+    <ul>
+      <li><code>\d</code> — Digit (0-9)</li>
+      <li><code>\w</code> — Word character (a-z, A-Z, 0-9, _)</li>
+      <li><code>\s</code> — Whitespace (space, tab, newline)</li>
+      <li><code>[abc]</code> — Any of a, b, or c</li>
+      <li><code>[^abc]</code> — Any character except a, b, or c</li>
+    </ul>
+    <h3>Groups</h3>
+    <ul>
+      <li><code>(abc)</code> — Capture group</li>
+      <li><code>(?:abc)</code> — Non-capturing group</li>
+      <li><code>(?&lt;name&gt;abc)</code> — Named capture group</li>
+      <li><code>(?=abc)</code> — Positive lookahead</li>
+      <li><code>(?!abc)</code> — Negative lookahead</li>
     </ul>
     <h2>Regex Flags</h2>
     <ul>
@@ -37,12 +72,23 @@ import RegexTester from '../../components/tools/RegexTester';
       <li><strong>m (multiline)</strong> — Make <code>^</code> and <code>$</code> match the start and end of each line instead of the whole string.</li>
       <li><strong>s (dot all)</strong> — Make <code>.</code> match newline characters as well.</li>
     </ul>
+    <h2>Debugging Tips</h2>
+    <ul>
+      <li><strong>Start simple</strong> — Build your pattern incrementally. Match a literal string first, then add character classes and quantifiers.</li>
+      <li><strong>Use non-greedy quantifiers</strong> — Replace <code>.*</code> with <code>.*?</code> to avoid over-matching.</li>
+      <li><strong>Escape special characters</strong> — Characters like <code>. * + ? ( ) [ ] {"{ }"} ^ $ | \</code> must be escaped with <code>\</code> to match literally.</li>
+      <li><strong>Check your flags</strong> — Forgetting the <code>g</code> flag is the most common reason only the first match is returned.</li>
+    </ul>
     <h2>FAQ</h2>
     <h3>Is my data safe?</h3>
     <p>Yes. All regex testing happens entirely in your browser using JavaScript. No data is sent to any server.</p>
     <h3>Which flags are supported?</h3>
     <p>The tool supports g (global), i (case insensitive), m (multiline), and s (dot all) flags. You can combine multiple flags.</p>
     <h3>Why does my regex match unexpectedly?</h3>
-    <p>Common pitfalls include forgetting to escape special characters like <code>. * + ? ( ) [ ] { } ^ $ | \</code>, or not using the global flag when you expect multiple matches.</p>
+    <p>Common pitfalls include forgetting to escape special characters like <code>. * + ? ( ) [ ] {"{ }"} ^ $ | \</code>, or not using the global flag when you expect multiple matches.</p>
+    <h3>What is a capture group?</h3>
+    <p>A capture group is a part of the pattern wrapped in parentheses <code>()</code>. It lets you extract specific parts of a match. For example, <code>(\d+)-(\d+)</code> applied to <code>2024-01</code> captures <code>2024</code> and <code>01</code> as separate groups.</p>
+    <h3>How do I match a literal dot?</h3>
+    <p>Use <code>\.</code> instead of <code>.</code>. In regex, an unescaped dot matches any character. To match a literal period — for example in a file extension or IP address — you must escape it: <code>\.txt</code> or <code>\d+\.\d+\.\d+\.\d+</code>.</p>
   </Fragment>
 </ToolLayout>

@@ -7,7 +7,7 @@ import BaseConverter from '../../components/tools/BaseConverter';
   title="Base Converter — Free Online Number Base Calculator"
   description="Convert numbers between binary, octal, decimal, and hexadecimal. Supports arbitrary precision with BigInt. All conversion happens in your browser."
   toolName="Base Converter"
-  toolUrl="https://oortcraft.dev/tools/base-converter"
+  toolUrl="https://oortcraft.dev/tools/base-converter/"
   faq={[
     { question: 'What number bases are supported?', answer: 'Binary (base 2), Octal (base 8), Decimal (base 10), and Hexadecimal (base 16).' },
     { question: 'Is there a size limit?', answer: 'The tool uses BigInt for arbitrary precision, so it can handle very large numbers. Input is limited to 1MB.' },
@@ -23,11 +23,43 @@ import BaseConverter from '../../components/tools/BaseConverter';
 
     <h2>Supported Number Bases</h2>
     <ul>
-      <li><strong>Binary (BIN)</strong> — Base 2, digits 0-1</li>
-      <li><strong>Octal (OCT)</strong> — Base 8, digits 0-7</li>
-      <li><strong>Decimal (DEC)</strong> — Base 10, digits 0-9</li>
-      <li><strong>Hexadecimal (HEX)</strong> — Base 16, digits 0-9, A-F</li>
+      <li><strong>Binary (BIN)</strong> — Base 2, digits 0-1. Used by computers at the hardware level; every value in memory is ultimately stored as binary.</li>
+      <li><strong>Octal (OCT)</strong> — Base 8, digits 0-7. Common in Unix file permissions (e.g., <code>chmod 755</code>) and some legacy systems.</li>
+      <li><strong>Decimal (DEC)</strong> — Base 10, digits 0-9. The standard number system used in everyday arithmetic.</li>
+      <li><strong>Hexadecimal (HEX)</strong> — Base 16, digits 0-9, A-F. Widely used in programming for memory addresses, color codes, and byte values.</li>
     </ul>
+
+    <h2>Real-World Use Cases</h2>
+    <ul>
+      <li><strong>Color codes</strong> — HTML/CSS colors like <code>#FF5733</code> are hex. Each pair of hex digits (FF, 57, 33) represents the red, green, and blue channel values in decimal (255, 87, 51).</li>
+      <li><strong>File permissions</strong> — Unix permissions like <code>chmod 755</code> use octal. 7 = read+write+execute (binary 111), 5 = read+execute (binary 101).</li>
+      <li><strong>Memory addresses</strong> — Debuggers and disassemblers display addresses in hex (e.g., <code>0x7ffee4b2c8a0</code>) because it maps cleanly to byte boundaries.</li>
+      <li><strong>Bitwise operations</strong> — When working with flags or bitmasks, converting between binary and hex helps visualize which bits are set.</li>
+      <li><strong>Network addresses</strong> — IPv6 addresses are written in hexadecimal. Understanding base conversion helps read and manipulate them.</li>
+    </ul>
+
+    <h2>Quick Reference: 0–15</h2>
+    <table>
+      <thead><tr><th>DEC</th><th>BIN</th><th>OCT</th><th>HEX</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>0000</td><td>0</td><td>0</td></tr>
+        <tr><td>1</td><td>0001</td><td>1</td><td>1</td></tr>
+        <tr><td>2</td><td>0010</td><td>2</td><td>2</td></tr>
+        <tr><td>3</td><td>0011</td><td>3</td><td>3</td></tr>
+        <tr><td>4</td><td>0100</td><td>4</td><td>4</td></tr>
+        <tr><td>5</td><td>0101</td><td>5</td><td>5</td></tr>
+        <tr><td>6</td><td>0110</td><td>6</td><td>6</td></tr>
+        <tr><td>7</td><td>0111</td><td>7</td><td>7</td></tr>
+        <tr><td>8</td><td>1000</td><td>10</td><td>8</td></tr>
+        <tr><td>9</td><td>1001</td><td>11</td><td>9</td></tr>
+        <tr><td>10</td><td>1010</td><td>12</td><td>A</td></tr>
+        <tr><td>11</td><td>1011</td><td>13</td><td>B</td></tr>
+        <tr><td>12</td><td>1100</td><td>14</td><td>C</td></tr>
+        <tr><td>13</td><td>1101</td><td>15</td><td>D</td></tr>
+        <tr><td>14</td><td>1110</td><td>16</td><td>E</td></tr>
+        <tr><td>15</td><td>1111</td><td>17</td><td>F</td></tr>
+      </tbody>
+    </table>
 
     <h2>FAQ</h2>
     <h3>What number bases are supported?</h3>
@@ -38,5 +70,11 @@ import BaseConverter from '../../components/tools/BaseConverter';
 
     <h3>Is my data safe?</h3>
     <p>Yes. All conversion happens in your browser. No data is sent to any server.</p>
+
+    <h3>How do I convert a hex color to RGB?</h3>
+    <p>Split the hex code into three pairs and convert each from hex to decimal. For example, <code>#1A2B3C</code> → R: <code>1A</code> = 26, G: <code>2B</code> = 43, B: <code>3C</code> = 60. Paste each pair into this tool with HEX selected to get the decimal value instantly.</p>
+
+    <h3>Why does programming use hexadecimal so often?</h3>
+    <p>One hex digit represents exactly 4 binary bits (a nibble), so two hex digits represent one byte (8 bits). This makes hex a compact and readable shorthand for binary data — far easier to scan than a long string of 0s and 1s.</p>
   </Fragment>
 </ToolLayout>

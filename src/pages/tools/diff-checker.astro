@@ -28,6 +28,18 @@ import DiffChecker from '../../components/tools/DiffChecker';
       <li><strong>Config changes</strong> — Spot differences between two configuration files.</li>
       <li><strong>Document editing</strong> — See what changed between two drafts of a document.</li>
       <li><strong>Log analysis</strong> — Compare log outputs from two runs to find discrepancies.</li>
+      <li><strong>API response comparison</strong> — Diff two JSON responses to catch unexpected changes.</li>
+      <li><strong>SQL query tuning</strong> — Compare query plans or output sets between two versions.</li>
+    </ul>
+    <h2>How the Diff Algorithm Works</h2>
+    <p>This tool uses the <strong>Longest Common Subsequence (LCS)</strong> algorithm to find the minimal set of changes between two texts. LCS identifies the longest sequence of lines that appear in both versions in the same order, then marks everything else as added or removed.</p>
+    <p>The Unix <code>diff</code> command and Git both use variants of this approach (Git uses the Myers diff algorithm by default). The result is a compact, human-readable change summary that highlights only what actually changed.</p>
+    <h2>Tips for Better Diffs</h2>
+    <ul>
+      <li><strong>Normalize whitespace first</strong> — Extra spaces or tabs at line endings create false differences. Trim your input if you only care about content changes.</li>
+      <li><strong>One logical unit per comparison</strong> — Compare a single function, config block, or paragraph at a time for cleaner output.</li>
+      <li><strong>Use for JSON</strong> — Format both JSON objects with consistent indentation before diffing to get meaningful line-level differences.</li>
+      <li><strong>Check line endings</strong> — Windows (<code>CRLF</code>) and Unix (<code>LF</code>) line endings can produce unexpected diffs. Convert to the same format first.</li>
     </ul>
     <h2>FAQ</h2>
     <h3>Is my data safe?</h3>
@@ -36,5 +48,9 @@ import DiffChecker from '../../components/tools/DiffChecker';
     <p>It produces a line-by-line diff using the Longest Common Subsequence (LCS) algorithm, similar to the Unix <code>diff</code> command.</p>
     <h3>Can I compare code files?</h3>
     <p>Yes. Paste any text — code, prose, configs, or logs — and the tool will highlight added, removed, and unchanged lines.</p>
+    <h3>Can I compare JSON?</h3>
+    <p>Yes. For best results, format both JSON objects with consistent indentation before pasting. This ensures the diff highlights meaningful content changes rather than formatting differences.</p>
+    <h3>What is the difference between unified and side-by-side diff?</h3>
+    <p>A unified diff shows both old and new lines interleaved in a single column, prefixed with <code>-</code> (removed) and <code>+</code> (added). A side-by-side diff shows the two versions in parallel columns. This tool uses a unified format for compact, scannable output.</p>
   </Fragment>
 </ToolLayout>
