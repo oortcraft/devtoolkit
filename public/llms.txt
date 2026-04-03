@@ -57,6 +57,7 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 - [Blog](https://oortcraft.dev/blog): Developer tutorials and guides on JSON, Base64, URL encoding, UUIDs, Markdown, CSS, security, and more.
 
 ### Recent Posts
+- [Regex for Email Validation: Patterns That Actually Work](https://oortcraft.dev/blog/regex-email-validation)
 - [Measuring CSS Performance: LCP, FCP, and Core Web Vitals Workflow for Developers](https://oortcraft.dev/blog/css-performance-guide)
 - [The Algorithm Behind git diff: How Myers Diff Works](https://oortcraft.dev/blog/myers-diff-algorithm)
 - [JSON to YAML Conversion: A Practical Guide for Kubernetes, Docker, and Helm](https://oortcraft.dev/blog/json-to-yaml-devops)

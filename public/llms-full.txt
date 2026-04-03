@@ -327,6 +327,10 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
     URL: https://oortcraft.dev/blog/myers-diff-algorithm
     Topics: Myers diff algorithm, git diff internals, edit graph, shortest edit script, D-paths, k-diagonal traversal, unified diff format, Patience vs Histogram vs Myers comparison.
 
+38. **Regex for Email Validation: Patterns That Actually Work**
+    URL: https://oortcraft.dev/blog/regex-email-validation
+    Topics: Email regex patterns, simple to RFC-aware progressive validation, pass/fail test matrices, common regex mistakes, JavaScript Python Go examples, RFC 5322, plus-addressing, TLD length.
+
 ---
 
 ## Tool Categories

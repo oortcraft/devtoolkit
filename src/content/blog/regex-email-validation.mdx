@@ -1,0 +1,275 @@
+---
+title: "Regex for Email Validation: Patterns That Actually Work"
+description: "Learn 3 email validation regex patterns from simple to RFC-aware. Test each pattern with edge cases in JavaScript, Python, and Go."
+pubDate: "2026-04-03"
+tags: ["regex", "email", "validation", "tutorial"]
+relatedTools: ["regex-tester"]
+contentType: "traffic"
+---
+
+Every developer has reached for a regex to validate an email address. It feels like a solved problem — surely someone wrote the definitive pattern decades ago. The trap is that there is no single "correct" email regex. There are tradeoffs: a looser pattern accepts more valid addresses but also more garbage; a tighter pattern rejects garbage but also rejects unusual-but-valid addresses. This guide gives you three progressive patterns, explains exactly what each one does and does not catch, and tells you which to use for your situation.
+
+One thing regex cannot do: confirm that an email address actually exists or that someone controls it. Pattern matching tells you the string has the right shape. It says nothing about whether `user@example.com` has an inbox. For deliverability, you need an MX lookup or a confirmation email flow. This guide covers pattern matching only.
+
+## Why Email Validation With Regex Is Harder Than You Think
+
+The intuitive model of an email address is `local@domain.tld`. That model is correct about 99% of the time — and wrong in enough edge cases to cause real support tickets.
+
+Consider these addresses, all of which are valid by various standards:
+
+- `user+tag@gmail.com` — plus-addressing, used by millions
+- `first.last@company.co.uk` — multi-part TLD
+- `user@subdomain.example.com` — subdomain
+- `alice@museum` — single-label domain (rare but exists)
+- `"john doe"@example.com` — quoted local part with a space
+- `user@[192.168.1.1]` — IP address literal as domain
+
+The RFC 5322 specification that formally defines email addresses is long, recursive, and full of edge cases that nobody uses in practice. A pattern that rejects `user+tag@gmail.com` (because it lacks `+` in its allowed local-part characters) will annoy a significant fraction of your users. A pattern that accepts `user@[192.168.1.1]` is probably accepting more than you intended.
+
+The practical answer is to match your pattern's permissiveness to the context. Prototypes and internal tools can accept a simple pattern. Public-facing forms should use a production-ready pattern. Standards-critical integrations — email infrastructure, compliance tooling — warrant the extra care of an RFC-aware pattern.
+
+## Level 1 — The Simple Pattern (Good Enough for Prototypes)
+
+**Pattern:** `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`
+
+This pattern reads: "one or more characters that are not whitespace or `@`, then `@`, then one or more characters that are not whitespace or `@`, then a literal `.`, then one or more characters that are not whitespace or `@`."
+
+It is intentionally permissive. It does not care what characters make up the local part or the domain — it only requires the structural shape to be present.
+
+| Address | Result | Reason |
+|---|---|---|
+| `user@example.com` | pass | Basic address |
+| `user+tag@gmail.com` | pass | Plus-addressing allowed |
+| `first.last@company.co.uk` | pass | Multi-part TLD |
+| `user@subdomain.example.com` | pass | Subdomain |
+| `USER@EXAMPLE.COM` | pass | All-caps |
+| `user @example.com` | fail | Space before `@` |
+| `@example.com` | fail | Empty local part |
+| `user@` | fail | No domain |
+| `nodomain` | fail | No `@` at all |
+| `user@@example.com` | fail | Double `@` |
+
+**When to use:** Prototypes, internal admin dashboards, scripts where you just want to catch obvious typos. The cost of a false negative (rejecting a valid address) is low because there are no real users yet.
+
+**Limitations:** This pattern accepts `a@b.c` (valid), but also things like `@@@.@` if you squint at the anchors — in practice the `[^\s@]+` groups prevent the worst cases. It does not enforce minimum TLD length, does not restrict local-part characters, and would pass `user@domain.1` (numeric TLD). For those reasons, do not use it on a public registration form.
+
+For a broader reference of validation patterns including this one, see [Common Regex Patterns](/blog/common-regex-patterns).
+
+> Try this pattern — paste it into the [Regex Tester](/tools/regex-tester) and run it against your own test addresses.
+
+## Level 2 — The Practical Pattern (Production-Ready)
+
+**Pattern:** `/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/`
+
+This is the pattern you should use on public registration forms, contact forms, and anywhere a real user submits an email address. It tightens the Level 1 pattern in two specific ways:
+
+1. The local part is restricted to alphanumerics plus `._%+-` — the characters valid in the overwhelming majority of real addresses.
+2. The TLD is restricted to letters only, with a minimum length of 2, which catches numeric TLDs like `.123`.
+
+| Address | Result | Reason |
+|---|---|---|
+| `user@example.com` | pass | Standard address |
+| `user+tag@gmail.com` | pass | `+` is in the allowed set |
+| `first.last@company.co.uk` | pass | Dots and multi-part TLD |
+| `user@subdomain.example.com` | pass | Dots allowed in domain |
+| `user@example.photography` | pass | Long TLD, letters only |
+| `user@example.museum` | pass | `.museum` has 6 letters — passes `{2,}` |
+| `USER@EXAMPLE.COM` | pass | `a-zA-Z` covers uppercase |
+| `user@domain.1` | fail | Numeric TLD rejected |
+| `user name@example.com` | fail | Space not in allowed set |
+| `@example.com` | fail | Empty local part |
+| `user@` | fail | No domain |
+| `user@.com` | fail | Domain starts with dot |
+
+**Why this is the recommended default:** It covers plus-addressing (`+`), subdomains, long modern TLDs (`.photography`, `.academy`, `.solutions`), and mixed-case. It rejects the clearest invalid inputs. Most web frameworks and popular validators use a pattern in this family.
+
+**Remaining limitations:** It accepts `user@a.io` (a valid 2-letter TLD) but would also accept `user@localhost.xy` where `.xy` is not a real TLD. It rejects quoted local parts (`"john doe"@example.com`) and IP address literals (`user@[192.168.1.1]`), both of which are RFC-valid but vanishingly rare in practice.
+
+> Try this pattern — paste it into the [Regex Tester](/tools/regex-tester) to confirm it handles your real-world address list.
+
+## Level 3 — The RFC-Aware Pattern (When Standards Matter)
+
+**Pattern (HTML5 spec):**
+
+```
+/^[a-zA-Z0-9.!#$%&'*+/=?^_{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
+```
+
+RFC 5322 is the formal specification for email message format. It defines a grammar for what constitutes a valid email address using a set of recursive rules. Reading the RFC directly, the local part of an email address can contain quoted strings (allowing spaces and other special characters), comments (parenthetical text that is technically part of the address), and a wider set of special characters than most developers expect.
+
+The HTML5 specification took a pragmatic approach: rather than implementing full RFC 5322 (which would accept `"john doe"@example.com` and other exotic forms that real mail servers reject), the [WHATWG HTML Living Standard](https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address) defines a "valid email address" using a specific pattern designed for web input validation. That pattern is the one above.
+
+What this pattern adds over Level 2:
+
+- Allows a wider range of special characters in the local part: `!#$%&'*+/=?^_{|}~-`
+- Enforces the DNS hostname rules on the domain: labels must start and end with an alphanumeric, and each label is limited to 63 characters
+- Allows multi-label domains with proper structure
+
+| Address | Result | Reason |
+|---|---|---|
+| `user@example.com` | pass | Standard |
+| `user+tag@gmail.com` | pass | `+` allowed |
+| `very.unusual."@".unusual.com@example.com` | fail | Quoted strings not handled |
+| `user!name@example.com` | pass | `!` in allowed set |
+| `user#name@example.com` | pass | `#` in allowed set |
+| `user@xn--nxasmq6b.com` | pass | Punycode domain |
+| `user@-invalid.com` | fail | Domain label starts with hyphen |
+| `user@example..com` | fail | Consecutive dots in domain |
+
+**An honest note on "RFC compliance":** Full RFC 5322 compliance is a spectrum. Implementing the entire grammar accepts addresses that nearly all real-world mail servers reject. The HTML5 pattern is the right level of strictness for server-side and client-side form validation: it covers the RFC local-part characters that real users actually have, without opening the door to structurally bizarre addresses.
+
+For email infrastructure tooling, RFC compliance auditing, or building an MTA, use a dedicated parser library rather than regex.
+
+> Try this pattern — paste it into the [Regex Tester](/tools/regex-tester) and test it against your edge cases.
+
+## Common Mistakes That Break Email Regex
+
+### TLD length restriction `{2,4}` rejects valid addresses
+
+The pattern `/\.[a-zA-Z]{2,4}$/` was once common. In 2011, ICANN began delegating generic TLDs of arbitrary length. Today `.photography` (11 characters), `.solutions` (9), and `.international` (13) are all real TLDs. A `{2,4}` upper bound silently rejects users with these addresses. Use `{2,}` (minimum 2, no upper bound) instead.
+
+### Missing `+` in the local part character set
+
+`[a-zA-Z0-9._%-]` is almost right but omits `+`. Plus-addressing (`user+tag@gmail.com`) is a widely used feature — Gmail, Fastmail, ProtonMail, and most modern providers support it. Users who rely on it for email filtering will be silently frustrated when your form rejects their address. Always include `+` in the local part allowed characters.
+
+### Missing anchors (`^` and `$`)
+
+Without anchors, `/[^\s@]+@[^\s@]+\.[^\s@]+/` matches the email-shaped substring inside any string. The input `"not an email but user@example.com is here"` would pass validation. The anchors `^` and `$` enforce that the entire input string must match the pattern, not just a substring of it.
+
+### Backtracking vulnerability
+
+Patterns with nested quantifiers like `([a-zA-Z0-9.-]+)+` create catastrophic backtracking on certain non-matching inputs — the regex engine tries exponentially many combinations before giving up. For email validation, this is unlikely to be exploited directly, but it can cause noticeable latency on server-side validation. Keep quantifiers simple: one `+` or `*` per group, no nesting.
+
+### Case sensitivity without the `i` flag
+
+`[a-z]{2,}` does not match `COM` or `UK`. Either include both ranges (`[a-zA-Z]`) or append the `i` flag. The Level 2 and Level 3 patterns above use explicit `[a-zA-Z]` ranges, which is more portable across engines (some engines do not support the `i` flag for Unicode patterns the same way).
+
+For a broader catalog of regex pitfalls, see the [Regex Cheat Sheet](/blog/regex-cheat-sheet).
+
+## Code Examples in JavaScript, Python, and Go
+
+### JavaScript
+
+Use `RegExp.prototype.test()` for a boolean result. The practical (Level 2) pattern is used here.
+
+```javascript
+const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+function isValidEmail(address) {
+  return EMAIL_RE.test(address);
+}
+
+console.log(isValidEmail("user@example.com"));       // true
+console.log(isValidEmail("user+tag@gmail.com"));     // true
+console.log(isValidEmail("user@example.photography")); // true
+console.log(isValidEmail("user @example.com"));      // false
+console.log(isValidEmail("nodomain"));               // false
+```
+
+Define the regex outside the function to avoid recompiling it on every call. If you add the `g` flag for reuse, reset `lastIndex` between calls or the second call may return unexpected results.
+
+### Python
+
+Use `re.fullmatch()` to anchor automatically (equivalent to `^...$` without writing the anchors explicitly).
+
+```python
+import re
+
+EMAIL_RE = re.compile(
+    r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
+)
+
+def is_valid_email(address: str) -> bool:
+    return EMAIL_RE.fullmatch(address) is not None
+
+print(is_valid_email("user@example.com"))        # True
+print(is_valid_email("user+tag@gmail.com"))      # True
+print(is_valid_email("user@example.museum"))     # True
+print(is_valid_email("user @example.com"))       # False
+print(is_valid_email("nodomain"))                # False
+```
+
+`re.fullmatch()` is available from Python 3.4. Prefer it over `re.match()` (anchored only at the start) or `re.search()` (unanchored).
+
+### Go
+
+Use `regexp.MustCompile` at package level to compile once and panic on bad syntax rather than silently returning a nil regexp.
+
+```go
+package main
+
+import (
+    "fmt"
+    "regexp"
+)
+
+var emailRE = regexp.MustCompile(
+    `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`,
+)
+
+func isValidEmail(address string) bool {
+    return emailRE.MatchString(address)
+}
+
+func main() {
+    fmt.Println(isValidEmail("user@example.com"))        // true
+    fmt.Println(isValidEmail("user+tag@gmail.com"))      // true
+    fmt.Println(isValidEmail("user@example.photography")) // true
+    fmt.Println(isValidEmail("user @example.com"))       // false
+    fmt.Println(isValidEmail("nodomain"))                // false
+}
+```
+
+Go's `regexp` package uses RE2 syntax, which guarantees linear-time matching and has no catastrophic backtracking. This also means some PCRE features (like lookaheads) are unavailable, but the Level 2 pattern above works without modification.
+
+> Paste any of these patterns into the [Regex Tester](/tools/regex-tester) to verify them against your test cases before shipping.
+
+## When to Stop Using Regex for Email Validation
+
+Regex validation has diminishing returns past a certain point. The practical ceiling is Level 2: it filters the most common invalid inputs, handles the most common valid formats, and rarely rejects a real address. Beyond that, you are writing increasingly complex patterns to handle cases that represent a fraction of a percent of real-world addresses.
+
+**Better alternatives:**
+
+**Confirmation email.** The only way to prove a user controls an email address is to send them something and have them act on it. A confirmation link or one-time code provides both format validation and deliverability proof in a single step. This should be your default for any address that will receive important system messages.
+
+**Library validators.** For server-side validation that needs to go beyond basic format checking, use a well-maintained library. In JavaScript, `validator.js` provides `isEmail()` with configurable strictness. In Python, the `email-validator` package handles Unicode domains and RFC compliance. These libraries are maintained to track TLD changes and edge cases that a hand-written regex is not.
+
+**Decision matrix:**
+
+| Context | Recommended level | Reason |
+|---|---|---|
+| Prototype / internal tool | Level 1 | Speed matters, users are trusted |
+| Public web form (registration, contact) | Level 2 | Catches typos, handles real-world formats |
+| Email input in a browser form | HTML `type="email"` | Browser applies HTML5 spec pattern automatically |
+| Standards-critical (MTA, compliance) | Library validator | Regex is insufficient for full compliance |
+| Deliverability confirmation | Send a confirmation email | Regex cannot check inbox existence |
+
+The escalating complexity of Level 3 and beyond rarely moves a meaningful metric. A user with a `.photography` TLD who gets rejected by a Level 2 form might just move on — but the odds are low enough that investing engineering time in a more complex pattern rarely pays off compared to shipping a confirmation email flow.
+
+## Frequently Asked Questions
+
+### What is the best regex for email validation?
+
+For most production web applications, `/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/` is the right choice. It accepts plus-addressing, subdomains, and long modern TLDs while rejecting obvious typos and invalid formats. Pair it with a confirmation email to verify deliverability.
+
+### Is regex enough to validate an email address?
+
+For format checking, yes — Level 2 handles the vast majority of real addresses correctly. But regex cannot verify that the domain accepts mail, that the mailbox exists, or that the person submitting the form controls the address. For any address that will receive important system messages, send a confirmation email as well.
+
+### Why do some email regex patterns reject user+tag@gmail.com?
+
+Patterns that do not include `+` in the allowed local-part characters will reject plus-addressed emails. The character class `[a-zA-Z0-9._%-]` is missing the `+`. The fix is simple: add `+` to the character class to get `[a-zA-Z0-9._%+-]`. Plus-addressing is supported by Gmail, Fastmail, ProtonMail, and most major providers.
+
+### What does RFC 5322 say about email format?
+
+RFC 5322 defines the format of email messages, including the structure of addresses. The local part (before `@`) can contain alphanumerics, most special characters, and quoted strings (allowing spaces). The domain part must be a valid hostname or an IP address literal in square brackets. In practice, the HTML5 email address spec is a more useful target for web validation: it covers the RFC local-part characters that real users have, without the recursive grammar complexity that produces theoretically valid but practically unsupported addresses.
+
+### How do I test my email regex pattern?
+
+Use the [Regex Tester](/tools/regex-tester) to test patterns against multiple addresses at once. Build a test list that includes: a standard address, a plus-addressed email, a subdomain address, a long TLD, an all-caps address, an address with a space, an address missing `@`, and an address with no TLD. Running all eight gives you meaningful coverage across the most common pass and fail cases.
+
+## Conclusion
+
+Three patterns, three contexts. Use the simple pattern (`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`) when you just need to catch obvious non-addresses in a prototype. Use the practical pattern (`/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/`) as your production default — it handles plus-addressing, subdomains, and modern TLDs. Reach for the HTML5 RFC-aware pattern only when you specifically need to validate against that standard.
+
+The most important habit is testing each pattern against a real list of addresses — including the edge cases that catch developers off guard. Run all three patterns through the [Regex Tester](/tools/regex-tester) and compare which ones accept and reject your test addresses. For broader regex patterns beyond email, see [Common Regex Patterns](/blog/common-regex-patterns).
