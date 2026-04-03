@@ -1,7 +1,7 @@
 ---
 title: "JSON to YAML: Practical Guide for Kubernetes, Helm, Docker"
 description: "Convert JSON to YAML for Kubernetes, Helm, and Docker Compose. Covers yq, Python, js-yaml, multiline strings, boolean hazards, and null handling."
-pubDate: "2026-04-14"
+pubDate: "2026-04-03"
 tags: ["yaml", "json", "kubernetes", "devops", "helm"]
 relatedTools: ["json-to-yaml", "yaml-validator", "json-formatter"]
 contentType: "traffic"
@@ -58,7 +58,7 @@ The practical implication is immediate: you can take a raw JSON API response and
   "apiVersion": "v1",
   "kind": "ConfigMap",
   "metadata": { "name": "app-config" },
-  "data": { "LOG_LEVEL": "info" }
+  "data": { "LOG_LEVEL": "info" },
 }
 ```
 
@@ -130,17 +130,17 @@ print(yaml.dump(data, default_flow_style=False, sort_keys=True, indent=2))
 `js-yaml` is the most-downloaded YAML library in the npm ecosystem — it averages over 80 million weekly downloads (npm, 2025). It is used internally by dozens of major tools including ESLint, Jest, and Webpack.
 
 ```javascript
-import yaml from 'js-yaml';
-import fs from 'fs';
+import yaml from "js-yaml";
+import fs from "fs";
 
 // Read JSON, write YAML
-const data = JSON.parse(fs.readFileSync('input.json', 'utf8'));
+const data = JSON.parse(fs.readFileSync("input.json", "utf8"));
 const yamlStr = yaml.dump(data, {
   indent: 2,
   lineWidth: 120,
   noRefs: true,
 });
-fs.writeFileSync('output.yaml', yamlStr);
+fs.writeFileSync("output.yaml", yamlStr);
 ```
 
 For a quick in-browser conversion without installing anything, use the [JSON to YAML converter](/tools/json-to-yaml) — paste your JSON and get clean YAML instantly.
@@ -181,10 +181,10 @@ Here is a realistic JSON payload from `kubectl get deployment my-app -o json`:
           {
             "name": "app",
             "image": "my-registry/my-app:1.4.2",
-            "ports": [{"containerPort": 8080}],
+            "ports": [{ "containerPort": 8080 }],
             "resources": {
-              "requests": {"cpu": "250m", "memory": "128Mi"},
-              "limits": {"cpu": "500m", "memory": "256Mi"}
+              "requests": { "cpu": "250m", "memory": "128Mi" },
+              "limits": { "cpu": "500m", "memory": "256Mi" }
             }
           }
         ]
@@ -376,8 +376,8 @@ This conversion is dangerous:
 Naive YAML output (YAML 1.1 parser will read `yes` and `off` as booleans):
 
 ```yaml
-ssl_enabled: yes   # parsed as true
-debug_mode: off    # parsed as false
+ssl_enabled: yes # parsed as true
+debug_mode: off # parsed as false
 ```
 
 Safe YAML output (always quote ambiguous strings):
@@ -424,7 +424,7 @@ YAML allows integer keys in mappings; JSON does not (all JSON keys are strings).
 Without quoting, some YAML parsers read these as integer keys:
 
 ```yaml
-200: OK     # integer key — not the same as "200"
+200: OK # integer key — not the same as "200"
 404: Not Found
 ```
 

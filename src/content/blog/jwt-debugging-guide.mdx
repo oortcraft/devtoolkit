@@ -1,7 +1,7 @@
 ---
 title: "How to Debug JWT Authentication Issues"
 description: "Decode JWTs, read claims, and fix the 5 most common auth errors — expired tokens, wrong audience, algorithm mismatch, and more."
-pubDate: "2026-04-07"
+pubDate: "2026-04-03"
 tags: ["jwt", "authentication", "debugging", "security"]
 relatedTools: ["jwt-decoder", "hash-generator"]
 contentType: "traffic"
@@ -50,15 +50,15 @@ The second segment contains the claims — assertions about the user and the tok
 
 The registered claim names defined in [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1) are:
 
-| Claim | Full name | What it means |
-|-------|-----------|---------------|
-| `sub` | Subject | The entity the token represents (usually a user ID) |
-| `iss` | Issuer | The server that created and signed the token |
-| `aud` | Audience | The recipient(s) the token is intended for |
-| `iat` | Issued At | Unix timestamp when the token was created |
-| `exp` | Expiration | Unix timestamp after which the token is invalid |
-| `nbf` | Not Before | Unix timestamp before which the token is invalid |
-| `jti` | JWT ID | Unique identifier for the token (used for revocation) |
+| Claim | Full name  | What it means                                         |
+| ----- | ---------- | ----------------------------------------------------- |
+| `sub` | Subject    | The entity the token represents (usually a user ID)   |
+| `iss` | Issuer     | The server that created and signed the token          |
+| `aud` | Audience   | The recipient(s) the token is intended for            |
+| `iat` | Issued At  | Unix timestamp when the token was created             |
+| `exp` | Expiration | Unix timestamp after which the token is invalid       |
+| `nbf` | Not Before | Unix timestamp before which the token is invalid      |
+| `jti` | JWT ID     | Unique identifier for the token (used for revocation) |
 
 Everything outside these seven names — `email`, `roles`, `org_id`, etc. — is a custom claim. There is no schema enforcement; the fields are whatever the issuer chose to include.
 
@@ -81,6 +81,7 @@ Open DevTools (F12), go to the Network tab, and click any authenticated API requ
 **Step 2: Paste it into the decoder.**
 
 Go to [/tools/jwt-decoder](/tools/jwt-decoder) and paste the full token. The tool splits the three segments and renders:
+
 - Header with algorithm and token type
 - Payload with all claims, with `exp` and `iat` converted to human-readable local time
 - Whether the token is currently expired
@@ -123,6 +124,7 @@ print(json.dumps(json.loads(base64.urlsafe_b64decode(p)), indent=2))
 ### 1. TokenExpiredError — `exp` is in the past
 
 **Error message (jsonwebtoken / Node.js):**
+
 ```
 JsonWebTokenError: jwt expired
 TokenExpiredError: jwt expired
@@ -145,7 +147,9 @@ Convert `exp` to a human timestamp: `new Date(1741603600 * 1000).toISOString()`.
 ```javascript
 function isTokenExpiringSoon(token, thresholdSeconds = 60) {
   const [, payload] = token.split(".");
-  const { exp } = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+  const { exp } = JSON.parse(
+    atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
+  );
   return Date.now() / 1000 > exp - thresholdSeconds;
 }
 ```
@@ -155,6 +159,7 @@ function isTokenExpiringSoon(token, thresholdSeconds = 60) {
 ### 2. Invalid Audience — `aud` mismatch
 
 **Error message:**
+
 ```
 JsonWebTokenError: jwt audience invalid. expected: https://api.example.com
 ```
@@ -182,6 +187,7 @@ jwt.verify(token, publicKey, {
 ### 3. Missing or Wrong Issuer — `iss` mismatch
 
 **Error message:**
+
 ```
 JsonWebTokenError: jwt issuer invalid. expected: https://auth.example.com
 ```
@@ -201,6 +207,7 @@ After migrating an auth provider — from Auth0 to a self-hosted service, for ex
 ### 4. Algorithm Mismatch — RS256 vs HS256
 
 **Error message:**
+
 ```
 JsonWebTokenError: invalid algorithm
 ```
@@ -230,6 +237,7 @@ jwt.verify(token, publicKey); // do NOT do this
 ### 5. Invalid Signature — Key Rotation
 
 **Error message:**
+
 ```
 JsonWebTokenError: invalid signature
 ```
@@ -239,6 +247,7 @@ JsonWebTokenError: invalid signature
 The token structure looks correct — valid `exp`, matching `iss` and `aud`, correct `alg`. But the signature fails. This almost always means the signing key changed after the token was issued.
 
 **Diagnosis steps:**
+
 1. Check when the token was issued (`iat`). Did a key rotation happen after that timestamp?
 2. Confirm the verification key your API is using matches the key that signed the token.
 3. For JWKs (JSON Web Key Sets), check the `kid` (key ID) header claim — it should match a key in your current JWKS endpoint.
@@ -274,6 +283,7 @@ const claims = JSON.parse(atob(payload));
 ```
 
 **Never store in the JWT payload:**
+
 - Passwords or password hashes
 - Credit card numbers or PII subject to GDPR/CCPA
 - API keys or secrets
@@ -283,6 +293,7 @@ const claims = JSON.parse(atob(payload));
 The OWASP JWT Security Cheat Sheet specifically calls out payload exposure as a top JWT misuse. For background on how hashing protects sensitive values that need to be stored or compared, see [What is Hashing?](/blog/what-is-hashing).
 
 **Safe to store in the JWT payload:**
+
 - User ID (`sub`)
 - Roles and permissions (`roles`, `scope`)
 - Organization ID
@@ -293,15 +304,15 @@ If you need encrypted claims, look into JWE (JSON Web Encryption, RFC 7516), whi
 
 ## Quick Reference: JWT Claim Fields
 
-| Claim | Type | Example value | Required by spec? |
-|-------|------|---------------|-------------------|
-| `sub` | string | `"user_482"` | Recommended |
-| `iss` | string (URI) | `"https://auth.example.com"` | Recommended |
-| `aud` | string or array | `"https://api.example.com"` | Recommended |
-| `exp` | NumericDate | `1712403600` | Recommended |
-| `iat` | NumericDate | `1712400000` | Optional |
-| `nbf` | NumericDate | `1712400000` | Optional |
-| `jti` | string | `"tok_a3f9..."` | Optional |
+| Claim | Type            | Example value                | Required by spec? |
+| ----- | --------------- | ---------------------------- | ----------------- |
+| `sub` | string          | `"user_482"`                 | Recommended       |
+| `iss` | string (URI)    | `"https://auth.example.com"` | Recommended       |
+| `aud` | string or array | `"https://api.example.com"`  | Recommended       |
+| `exp` | NumericDate     | `1712403600`                 | Recommended       |
+| `iat` | NumericDate     | `1712400000`                 | Optional          |
+| `nbf` | NumericDate     | `1712400000`                 | Optional          |
+| `jti` | string          | `"tok_a3f9..."`              | Optional          |
 
 `NumericDate` is an integer count of seconds since the Unix epoch (January 1, 1970 UTC), identical to the value returned by `Math.floor(Date.now() / 1000)` in JavaScript.
 
