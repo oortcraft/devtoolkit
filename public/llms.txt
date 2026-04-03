@@ -57,6 +57,7 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 - [Blog](https://oortcraft.dev/blog): Developer tutorials and guides on JSON, Base64, URL encoding, UUIDs, Markdown, CSS, security, and more.
 
 ### Recent Posts
+- [Epoch to Date: Convert Unix Timestamps in JS, Python, Go, Java, PHP & Rust](https://oortcraft.dev/blog/epoch-to-date-conversion)
 - [Regex for Email Validation: Patterns That Actually Work](https://oortcraft.dev/blog/regex-email-validation)
 - [Measuring CSS Performance: LCP, FCP, and Core Web Vitals Workflow for Developers](https://oortcraft.dev/blog/css-performance-guide)
 - [The Algorithm Behind git diff: How Myers Diff Works](https://oortcraft.dev/blog/myers-diff-algorithm)

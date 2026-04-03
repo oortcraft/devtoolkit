@@ -331,6 +331,10 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
     URL: https://oortcraft.dev/blog/regex-email-validation
     Topics: Email regex patterns, simple to RFC-aware progressive validation, pass/fail test matrices, common regex mistakes, JavaScript Python Go examples, RFC 5322, plus-addressing, TLD length.
 
+39. **Epoch to Date: Convert Unix Timestamps in JS, Python, Go, Java, PHP & Rust**
+    URL: https://oortcraft.dev/blog/epoch-to-date-conversion
+    Topics: Epoch to date conversion, Unix timestamp to datetime, JavaScript Python Go Java PHP Rust code snippets, timezone-aware conversion, milliseconds vs seconds, DST pitfalls, Bash CLI.
+
 ---
 
 ## Tool Categories

@@ -1,0 +1,502 @@
+---
+title: "Epoch to Date: Convert Unix Timestamps in JS, Python, Go, Java, PHP & Rust"
+description: "Convert epoch to date in JavaScript, Python, Go, Java, PHP, and Rust. Copy-paste code snippets with timezone-aware examples and common pitfalls."
+pubDate: "2026-04-04"
+tags: ["timestamp", "epoch", "conversion", "tutorial"]
+relatedTools: ["timestamp-converter"]
+contentType: "traffic"
+---
+
+Unix timestamps show up everywhere — API responses, database rows, log files, JWT `iat`/`exp` claims — and every language handles them slightly differently. This post is a copy-paste cheat sheet. For the full explanation of what epoch time actually is, see [Unix Timestamps Explained](/blog/unix-timestamp-guide).
+
+All examples use `1711670400`, which represents `2024-03-29T00:00:00Z`. Paste any timestamp directly into the [Timestamp Converter](/tools/timestamp-converter) to verify your results instantly.
+
+## Why You Need Epoch-to-Date Conversion
+
+Timestamps arrive as raw integers. Displaying them to users, logging them in a human-readable format, or comparing them against a calendar date all require conversion. The patterns differ just enough between languages to cause bugs — especially when:
+
+- An API returns seconds but your code expects milliseconds (or vice versa)
+- A JWT `exp` claim needs to be read as a human date (use [JWT Decoder](/tools/jwt-decoder) for quick inspection)
+- A database `created_at` column comes back as an integer and needs to be formatted in the user's local timezone
+- Log analysis requires converting thousands of timestamps to ISO strings for readability
+
+The sections below give you working, copy-paste snippets for both directions — epoch to date **and** date to epoch — for each language, including a timezone-aware example in every case.
+
+## JavaScript / TypeScript
+
+JavaScript's `Date` object works in **milliseconds**. The single most common mistake is passing a 10-digit seconds timestamp directly to `new Date()` — it produces a date in January 1970.
+
+```javascript
+// Epoch seconds → Date (multiply by 1000)
+const epoch = 1711670400;
+const date = new Date(epoch * 1000);
+console.log(date.toISOString()); // "2024-03-29T00:00:00.000Z"
+
+// Epoch milliseconds → Date (pass directly)
+const epochMs = 1711670400000;
+const dateMs = new Date(epochMs);
+console.log(dateMs.toISOString()); // "2024-03-29T00:00:00.000Z"
+
+// Date → epoch seconds
+const nowSec = Math.floor(Date.now() / 1000);
+console.log(nowSec); // e.g. 1711670400
+
+// Date → epoch milliseconds
+const nowMs = Date.now();
+console.log(nowMs); // e.g. 1711670400000
+
+// Specific date → epoch seconds
+const specific = new Date("2024-03-29T00:00:00Z");
+console.log(Math.floor(specific.getTime() / 1000)); // 1711670400
+```
+
+### Timezone-aware formatting with Intl.DateTimeFormat
+
+The built-in `Intl.DateTimeFormat` API handles timezone display without any third-party library:
+
+```javascript
+const epoch = 1711670400;
+const date = new Date(epoch * 1000);
+
+// Format in a specific timezone
+const formatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+console.log(formatter.format(date));
+// "03/28/2024, 20:00:00" (UTC−4 in effect on 2024-03-29)
+
+// ISO string in a specific timezone (requires manual offset handling)
+// For serious timezone work in Node.js, use the Temporal API (Stage 3) or date-fns-tz
+```
+
+**Key gotcha:** `Date.now()` returns milliseconds. If you need seconds for an API or a JWT claim, always divide by 1000 and floor.
+
+## Python
+
+Python's `time` module works in seconds (floats). Always pass `tz=timezone.utc` to avoid subtle bugs when code runs on servers in different timezones.
+
+```python
+from datetime import datetime, timezone
+import time
+
+# Epoch seconds → UTC datetime
+epoch = 1711670400
+dt_utc = datetime.fromtimestamp(epoch, tz=timezone.utc)
+print(dt_utc.isoformat())  # "2024-03-29T00:00:00+00:00"
+
+# Epoch seconds → local datetime (system timezone)
+dt_local = datetime.fromtimestamp(epoch)
+print(dt_local)  # Varies by system timezone
+
+# datetime → epoch seconds
+dt = datetime(2024, 3, 29, 0, 0, 0, tzinfo=timezone.utc)
+ts = int(dt.timestamp())
+print(ts)  # 1711670400
+
+# Current epoch (integer seconds)
+now = int(time.time())
+print(now)
+```
+
+**Deprecation warning:** `datetime.utcfromtimestamp()` is deprecated in Python 3.12+ and will be removed in a future version. Use `datetime.fromtimestamp(ts, tz=timezone.utc)` instead. The deprecated form returns a naive datetime that silently assumes UTC, which causes bugs when the result is compared to other timezone-aware objects.
+
+### Non-UTC timezone with `zoneinfo` (Python 3.9+)
+
+```python
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+epoch = 1711670400
+
+# Convert to a named timezone (no third-party library needed on Python 3.9+)
+dt_ny = datetime.fromtimestamp(epoch, tz=ZoneInfo("America/New_York"))
+print(dt_ny.isoformat())  # "2024-03-28T20:00:00-04:00"
+
+dt_tokyo = datetime.fromtimestamp(epoch, tz=ZoneInfo("Asia/Tokyo"))
+print(dt_tokyo.isoformat())  # "2024-03-29T09:00:00+09:00"
+
+# Named timezone datetime → epoch seconds
+ts = int(dt_ny.timestamp())
+print(ts)  # 1711670400 (always the same UTC value)
+```
+
+For Python 3.8 and below, use `pytz` instead: `import pytz; tz = pytz.timezone("America/New_York")`.
+
+## Go
+
+Go's `time` package uses `time.Unix()` for seconds and `time.UnixMilli()` for milliseconds. All `time.Time` values are timezone-aware by default.
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	epoch := int64(1711670400)
+
+	// Epoch seconds → time.Time (UTC)
+	t := time.Unix(epoch, 0).UTC()
+	fmt.Println(t.Format(time.RFC3339)) // "2024-03-29T00:00:00Z"
+
+	// Epoch milliseconds → time.Time
+	epochMs := int64(1711670400000)
+	tMs := time.UnixMilli(epochMs).UTC()
+	fmt.Println(tMs.Format(time.RFC3339)) // "2024-03-29T00:00:00Z"
+
+	// time.Time → epoch seconds
+	ts := t.Unix()
+	fmt.Println(ts) // 1711670400
+
+	// time.Time → epoch milliseconds
+	tsMs := t.UnixMilli()
+	fmt.Println(tsMs) // 1711670400000
+
+	// Current epoch
+	now := time.Now().Unix()
+	fmt.Println(now)
+}
+```
+
+### Timezone-aware formatting
+
+Go's reference time is `Mon Jan 2 15:04:05 MST 2006` — a fixed date used as a layout template. Use `time.LoadLocation` for named timezones:
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	epoch := int64(1711670400)
+
+	// Load a named timezone
+	loc, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		panic(err)
+	}
+
+	t := time.Unix(epoch, 0).In(loc)
+	// Go layout: reference time is 2006-01-02T15:04:05Z07:00
+	fmt.Println(t.Format("2006-01-02T15:04:05Z07:00"))
+	// "2024-03-28T20:00:00-04:00"
+
+	fmt.Println(t.Format("2006-01-02 15:04:05 MST"))
+	// "2024-03-28 20:00:00 EDT"
+
+	// Convert a specific date in a timezone → epoch
+	t2, _ := time.ParseInLocation("2006-01-02", "2024-03-29", time.UTC)
+	fmt.Println(t2.Unix()) // 1711670400
+}
+```
+
+## Java
+
+Java's modern time API (`java.time`) lives in the `java.time` package added in Java 8. Avoid the legacy `java.util.Date` / `Calendar` API for any new code.
+
+```java
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+
+public class EpochConverter {
+    public static void main(String[] args) {
+        long epoch = 1711670400L;
+
+        // Epoch seconds → Instant
+        Instant instant = Instant.ofEpochSecond(epoch);
+        System.out.println(instant);  // 2024-03-29T00:00:00Z
+
+        // Epoch milliseconds → Instant
+        long epochMs = 1711670400000L;
+        Instant instantMs = Instant.ofEpochMilli(epochMs);
+        System.out.println(instantMs); // 2024-03-29T00:00:00Z
+
+        // Instant → epoch seconds
+        long ts = instant.getEpochSecond();
+        System.out.println(ts); // 1711670400
+
+        // Instant → epoch milliseconds
+        long tsMs = instant.toEpochMilli();
+        System.out.println(tsMs); // 1711670400000
+
+        // Timezone-aware: Instant → ZonedDateTime
+        ZonedDateTime zdt = instant.atZone(ZoneId.of("America/New_York"));
+        System.out.println(zdt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        // "2024-03-28T20:00:00-04:00"
+
+        // ZonedDateTime → epoch seconds
+        long tsFromZdt = zdt.toEpochSecond();
+        System.out.println(tsFromZdt); // 1711670400
+    }
+}
+```
+
+The legacy `new Date(ts * 1000L)` pattern still works but gives you a `java.util.Date` with no timezone support. Migrate to `Instant` and `ZonedDateTime` for any new code — they are safer, immutable, and composable.
+
+## PHP
+
+PHP's `date()` function operates on seconds timestamps. The `DateTime` class provides an object-oriented alternative with full timezone support.
+
+```php
+<?php
+
+$epoch = 1711670400;
+
+// Epoch seconds → formatted string (server's default timezone)
+echo date('Y-m-d H:i:s', $epoch) . "\n";
+// "2024-03-29 00:00:00" (if server timezone is UTC)
+
+// Epoch seconds → UTC formatted string (explicit)
+echo gmdate('Y-m-d H:i:s', $epoch) . "\n";
+// "2024-03-29 00:00:00" — always UTC
+
+// date string → epoch seconds
+echo strtotime('2024-03-29 00:00:00 UTC') . "\n";
+// 1711670400
+
+// Current epoch
+echo time() . "\n";
+```
+
+### Timezone-aware with DateTime
+
+```php
+<?php
+
+$epoch = 1711670400;
+
+// Epoch → DateTime in a specific timezone
+$dt = new DateTime('@' . $epoch); // '@' prefix = Unix timestamp
+$dt->setTimezone(new DateTimeZone('America/New_York'));
+echo $dt->format('Y-m-d H:i:s T') . "\n";
+// "2024-03-28 20:00:00 EDT"
+
+echo $dt->format(DateTime::ATOM) . "\n";
+// "2024-03-28T20:00:00-04:00"
+
+// DateTime → epoch seconds
+$epoch2 = $dt->getTimestamp();
+echo $epoch2 . "\n"; // 1711670400
+
+// Build a specific UTC datetime → epoch
+$dt2 = new DateTime('2024-03-29 00:00:00', new DateTimeZone('UTC'));
+echo $dt2->getTimestamp() . "\n"; // 1711670400
+```
+
+**Note:** `new DateTime('@' . $epoch)` always interprets the value as UTC, regardless of the server's default timezone. Call `setTimezone()` after construction to display in a different timezone. The `@` prefix is the reliable, library-free way to parse a Unix timestamp in PHP.
+
+## Rust
+
+Rust's standard library provides `std::time::SystemTime` but no date formatting. The `chrono` crate is the standard choice for timestamp-to-date conversion.
+
+### With `chrono` (recommended)
+
+Add to `Cargo.toml`:
+
+```toml
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+```
+
+```rust
+use chrono::{DateTime, TimeZone, Utc};
+
+fn main() {
+    let epoch: i64 = 1711670400;
+
+    // Epoch seconds → DateTime<Utc>
+    let dt: DateTime<Utc> = Utc.timestamp_opt(epoch, 0).unwrap();
+    println!("{}", dt.to_rfc3339()); // "2024-03-29T00:00:00+00:00"
+    println!("{}", dt.format("%Y-%m-%d %H:%M:%S UTC")); // "2024-03-29 00:00:00 UTC"
+
+    // Epoch milliseconds → DateTime<Utc>
+    let epoch_ms: i64 = 1711670400000;
+    let dt_ms = DateTime::from_timestamp_millis(epoch_ms).unwrap();
+    println!("{}", dt_ms.to_rfc3339()); // "2024-03-29T00:00:00+00:00"
+
+    // DateTime<Utc> → epoch seconds
+    let ts = dt.timestamp();
+    println!("{}", ts); // 1711670400
+
+    // DateTime<Utc> → epoch milliseconds
+    let ts_ms = dt.timestamp_millis();
+    println!("{}", ts_ms); // 1711670400000
+}
+```
+
+### Timezone-aware with `chrono-tz`
+
+```toml
+[dependencies]
+chrono = "0.4"
+chrono-tz = "0.9"
+```
+
+```rust
+use chrono::{TimeZone, Utc};
+use chrono_tz::America::New_York;
+
+fn main() {
+    let epoch: i64 = 1711670400;
+
+    let dt_utc = Utc.timestamp_opt(epoch, 0).unwrap();
+
+    // Convert to a named timezone
+    let dt_ny = dt_utc.with_timezone(&New_York);
+    println!("{}", dt_ny.to_rfc3339()); // "2024-03-28T20:00:00-04:00"
+
+    // Named timezone datetime → epoch seconds (still the same UTC value)
+    println!("{}", dt_ny.timestamp()); // 1711670400
+}
+```
+
+### Without `chrono` (stdlib only)
+
+If you cannot add a dependency, `std::time::SystemTime` gives you durations but no formatting:
+
+```rust
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+fn main() {
+    let epoch: u64 = 1711670400;
+
+    // Epoch → SystemTime
+    let st = UNIX_EPOCH + Duration::from_secs(epoch);
+
+    // SystemTime → epoch seconds
+    let ts = st.duration_since(UNIX_EPOCH).unwrap().as_secs();
+    println!("{}", ts); // 1711670400
+
+    // Current epoch
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    println!("{}", now);
+}
+```
+
+The stdlib path is useful for embedded or WASM targets where `chrono` may not be available. For any user-facing formatting, `chrono` is the correct choice.
+
+## Bash / CLI
+
+For quick debugging in a terminal, most Unix-like systems expose epoch conversion directly in the `date` command. This captures a lot of "epoch to date bash" queries that don't need a code snippet at all.
+
+```bash
+# Linux (GNU date) — epoch seconds → human-readable
+date -d @1711670400
+# Fri Mar 29 00:00:00 UTC 2024
+
+# Linux — epoch seconds → ISO 8601
+date -d @1711670400 --iso-8601=seconds
+# 2024-03-29T00:00:00+00:00
+
+# Linux — epoch seconds → specific timezone
+TZ="America/New_York" date -d @1711670400
+# Thu Mar 28 20:00:00 EDT 2024
+
+# macOS/BSD date — syntax differs
+date -r 1711670400
+# Fri Mar 29 00:00:00 UTC 2024
+
+# macOS — ISO format
+date -r 1711670400 -u +"%Y-%m-%dT%H:%M:%SZ"
+# 2024-03-29T00:00:00Z
+
+# Any platform — current epoch
+date +%s
+# e.g. 1711670400
+
+# Human date string → epoch (Linux)
+date -d "2024-03-29 00:00:00 UTC" +%s
+# 1711670400
+
+# Human date string → epoch (macOS)
+date -j -f "%Y-%m-%d %H:%M:%S" "2024-03-29 00:00:00" +%s
+# (requires TZ=UTC prefix for accurate UTC result)
+```
+
+The `TZ=` prefix is the most reliable way to force UTC output without modifying your system timezone.
+
+## Timezone Conversion Pitfalls
+
+These are the bugs that appear in production and are hard to reproduce locally.
+
+### Naive vs. aware datetimes (Python)
+
+A naive datetime has no timezone attached. Comparing a naive datetime to an aware one throws a `TypeError` in Python. Always attach `tz=timezone.utc` when constructing from an epoch, and use `zoneinfo` or `pytz` for named timezones.
+
+```python
+from datetime import datetime, timezone
+
+# Naive — no timezone, assumes local system time
+naive = datetime.fromtimestamp(1711670400)  # risky
+
+# Aware — always explicit
+aware = datetime.fromtimestamp(1711670400, tz=timezone.utc)  # correct
+```
+
+### DST ambiguity
+
+During "fall back" in DST transitions, a wall-clock time like `01:30:00` occurs twice. An epoch timestamp is always unambiguous — it maps to exactly one UTC instant. When converting from a human-readable local time to an epoch, specify `fold=0` (first occurrence) or `fold=1` (second occurrence) in Python, or use an explicit UTC offset rather than a named timezone.
+
+### Named timezone vs. fixed offset
+
+`America/New_York` is a named timezone — it knows about DST and switches between `-05:00` and `-04:00`. `UTC-5` is a fixed offset — it never changes. Use named timezones for user-facing display; use UTC or fixed offsets for storage and transmission.
+
+```javascript
+// Named timezone (correct for display — respects DST)
+new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York" }).format(date);
+
+// Hardcoded offset (wrong for half the year in New York)
+// Don't do this for a named timezone region
+```
+
+### Milliseconds vs. seconds detection
+
+A 10-digit timestamp is seconds. A 13-digit timestamp is milliseconds. Mixing them up by a factor of 1000 produces dates in 1970 or 56000. When you receive a timestamp from an external API and are unsure of the unit, check its digit count:
+
+```javascript
+function normalizeToMs(ts) {
+  // Heuristic: anything under 1e12 is almost certainly seconds
+  return ts < 1_000_000_000_000 ? ts * 1000 : ts;
+}
+```
+
+Use the [Timestamp Converter](/tools/timestamp-converter) to instantly check what date a raw number represents without writing any code.
+
+## Frequently Asked Questions
+
+### What is epoch time?
+
+Epoch time (Unix timestamp) is the number of seconds elapsed since January 1, 1970 at 00:00:00 UTC. The value `1711670400` represents `2024-03-29T00:00:00Z`. For a full explainer, see [Unix Timestamps Explained](/blog/unix-timestamp-guide).
+
+### How do I convert epoch to date in JavaScript?
+
+Multiply the epoch seconds by 1000 and pass to `new Date()`: `new Date(1711670400 * 1000).toISOString()`. If your value is already in milliseconds (13 digits), pass it directly. `Date.now()` always returns milliseconds.
+
+### Why does my epoch conversion show the wrong date?
+
+The most common cause is a seconds/milliseconds mismatch. A 10-digit value passed to JavaScript's `new Date()` without multiplying by 1000 lands in January 1970. A 13-digit value passed to Python's `datetime.fromtimestamp()` without dividing by 1000 produces a date far in the future. Check digit count: 10 digits = seconds, 13 digits = milliseconds.
+
+### How do I handle timezone conversion with Unix timestamps?
+
+Always store and transmit timestamps as UTC integers. Convert to a display timezone only at the presentation layer, using named timezones (`America/New_York`, `Asia/Tokyo`) rather than hardcoded offsets. Named timezones handle DST automatically; fixed offsets do not. Use the [Timestamp Converter](/tools/timestamp-converter) to quickly verify any conversion.
+
+### What is the difference between epoch seconds and epoch milliseconds?
+
+Epoch seconds is the standard Unix timestamp — a 10-digit integer for any date after 2001. Epoch milliseconds multiplies that by 1000, giving a 13-digit integer. JavaScript uses milliseconds internally (`Date.now()`, `new Date().getTime()`). Most other languages and APIs use seconds. Always confirm which unit an API returns before doing arithmetic.
