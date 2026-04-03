@@ -189,7 +189,7 @@ export const tools: Tool[] = [
     category: 'Text',
     keywords: ['sql formatter', 'sql beautifier', 'format sql', 'sql pretty print', 'sql minifier'],
   },
-  // CSS (2)
+  // CSS (3)
   {
     slug: 'color-converter',
     name: 'Color Converter',
@@ -205,6 +205,14 @@ export const tools: Tool[] = [
     description: 'Minify CSS code to reduce file size and improve load times.',
     category: 'CSS',
     keywords: ['css minifier', 'minify css', 'css compressor', 'compress css online', 'css optimizer'],
+  },
+  {
+    slug: 'css-formatter',
+    name: 'CSS Formatter & Beautifier',
+    icon: '{ }',
+    description: 'Format and beautify minified CSS with customizable indentation.',
+    category: 'CSS',
+    keywords: ['css formatter', 'css beautifier', 'beautify css', 'format css online', 'css prettifier'],
   },
   // DevOps (1)
   {

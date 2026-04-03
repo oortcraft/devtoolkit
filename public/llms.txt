@@ -22,6 +22,7 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 - [Cron Expression Builder](https://oortcraft.dev/tools/cron-builder): Build, test, and understand cron expressions with a visual editor.
 - [Markdown Preview](https://oortcraft.dev/tools/markdown-preview): Write Markdown and see real-time rendered preview side by side.
 - [CSS Minifier](https://oortcraft.dev/tools/css-minifier): Minify CSS code to reduce file size and improve load times.
+- [CSS Formatter & Beautifier](https://oortcraft.dev/tools/css-formatter): Format and beautify minified CSS with customizable indentation.
 - [JSON Schema Validator](https://oortcraft.dev/tools/json-schema-validator): Validate JSON data against JSON Schema with detailed error reporting.
 - [HTML Entity Encoder & Decoder](https://oortcraft.dev/tools/html-entity-encoder): Encode and decode HTML entities for safe web content.
 - [Password Generator](https://oortcraft.dev/tools/password-generator): Generate strong, random passwords with customizable length and character options.
@@ -57,6 +58,7 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 - [Blog](https://oortcraft.dev/blog): Developer tutorials and guides on JSON, Base64, URL encoding, UUIDs, Markdown, CSS, security, and more.
 
 ### Recent Posts
+- [How to Format and Beautify CSS: A Complete Guide](https://oortcraft.dev/blog/css-formatter-guide)
 - [Epoch to Date: Convert Unix Timestamps in JS, Python, Go, Java, PHP & Rust](https://oortcraft.dev/blog/epoch-to-date-conversion)
 - [Regex for Email Validation: Patterns That Actually Work](https://oortcraft.dev/blog/regex-email-validation)
 - [Measuring CSS Performance: LCP, FCP, and Core Web Vitals Workflow for Developers](https://oortcraft.dev/blog/css-performance-guide)

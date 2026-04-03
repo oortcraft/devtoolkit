@@ -1,0 +1,38 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import CssFormatter from '../../components/tools/CssFormatter';
+---
+
+<ToolLayout
+  title="CSS Formatter & Beautifier - Format CSS Online | DevToolkit"
+  description="Format and beautify minified CSS code with customizable indentation. Free, fast, and runs entirely in your browser."
+  toolName="CSS Formatter & Beautifier"
+  toolUrl="https://oortcraft.dev/tools/css-formatter"
+  faq={[
+    { question: 'Is my CSS safe?', answer: 'Yes. All formatting happens in your browser. No CSS is sent to any server.' },
+    { question: 'What indentation options are available?', answer: 'You can choose 2 spaces (default), 4 spaces, or tabs. Select your preferred style from the Indent dropdown before formatting.' },
+    { question: 'Will formatting change how my CSS works?', answer: 'No. CSS formatting is purely cosmetic. It only adds whitespace and newlines — it does not change selectors, properties, or values. The formatted CSS renders identically to the original in every browser.' },
+    { question: 'Can I format minified CSS?', answer: 'Yes, that is the primary use case. Paste any minified CSS and the formatter will expand it into a readable, indented structure with each rule and declaration on its own line.' },
+  ]}
+>
+  <div slot="tool">
+    <CssFormatter client:load />
+  </div>
+  <Fragment slot="content">
+    <h2>How to Use the CSS Formatter</h2>
+    <p>Paste your CSS code in the left panel. The formatted output appears automatically in the right panel. Use the Indent dropdown to choose 2 spaces, 4 spaces, or tabs. Click the copy button to grab the result. All processing happens entirely in your browser.</p>
+    <h2>What is CSS Formatting?</h2>
+    <p>CSS formatting (also called beautification or pretty-printing) transforms compressed or disorganized CSS into a consistently structured, readable format. Each rule gets its own block, properties are indented inside selectors, declarations are placed on separate lines, and consistent spacing is applied around colons and braces. Comments are preserved exactly as written.</p>
+    <h2>Format vs Minify</h2>
+    <p>Formatting and minification are inverse operations. Formatting expands CSS for readability during development and debugging. Minification compresses CSS for production to reduce file size and improve page load performance. Use this formatter to expand minified CSS you need to read or edit, then use the <a href="/tools/css-minifier">CSS Minifier</a> to compress it back for deployment.</p>
+    <h2>FAQ</h2>
+    <h3>Is my CSS safe?</h3>
+    <p>Yes. All formatting happens in your browser. No CSS is sent to any server.</p>
+    <h3>What indentation options are available?</h3>
+    <p>You can choose 2 spaces (default), 4 spaces, or tabs from the Indent dropdown.</p>
+    <h3>Will formatting change how my CSS works?</h3>
+    <p>No. CSS formatting is purely cosmetic and does not affect how the browser renders the styles.</p>
+    <h3>Can I format minified CSS?</h3>
+    <p>Yes, that is the primary use case. Paste any minified CSS to expand it into a readable, indented structure.</p>
+  </Fragment>
+</ToolLayout>

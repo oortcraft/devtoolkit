@@ -1,0 +1,461 @@
+---
+title: "How to Format and Beautify CSS: A Complete Guide"
+description: "Learn how to format and beautify CSS with Prettier, Stylelint, and online tools. Covers indentation rules, property ordering, and team standardization."
+pubDate: "2026-04-04"
+tags: ["css", "formatter", "beautifier", "tutorial"]
+relatedTools: ["css-formatter", "css-minifier"]
+contentType: "traffic"
+---
+
+Well-formatted CSS is the difference between a stylesheet you can maintain six months from now and one that requires archaeology to understand. Whether you are working solo or on a team, consistent formatting reduces review friction, prevents merge conflicts, and makes debugging substantially faster. This guide covers everything from what a CSS formatter actually does to enforcing team-wide standards with Prettier and Stylelint — and when an online tool is the right choice for a quick job.
+
+## Why CSS Formatting Matters
+
+Readable CSS is not a cosmetic concern. It is an operational one.
+
+When CSS is well-formatted, a developer reviewing a pull request can immediately see which properties changed, understand the cascade at a glance, and spot structural problems like runaway nesting or missing values. Poorly formatted CSS — inconsistent indentation, properties jammed on one line, no spacing around operators — forces reviewers to parse syntax before they can evaluate logic. This adds review time and increases the chance of missing real issues.
+
+Maintainability follows the same logic. CSS that is formatted consistently can be searched, refactored, and extended without introducing unintended side effects. If every developer on your team writes properties in a different order with different spacing conventions, merging two branches that touched the same selector becomes a tedious manual job.
+
+There is also a common point of confusion worth clearing up early: **formatting and minification are opposite operations**. Minification strips whitespace, comments, and redundant characters to reduce file size — it makes CSS smaller and unreadable. Formatting adds whitespace, indentation, and structure to make CSS readable for developers. If you want to understand what minification removes and why it matters for page load speed, see [CSS Minification Explained](/blog/css-minification-explained). This guide focuses entirely on the other side: making CSS readable and consistent during development.
+
+## What a CSS Formatter Does
+
+A CSS formatter takes CSS — whether it is compact, inconsistently spaced, or minified — and restructures it according to a defined set of whitespace and layout rules. It does not change any property values, selectors, or logic. The output is functionally identical to the input, just arranged for readability.
+
+Specifically, a formatter applies these transformations:
+
+- **Adds a newline and indentation after `{`** — each property appears on its own line, indented inside the rule
+- **Adds a newline after `;`** — each declaration is visually separated from the next
+- **Adds a newline before `}`** — closing braces appear on their own line, aligning with the selector
+- **Adds a space after `:`** — separating property names from values (`color: red` not `color:red`)
+- **Adds a space before `{`** — separating selectors from opening braces (`.button {` not `.button{`)
+- **Handles nested rules** — `@media`, `@keyframes`, and `@supports` blocks are indented and structured consistently
+- **Preserves comments** — unlike minification, formatting keeps all comments intact because they carry developer intent
+
+Here is a concrete before-and-after example using CSS that arrived from a minifier or was written carelessly:
+
+**Before formatting:**
+
+```css
+.button{background-color:#3498db;color:#fff;padding:12px 24px;border:none;border-radius:4px;font-size:16px;cursor:pointer;transition:background-color .3s ease}.button:hover{background-color:#2980b9}.button:disabled{background-color:#95a5a6;cursor:not-allowed}@media(max-width:768px){.button{width:100%;padding:16px}}
+```
+
+**After formatting:**
+
+```css
+.button {
+  background-color: #3498db;
+  color: #fff;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.button:hover {
+  background-color: #2980b9;
+}
+
+.button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .button {
+    width: 100%;
+    padding: 16px;
+  }
+}
+```
+
+Both are functionally identical. The formatted version takes 50% more characters, but it is readable at a glance, searchable by property, and safe to diff in a code review. For quick beautification of minified or messy CSS, the [CSS Formatter & Beautifier](/tools/css-formatter) handles this transformation instantly in your browser.
+
+## Formatting CSS with Prettier
+
+Prettier is the standard automated code formatter for JavaScript ecosystems. It supports CSS, SCSS, and Less natively, requiring no plugins. With 45 million weekly npm downloads as of 2025, it is the most widely adopted CSS formatting tool in the industry.
+
+Prettier's core philosophy is intentional: it is opinionated and offers few options. The goal is to eliminate formatting debates entirely. Your team adopts Prettier's output as the standard and stops arguing about whether properties should have two or four spaces of indentation.
+
+### Installation
+
+```bash
+npm install --save-dev prettier
+```
+
+### Configuration
+
+Create a `.prettierrc` file in your project root:
+
+```json
+{
+  "tabWidth": 2,
+  "useTabs": false,
+  "singleQuote": false,
+  "printWidth": 80,
+  "trailingComma": "es5"
+}
+```
+
+The key CSS-relevant options:
+
+- **`tabWidth`**: 2 is the industry default for CSS; matches the convention used by MDN and the majority of open-source projects
+- **`useTabs`**: `false` means spaces; tabs work too but spaces are more portable across editors and terminals
+- **`printWidth`**: At 80 characters, long selectors and values wrap to the next line; increase to 100 or 120 for wider screens
+
+You can also use a `.prettierrc.js` for dynamic configuration:
+
+```js
+module.exports = {
+  tabWidth: 2,
+  singleQuote: false,
+  printWidth: 80,
+  overrides: [
+    {
+      files: "*.css",
+      options: {
+        tabWidth: 2,
+      },
+    },
+  ],
+};
+```
+
+### Running Prettier from the CLI
+
+Format a single file:
+
+```bash
+npx prettier --write "src/styles/main.css"
+```
+
+Format all CSS files in your project:
+
+```bash
+npx prettier --write "**/*.css"
+```
+
+Check formatting without modifying files (useful in CI):
+
+```bash
+npx prettier --check "**/*.css"
+```
+
+Add a format script to `package.json` so your team runs it consistently:
+
+```json
+{
+  "scripts": {
+    "format": "prettier --write \"**/*.css\"",
+    "format:check": "prettier --check \"**/*.css\""
+  }
+}
+```
+
+### VS Code Integration
+
+The Prettier VS Code extension (over 40 million installs) formats CSS on save. Install it from the marketplace, then add to `.vscode/settings.json`:
+
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}
+```
+
+With this configuration, every time you save a `.css` file, Prettier formats it automatically. Developers on your team do not need to think about formatting — it happens as part of the save action.
+
+## Enforcing CSS Style with Stylelint
+
+Prettier handles formatting (whitespace, indentation, line breaks). Stylelint handles linting — identifying structural problems, enforcing property conventions, and catching potential errors that formatting tools do not address.
+
+The distinction matters: Prettier ensures `.button{color:red}` becomes `.button { color: red; }`. Stylelint can additionally enforce that `color` appears before `background`, flag the use of `!important`, require consistent units, and warn about selector specificity violations. These are decisions about CSS quality, not just whitespace.
+
+### Installation
+
+```bash
+npm install --save-dev stylelint stylelint-config-standard
+```
+
+Create a `.stylelintrc.json`:
+
+```json
+{
+  "extends": ["stylelint-config-standard"],
+  "rules": {
+    "color-named": "never",
+    "declaration-no-important": true,
+    "selector-max-id": 0
+  }
+}
+```
+
+`stylelint-config-standard` provides sensible defaults used by most projects: consistent quote style, no empty rules, correct syntax for values.
+
+Run Stylelint from the CLI:
+
+```bash
+npx stylelint "**/*.css"
+```
+
+Auto-fix fixable violations:
+
+```bash
+npx stylelint "**/*.css" --fix
+```
+
+### Property Ordering with stylelint-order
+
+One of the most practical Stylelint extensions enforces a consistent order for CSS properties. When every developer writes properties in the same order, diffs are smaller and code reviews are faster.
+
+```bash
+npm install --save-dev stylelint-order stylelint-config-recess-order
+```
+
+`stylelint-config-recess-order` implements the property order used by Bootstrap and Twitter's Recess tool: positioning → display/box model → typography → visual → animation → miscellaneous.
+
+```json
+{
+  "extends": [
+    "stylelint-config-standard",
+    "stylelint-config-recess-order"
+  ]
+}
+```
+
+With this configuration, a selector that lists `color` before `position` triggers a linting error, guiding developers toward consistent ordering automatically.
+
+### Pre-commit Hooks with husky and lint-staged
+
+Linting on save is convenient, but enforcing it at commit time ensures no poorly formatted CSS enters your repository regardless of editor setup.
+
+```bash
+npm install --save-dev husky lint-staged
+npx husky init
+```
+
+Add to `package.json`:
+
+```json
+{
+  "lint-staged": {
+    "*.css": [
+      "stylelint --fix",
+      "prettier --write"
+    ]
+  }
+}
+```
+
+Add the pre-commit hook:
+
+```bash
+echo "npx lint-staged" > .husky/pre-commit
+```
+
+Now every `git commit` automatically runs Stylelint and Prettier on staged CSS files. Commits with formatting violations are blocked until issues are resolved — either automatically (for fixable rules) or manually (for structural problems that require developer judgment).
+
+## CSS Formatting Rules by Methodology
+
+How you format CSS should align with the architecture your project uses. The same formatter settings do not fit every codebase.
+
+### Standard CSS
+
+The baseline conventions for vanilla CSS:
+
+- **2-space indentation** — the most common choice, used by the W3C in specification examples and by the majority of CSS frameworks
+- **One property per line** — never multiple declarations on a single line
+- **Single blank line between rules** — visual separation without wasted space
+- **Lowercase property names and values** — `color: red` not `COLOR: RED`
+- **Consistent quote style for attribute selectors** — `[type="text"]` not mixing quote styles
+
+```css
+/* Standard CSS formatting conventions */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.card__header {
+  margin-bottom: 16px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+```
+
+### BEM Naming and Formatting
+
+BEM (Block Element Modifier) uses double underscores for elements (`__`) and double hyphens for modifiers (`--`). Formatting BEM correctly means keeping the visual hierarchy readable:
+
+```css
+/* Block */
+.nav {
+  display: flex;
+  align-items: center;
+}
+
+/* Element — indented to show relationship to block visually */
+.nav__item {
+  padding: 8px 16px;
+}
+
+.nav__link {
+  color: #4a5568;
+  text-decoration: none;
+}
+
+/* Modifier — signals a variant, not a nested element */
+.nav__link--active {
+  color: #3182ce;
+  font-weight: 600;
+  border-bottom: 2px solid #3182ce;
+}
+```
+
+A key BEM formatting principle: do not actually nest selectors in standard CSS (save nesting for SCSS). Keep each BEM class as a top-level rule. This keeps specificity flat and prevents cascade surprises.
+
+### Tailwind and Utility-First CSS
+
+With utility-first frameworks, you write very little custom CSS. The few custom rules you do write — component abstractions with `@apply`, custom properties, base overrides — follow the same formatting conventions as standard CSS.
+
+The formatting focus with Tailwind shifts to the HTML: keeping class lists readable. Some teams use Prettier's Tailwind plugin to sort utility classes into a consistent order:
+
+```bash
+npm install --save-dev prettier-plugin-tailwindcss
+```
+
+For any custom CSS written alongside Tailwind, standard 2-space indentation and one-property-per-line rules apply as usual.
+
+### CSS Modules
+
+CSS Modules scope class names to the component that imports them, eliminating naming collisions. Formatting conventions:
+
+- Use camelCase for class names (easier to reference in JavaScript: `styles.cardHeader` not `styles['card-header']`)
+- Keep the file co-located with its component (`Button.module.css` next to `Button.tsx`)
+- Format exactly as standard CSS — the module system is a build-time concern, not a formatting concern
+
+```css
+/* Button.module.css */
+.root {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: var(--color-primary);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.rootLarge {
+  padding: 12px 24px;
+  font-size: 1.125rem;
+}
+
+.rootDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+```
+
+## Format vs Minify: When to Use Each
+
+The workflow is straightforward once you understand the role of each operation:
+
+**Development:** Write formatted CSS. Use Prettier and Stylelint to maintain consistency. Every developer reads and edits the formatted source. The [CSS Formatter & Beautifier](/tools/css-formatter) is useful here when you receive CSS from an external source (a vendor, a CMS export, a colleague's code snippet) that needs to match your codebase's style before you review or integrate it.
+
+**Production:** Minify automatically via your build tool. Your users receive the minified output — smaller files, faster downloads, better Core Web Vitals scores. The [CSS Minifier](/tools/css-minifier) is the tool for quick manual minification checks, or you can wire up PostCSS cssnano in your build pipeline for automatic minification.
+
+The standard build workflow:
+
+```
+Source CSS (formatted, readable)
+    ↓ git commit / code review
+    ↓ CI/CD build
+    ↓ PostCSS cssnano (or LightningCSS, or esbuild --minify)
+Production CSS (minified, optimized)
+```
+
+You never edit the minified output. If you find a bug in production CSS, fix it in the source, re-run the build, and redeploy. Source maps keep the connection between minified production files and your original source intact for debugging.
+
+The comparison between formatted and minified CSS — when each applies and their impact on different workflows — is covered in depth at [CSS Minifier vs Beautifier](/compare/css-minifier-vs-beautifier). For the full breakdown of minification's impact on Core Web Vitals and page load time, see the [CSS Performance Guide](/blog/css-performance-guide).
+
+The short version: format everything in development, minify everything in production, automate both so developers do not need to think about either.
+
+## Online CSS Formatting for Quick Tasks
+
+Prettier and Stylelint are project-level tools — they require a Node.js environment and configuration files. There are legitimate situations where you need to format CSS without setting up a toolchain:
+
+**Debugging production CSS.** When something looks wrong on a live page, you open DevTools, copy the computed styles or a stylesheet block, and need to read it. Production CSS is minified — a wall of text with no whitespace. Paste it into the [CSS Formatter & Beautifier](/tools/css-formatter), click format, and you get the readable version in seconds.
+
+**One-off integration work.** A vendor sends you a CSS file. A CMS exports styles in a compact format. A designer shares a code snippet from a prototype tool. Before you integrate any of this into your codebase, formatting it first lets you actually read it.
+
+**Learning and experimentation.** If you are exploring how a particular CSS pattern works, formatting lets you see the structure clearly without any toolchain setup.
+
+**Sharing code in documentation.** Screenshots, documentation, and Stack Overflow answers are easier to read with formatted CSS.
+
+The workflow for debugging minified CSS is particularly useful:
+
+1. Open browser DevTools (F12)
+2. Go to Sources → find the `.css` file, or copy a style rule from the Styles panel
+3. Paste the minified CSS into the [CSS Formatter & Beautifier](/tools/css-formatter)
+4. Click format
+5. Read the structured output — property by property, rule by rule
+6. Find the issue: an unexpected value, a property that overrides what you expected, a media query you did not know existed
+
+This beats trying to mentally parse minified CSS directly from DevTools, especially on large production stylesheets where a single rule might be hidden inside hundreds of characters of concatenated output.
+
+For projects, use Prettier and Stylelint with pre-commit hooks — the toolchain approach enforces consistency at scale. For everything else, the online formatter is the right tool.
+
+---
+
+## Frequently Asked Questions
+
+### What is the best CSS formatter?
+
+For projects with a codebase and a team, Prettier is the standard. It integrates with every major editor, runs from the command line, and enforces a consistent style automatically. For one-off tasks — formatting a CSS snippet, beautifying minified code from DevTools, reading a vendor stylesheet — use an online tool like the [CSS Formatter & Beautifier](/tools/css-formatter). It requires no installation or configuration.
+
+### Should I use tabs or spaces in CSS?
+
+2 spaces is the most common convention in CSS, used by the W3C in specification examples, by Bootstrap, by Tailwind's source, and by the majority of popular CSS frameworks and open-source projects. GitHub's 2024 survey of popular repositories showed spaces (2 or 4) in over 80% of CSS files. Prettier defaults to 2 spaces. The specific choice matters less than consistency across your entire team — pick one and configure Prettier to enforce it so the question never comes up in code review.
+
+### Does CSS formatting affect performance?
+
+No. Formatting adds whitespace that browsers ignore during parsing. The formatted CSS a developer writes is identical in performance to manually written CSS with the same property values. The only time formatting affects performance is if you deploy formatted CSS directly to production instead of running it through a minifier — your stylesheets will be larger than necessary. The solution is to minify during the build step, keeping formatted source in version control and shipping minified output to users.
+
+### How do I format CSS in VS Code?
+
+Install the Prettier extension (search "Prettier - Code formatter" in the VS Code marketplace). Then add to your `.vscode/settings.json`:
+
+```json
+{
+  "editor.formatOnSave": true,
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}
+```
+
+After this, saving any `.css` file automatically formats it. If you also add a `.prettierrc` to your project root, VS Code uses those settings; otherwise it uses Prettier's defaults.
+
+### What is the difference between a CSS formatter and a CSS linter?
+
+A **formatter** handles whitespace and layout: indentation, line breaks, spacing around operators and braces. It transforms code mechanically without understanding what the CSS does. Prettier is a formatter.
+
+A **linter** analyzes CSS for rule violations, potential errors, and style convention issues: using `!important`, selector specificity problems, unknown property names, missing units on non-zero values, property order consistency. It understands CSS semantics, not just syntax. Stylelint is a linter.
+
+In practice, you use both: Prettier for consistent formatting, Stylelint for consistent style decisions. They are complementary tools, not alternatives. Configure them together with lint-staged so both run automatically on every commit.

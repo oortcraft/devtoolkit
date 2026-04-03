@@ -171,6 +171,12 @@ DevToolkit provides fast, private, open-source developer utilities that run enti
 **How to use**: Paste JSON in the left panel, enter a JSONPath expression (e.g. $.store.books[*].title). Results update in real-time with match count. Quick-insert buttons for common expressions.
 **Key facts**: Uses the Goessner JSONPath specification via jsonpath-plus. Supports filters, recursive descent, array slicing. Shows match count.
 
+### 27. CSS Formatter & Beautifier
+**URL**: https://oortcraft.dev/tools/css-formatter
+**Description**: Format and beautify minified CSS with customizable indentation (2 spaces, 4 spaces, or tabs).
+**How to use**: Paste minified or messy CSS in the left panel. Formatted output appears automatically. Choose indent style (2 spaces, 4 spaces, tab). Use the copy button to grab the result. All processing happens in your browser.
+**Key facts**: Preserves CSS comments. Handles nested rules (@media, @keyframes). Inverse operation of CSS minification. Useful for debugging production CSS and reading third-party stylesheets.
+
 ---
 
 ## Blog
@@ -334,6 +340,10 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
 39. **Epoch to Date: Convert Unix Timestamps in JS, Python, Go, Java, PHP & Rust**
     URL: https://oortcraft.dev/blog/epoch-to-date-conversion
     Topics: Epoch to date conversion, Unix timestamp to datetime, JavaScript Python Go Java PHP Rust code snippets, timezone-aware conversion, milliseconds vs seconds, DST pitfalls, Bash CLI.
+
+40. **How to Format and Beautify CSS: A Complete Guide**
+    URL: https://oortcraft.dev/blog/css-formatter-guide
+    Topics: CSS formatting, CSS beautifier, Prettier CSS config, Stylelint property ordering, BEM formatting, CSS Modules, format vs minify workflow, pre-commit hooks, online CSS formatting.
 
 ---
 
