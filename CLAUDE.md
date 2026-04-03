@@ -91,17 +91,30 @@ Every proposal must include quantitative justification. "I think this would be u
 - AI crawlers are explicitly allowed in `robots.txt`
 - Use `seo-analyst` agent for comprehensive SEO audits
 
-## Agents
+## Agent Orchestration (MANDATORY)
 
-| Agent | Role | Delegates to |
-|-------|------|-------------|
-| `monetization-strategist` | 전략 결정 (뭘 할지, 왜) | content-planner, blog-writer, tool-developer, seo-analyst |
-| `content-planner` | 콘텐츠 기획 (뭘 쓸지) | blog-writer |
-| `blog-writer` | 블로그 작성 | — |
-| `tool-developer` | 도구 제안/설계 | executor (OMC 내장) |
-| `seo-analyst` | SEO 진단/최적화 | content-planner (피드백 루프) |
+모든 콘텐츠/전략/SEO 작업은 반드시 아래 파이프라인을 따른다. 에이전트 없이 직접 판단·실행 금지.
 
-All agent files: `.claude/agents/`
+```
+monetization-strategist (항상 먼저)
+    ├── 블로그 주제 선정 → content-planner → blog-writer
+    ├── 새 도구 제안    → tool-developer
+    └── SEO 판단/감사  → seo-analyst → content-planner (피드백)
+```
+
+### 강제 규칙
+
+| 작업 | 반드시 실행할 에이전트 순서 |
+|------|--------------------------|
+| 블로그 주제 선정 | `monetization-strategist` → `content-planner` |
+| 블로그 작성 | `content-planner` topic brief → `blog-writer` |
+| 새 도구 제안 | `monetization-strategist` → `tool-developer` |
+| SEO 판단 | `monetization-strategist` → `seo-analyst` |
+| 다음 스프린트 계획 | `monetization-strategist` (단독으로 먼저) |
+
+- `monetization-strategist`를 거치지 않은 콘텐츠/도구 작업은 시작하지 않는다
+- `blog-writer`는 반드시 `content-planner`의 Topic Brief를 받은 뒤에만 실행한다
+- 에이전트 파일 위치: `.claude/agents/`
 
 ## Commit Style
 
@@ -122,3 +135,7 @@ After committing and pushing, always update the project memory file at `~/.claud
 - Don't push without verifying build passes
 - Don't hardcode iconMap in individual pages (use `tools.ts`)
 - Don't add server-side processing to tools (privacy-first)
+- **Don't write blog posts without content-planner Topic Brief**
+- **Don't select blog topics without monetization-strategist approval**
+- **Don't propose new tools without tool-developer evaluation**
+- **Don't make SEO decisions without seo-analyst**
