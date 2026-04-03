@@ -1,0 +1,98 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths({ paginate }) {
+  const allPosts = await getCollection('blog');
+  const posts = allPosts.sort(
+    (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+  );
+  return paginate(posts, { pageSize: 12 });
+}
+
+const { page } = Astro.props;
+---
+
+<BaseLayout
+  title={page.currentPage === 1 ? "Blog | DevToolkit" : `Blog — Page ${page.currentPage} | DevToolkit`}
+  description="Tutorials, guides, and comparisons about JSON, YAML, and developer tools."
+>
+  <div class="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+    <h1 class="mb-2 text-4xl font-bold text-slate-900">Blog</h1>
+    <p class="mb-10 text-lg text-slate-500">
+      Tutorials, deep-dives, and comparisons to help you work with data formats and developer tools.
+    </p>
+
+    <div class="grid gap-6 sm:grid-cols-2">
+      {page.data.map((post) => (
+        <a
+          href={`/blog/${post.id}`}
+          class="group flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-blue-300 hover:shadow-md"
+        >
+          <p class="mb-2 text-xs text-slate-400">
+            {post.data.pubDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </p>
+          <h2 class="mb-2 text-lg font-semibold text-slate-900 group-hover:text-blue-600">
+            {post.data.title}
+          </h2>
+          <p class="mb-4 flex-1 text-sm text-slate-600">{post.data.description}</p>
+          {post.data.tags && post.data.tags.length > 0 && (
+            <div class="flex flex-wrap gap-2">
+              {post.data.tags.map((tag) => (
+                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </a>
+      ))}
+    </div>
+
+    {page.data.length === 0 && (
+      <p class="text-slate-500">No posts yet. Check back soon.</p>
+    )}
+
+    {page.lastPage > 1 && (
+      <nav class="mt-12 flex items-center justify-between" aria-label="Blog pagination">
+        <div>
+          {page.url.prev ? (
+            <a
+              href={page.url.prev}
+              class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-300 hover:text-blue-600"
+            >
+              ← Previous
+            </a>
+          ) : (
+            <span class="inline-flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">
+              ← Previous
+            </span>
+          )}
+        </div>
+
+        <span class="text-sm text-slate-500">
+          Page {page.currentPage} of {page.lastPage}
+        </span>
+
+        <div>
+          {page.url.next ? (
+            <a
+              href={page.url.next}
+              class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-300 hover:text-blue-600"
+            >
+              Next →
+            </a>
+          ) : (
+            <span class="inline-flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">
+              Next →
+            </span>
+          )}
+        </div>
+      </nav>
+    )}
+  </div>
+</BaseLayout>
