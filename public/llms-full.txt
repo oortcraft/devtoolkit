@@ -319,6 +319,14 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
     URL: https://oortcraft.dev/blog/json-to-yaml-devops
     Topics: JSON to YAML, yq converter, Kubernetes manifests, Helm values.yaml, Docker Compose, Python yaml.dump, js-yaml, multiline strings, boolean hazards, DevOps config formats.
 
+36. **Measuring CSS Performance: LCP, FCP, and Core Web Vitals Workflow for Developers**
+    URL: https://oortcraft.dev/blog/css-performance-guide
+    Topics: CSS performance optimization, render-blocking CSS, critical CSS inlining, LCP, FCP, Core Web Vitals, PostCSS cssnano, PageSpeed Insights, build tool integration.
+
+37. **The Algorithm Behind git diff: How Myers Diff Works**
+    URL: https://oortcraft.dev/blog/myers-diff-algorithm
+    Topics: Myers diff algorithm, git diff internals, edit graph, shortest edit script, D-paths, k-diagonal traversal, unified diff format, Patience vs Histogram vs Myers comparison.
+
 ---
 
 ## Tool Categories

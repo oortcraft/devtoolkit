@@ -1,0 +1,342 @@
+---
+title: "The Algorithm Behind git diff: How Myers Diff Works"
+description: "A deep dive into the Myers diff algorithm that powers git diff — from edit graph theory to shortest edit scripts and unified diff output."
+pubDate: "2026-04-03"
+tags: ["git", "algorithms", "diff", "computer-science"]
+relatedTools: ["diff-checker"]
+contentType: "linkbait"
+---
+
+Every time you run `git diff`, Git solves a graph search problem in milliseconds. Most developers treat the output as a black box — red lines gone, green lines added. But the algorithm doing that work, Myers diff (published by Eugene Myers in 1986), is one of the most practically influential algorithms in software development. Understanding it will change how you read diffs, choose diff strategies, and debug confusing merge outputs.
+
+## The Problem is a Graph, Not a String Comparison
+
+The naive framing is: "find lines that changed between file A and file B." The correct framing is: "find the shortest path through an edit graph."
+
+Here is how the graph is constructed. Lay out file A along the x-axis (N lines) and file B along the y-axis (M lines). Every point `(x, y)` in the grid represents the state "we have consumed x lines from A and y lines from B." Three types of moves are possible:
+
+- **Horizontal move** `(x, y) → (x+1, y)`: delete line `x+1` from A. Cost: 1 edit.
+- **Vertical move** `(x, y) → (x, y+1)`: insert line `y+1` from B. Cost: 1 edit.
+- **Diagonal move** `(x, y) → (x+1, y+1)`: lines match, no edit needed. Cost: 0.
+
+The goal is to find the shortest path from `(0, 0)` to `(N, M)`. The total number of horizontal and vertical steps along that path is the **edit distance** — the minimum number of insertions and deletions to transform A into B.
+
+```
+      B[0]  B[1]  B[2]
+     ┌─────┬─────┬─────┐
+A[0] │  ↘  │  →  │  →  │  (match: diagonal)
+     ├─────┼─────┼─────┤
+A[1] │  ↓  │  ↘  │  →  │  (mismatch: horizontal or vertical)
+     ├─────┼─────┼─────┤
+A[2] │  ↓  │  ↓  │  ↘  │
+     └─────┴─────┴─────┘
+```
+
+This graph reframing is not just theoretical — it is why Myers can guarantee minimality and why it connects naturally to path-finding algorithms.
+
+## Greedy K-Diagonal Traversal
+
+Myers' key insight is that you do not need to search the entire N×M grid. Instead, you search diagonals.
+
+Define a **diagonal** `k` as the set of points where `x - y = k`. Diagonal 0 runs from `(0,0)` toward `(N,M)`. Diagonal 1 is one step to the right, diagonal -1 one step down.
+
+### D-Paths
+
+A **D-path** is a path that uses exactly D non-diagonal moves (D edits). Myers' algorithm finds the shortest D-path for increasing values of D: 0, 1, 2, ... until reaching `(N, M)`.
+
+For each D, the algorithm computes the furthest-reaching endpoint on every reachable diagonal `k` where `-D ≤ k ≤ D` and `k` has the same parity as D. It stores this in a single array `V[k]` — not an N×M matrix.
+
+```javascript
+// Simplified Myers core loop (pedagogical, not production)
+function myersDiff(a, b) {
+  const N = a.length;
+  const M = b.length;
+  const MAX = N + M;
+  const V = new Array(2 * MAX + 1).fill(0); // furthest x per diagonal k
+
+  for (let d = 0; d <= MAX; d++) {
+    for (let k = -d; k <= d; k += 2) {
+      // Choose to move down (insert) or right (delete)
+      let x;
+      if (k === -d || (k !== d && V[k - 1] < V[k + 1])) {
+        x = V[k + 1]; // move down: take x from diagonal k+1
+      } else {
+        x = V[k - 1] + 1; // move right: delete from A
+      }
+
+      let y = x - k;
+
+      // Follow diagonals (matching lines) as far as possible
+      while (x < N && y < M && a[x] === b[y]) {
+        x++;
+        y++;
+      }
+
+      V[k] = x;
+
+      if (x >= N && y >= M) {
+        return d; // found shortest edit distance
+      }
+    }
+  }
+}
+```
+
+### Why O(ND), Not O(N²)
+
+The classical LCS dynamic programming approach allocates an N×M table and fills every cell — O(N×M) time and space. For two 10,000-line files that differ in only 50 places, that is 100 million cells computed, almost all of them unnecessary.
+
+Myers only explores diagonals touched by D-paths. If the edit distance is D, the algorithm terminates after examining O(D) diagonals per round for D rounds: total work is **O(ND)**. For typical code reviews where files differ in dozens of lines (small D) but files are large (large N), this is dramatically faster.
+
+| Files | Edit Distance | LCS (N×M cells) | Myers (O(ND) cells) |
+|-------|--------------|-----------------|---------------------|
+| 500 lines, 10 edits | 10 | 250,000 | 5,000 |
+| 5,000 lines, 50 edits | 50 | 25,000,000 | 250,000 |
+| 50,000 lines, 200 edits | 200 | 2,500,000,000 | 10,000,000 |
+
+In practice, `git diff` on a large repository with a small commit completes in under 10ms. The O(ND) bound is the reason.
+
+## Why Git Chose Myers — and When It Falls Short
+
+Git has shipped four diff algorithms since 2006: Myers (default), Patience, Histogram, and Minimal. Myers was the original choice because it produces correct shortest edit scripts and is fast. The [Git source history](https://github.com/git/git) shows Myers has been the default since the initial public release — it handles the 90% case well.
+
+But Myers optimizes for **minimum edits**, not **human readability**. Three scenarios reveal the gap.
+
+### Scenario 1: Renamed Function
+
+```python
+# Before
+def calculate_area(width, height):
+    return width * height
+
+def calculate_perimeter(width, height):
+    return 2 * (width + height)
+```
+
+```python
+# After
+def get_area(width, height):
+    return width * height
+
+def get_perimeter(width, height):
+    return 2 * (width + height)
+```
+
+**Myers output** (default `git diff`):
+
+```diff
+-def calculate_area(width, height):
++def get_area(width, height):
+     return width * height
+ 
+-def calculate_perimeter(width, height):
++def get_perimeter(width, height):
+     return 2 * (width + height)
+```
+
+Clean and readable here — Myers performs well when changes are localized.
+
+### Scenario 2: Repeated Braces (Myers Failure Mode)
+
+```javascript
+// Before
+function alpha() {
+}
+
+function beta() {
+}
+```
+
+```javascript
+// After
+function alpha() {
+    doSomething();
+}
+
+function beta() {
+}
+```
+
+**Myers diff** may produce:
+
+```diff
+ function alpha() {
++    doSomething();
++}
++
++function beta() {
+ }
+ 
+-function beta() {
+-}
+```
+
+Myers sees `}` as a matching line and anchors to the nearest one, which splits the diff across function boundaries. The edit is minimal in character count but misleading to humans.
+
+**Histogram diff** (`git diff --histogram`) produces:
+
+```diff
+ function alpha() {
++    doSomething();
+ }
+ 
+ function beta() {
+ }
+```
+
+Histogram extends Patience diff by building a frequency histogram of lines. Unique lines (lines that appear only once in each file) are anchored first, then the algorithm recurses on the gaps. This prevents `}` from being used as an anchor when better unique lines exist nearby.
+
+### Scenario 3: Blank Line Alignment
+
+```python
+# Before
+class Database:
+    def connect(self):
+        pass
+    def disconnect(self):
+        pass
+```
+
+```python
+# After
+class Database:
+    def connect(self):
+        pass
+
+    def disconnect(self):
+        pass
+```
+
+**Myers** sometimes aligns the blank line ambiguously, producing a diff that looks like code moved when only whitespace was added. **Patience** (`git diff --patience`) anchors on the `def` lines (unique function signatures) and shows the blank line addition cleanly.
+
+### Algorithm Comparison
+
+| Algorithm | Default | Speed | Readability | Best For |
+|-----------|---------|-------|-------------|----------|
+| Myers | Yes | Fastest (O(ND)) | Good | General use, small diffs |
+| Patience | No | Moderate | Excellent | Refactors, function moves |
+| Histogram | No | Fast | Excellent | Repeated tokens (braces, brackets) |
+| Minimal | No | Slowest | Good | Exhaustive shortest edit search |
+
+```bash
+# Switch algorithms per-command
+git diff --patience
+git diff --histogram
+git diff --diff-algorithm=minimal
+
+# Set histogram as your default
+git config --global diff.algorithm histogram
+```
+
+Many experienced developers set Histogram as their default. The [Git documentation](https://git-scm.com/docs/git-diff) notes that Histogram is "an extended version of patience that performs slightly better on some inputs" — and in practice, it rarely produces worse output than Myers on modern code.
+
+## From Edit Graph to Unified Diff Output
+
+Once Myers finds the shortest edit script (SES) — the sequence of insert and delete operations — Git converts it to the unified diff format you see in the terminal.
+
+### Tracing the SES
+
+The SES is read by backtracking through the recorded V snapshots (one per D-round). Each backtrack step identifies whether a move was horizontal (delete), vertical (insert), or diagonal (context). The result is a sequence of operations:
+
+```
+KEEP   "apple"
+DELETE "banana"
+INSERT "blueberry"
+KEEP   "cherry"
+INSERT "date"
+```
+
+### Mapping to Unified Diff
+
+Git groups consecutive edits into **hunks** and wraps them with 3 lines of context (configurable with `-U`). Each hunk gets a header line:
+
+```
+@@ -1,3 +1,4 @@
+```
+
+The format is `@@ -<start>,<count> +<start>,<count> @@`:
+- `-1,3`: The hunk spans 3 lines starting at line 1 in the original file.
+- `+1,4`: The hunk spans 4 lines starting at line 1 in the new file.
+
+Full example tracing the SES above:
+
+```diff
+--- a/fruits.txt
++++ b/fruits.txt
+@@ -1,3 +1,4 @@
+ apple
+-banana
++blueberry
+ cherry
++date
+```
+
+The space-prefixed lines are the KEEP operations. The `-` lines are deletes. The `+` lines are inserts. Git adds ANSI color codes on top for terminal display — the algorithm output itself is plain text.
+
+### Word-Level and Character-Level Diffs
+
+The same Myers algorithm runs at finer granularity when you use `--word-diff` or `--color-words`. Git splits lines into tokens (words or characters), builds a new A and B sequence from those tokens, and runs Myers again on the token sequences.
+
+```bash
+# Show which words changed, not just which lines
+git diff --word-diff
+
+# Highlight exact character changes inline
+git diff --color-words
+```
+
+This is the same algorithm, applied recursively at smaller granularity. The edit graph scales down from lines to words to characters — the path-finding logic is identical.
+
+## Common Misconceptions
+
+**"git diff stores the diff."** Git stores snapshots (trees and blobs), not diffs. The diff is computed on-the-fly each time you run `git diff`. Delta encoding in pack files is a storage optimization, separate from the user-facing diff algorithm.
+
+**"Fewer diff lines means a better commit."** Myers minimizes edit count, not semantic clarity. A 2-line diff that moves a function to a different file can be harder to review than a 20-line diff that clearly renames variables. Optimize for reviewer comprehension, not line count.
+
+**"All diff tools use the same algorithm."** IntelliJ IDEA and VS Code use their own diff implementations. GitHub's web UI uses a server-side diff pipeline. `vimdiff` uses its own algorithm. The output can differ from `git diff` for the same two files — algorithm choice matters.
+
+**"Myers always finds the unique answer."** For a given edit distance D, there may be multiple D-paths reaching `(N, M)`. Myers breaks ties greedily (prefers deletes over inserts in the inner loop). Different tie-breaking produces different but equally valid diffs.
+
+## Hands-On: Observe the Algorithm in Action
+
+The best way to internalize how Myers diff works is to feed it pathological inputs — repeated tokens, moved blocks, bulk renames — and observe how the output changes across algorithms.
+
+Paste any two code snippets into our [Diff Checker](/tools/diff-checker) to see the line-by-line edit script instantly. Try the repeated-brace scenario from Scenario 2 above. Then compare the same input in your terminal with `git diff --histogram` to see how algorithm choice changes the output you are reviewing.
+
+For related background on what unified diff format communicates beyond the algorithm, see [Text Diff Algorithms Explained](/blog/text-diff-explained). For regex patterns used in diff post-processing (like `--color-words` tokenization), see [Common Regex Patterns](/blog/common-regex-patterns).
+
+## Frequently Asked Questions
+
+### Why is Myers diff the default in Git rather than Patience or Histogram?
+
+Myers was the best available algorithm when Git was first released in 2005. It is correct, fast (O(ND)), and handles the common case — small localized edits to large files — extremely well. Changing a default in a tool used by millions of developers carries significant compatibility risk, so Myers remains the default even though Histogram often produces cleaner output for modern codebases.
+
+### What does "shortest edit script" actually mean?
+
+It means the minimum number of line insertions and deletions needed to transform file A into file B. Substitutions are counted as one deletion plus one insertion. Myers guarantees that no shorter edit sequence exists for the given pair of files, but does not guarantee the output is the most human-readable representation of that minimum.
+
+### How does `git diff --stat` count lines changed?
+
+It counts the total number of `+` and `-` lines in the SES, including context-free counting. Each inserted line adds 1 to the additions count, each deleted line adds 1 to the deletions count. Renames appear as 100% deletion followed by 100% addition unless Git's rename detection (`-M` flag) identifies the similarity and collapses them.
+
+### Can Myers diff handle binary files?
+
+No. Myers operates on sequences of lines (text). Binary files have no meaningful line boundaries, so Git reports "Binary files differ" and skips the algorithm. Tools like `git diff --binary` produce a base85-encoded patch of the raw byte delta, which is a different mechanism entirely.
+
+### What is the relationship between edit distance and LCS length?
+
+They are dual problems. If the LCS length of A and B is `L`, and A has N lines while B has M lines, then the edit distance is `(N - L) + (M - L) = N + M - 2L`. Myers computes edit distance directly without explicitly computing LCS, which is why it is faster than LCS-based algorithms.
+
+### Does `git merge` use Myers diff?
+
+Git merge uses a three-way diff: Myers runs between the common ancestor and each branch tip to find two edit scripts, then combines them. Conflicts occur where both edit scripts modify overlapping regions. The diff algorithm affects how cleanly the individual branch diffs are computed, which in turn affects how many false conflicts Git reports.
+
+## Conclusion
+
+The Myers diff algorithm reframes a string comparison problem as a graph search — find the shortest path from `(0, 0)` to `(N, M)` through an edit graph where diagonal moves are free. Its O(ND) complexity makes it practical for files of any size when changes are sparse, which describes the overwhelming majority of commits in any active repository.
+
+Myers is not perfect. Histogram diff produces more readable output for common patterns like repeated tokens and moved functions. Setting `git config --global diff.algorithm histogram` is a low-risk quality-of-life improvement most developers make once and never revisit.
+
+The next time a diff output looks wrong — a hunk that spans two functions, a deletion that appears in the wrong place — you now have the mental model to explain it: the algorithm found the shortest edit script, but shortest is not always clearest.
+
+Explore the edit scripts yourself in our [Diff Checker](/tools/diff-checker) — paste two code blocks and watch the SES rendered as a live unified diff, free and no signup required.
