@@ -1,0 +1,352 @@
+---
+title: "How to Debug JWT Authentication Issues"
+description: "Decode JWTs, read claims, and fix the 5 most common auth errors — expired tokens, wrong audience, algorithm mismatch, and more."
+pubDate: "2026-04-07"
+tags: ["jwt", "authentication", "debugging", "security"]
+relatedTools: ["jwt-decoder", "hash-generator"]
+contentType: "traffic"
+---
+
+A 401 response with no error body is one of the most frustrating debugging experiences in backend development. Nine times out of ten the culprit is a malformed or misconfigured JWT — and the fix is a 10-second decode away. This guide walks you through reading every field of a decoded token and diagnosing the five errors that cause 95% of JWT auth failures.
+
+## What a JWT Contains
+
+A JWT is three Base64URL-encoded segments joined by dots: `header.payload.signature`. None of these segments are encrypted by default — they are only signed. Anyone who intercepts the token can read the header and payload in plain text.
+
+```
+eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9
+.eyJzdWIiOiJ1c2VyXzQ4MiIsImlzcyI6Imh0dHBzOi8vYXV0aC5leGFtcGxlLmNvbSIsImF1ZCI6Imh0dHBzOi8vYXBpLmV4YW1wbGUuY29tIiwiaWF0IjoxNzEyNDAwMDAwLCJleHAiOjE3MTI0MDM2MDB9
+.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+```
+
+### Header
+
+The first segment decodes to a JSON object that describes the token format:
+
+```json
+{
+  "alg": "RS256",
+  "typ": "JWT"
+}
+```
+
+`alg` is the signing algorithm. The most common values are `HS256` (HMAC with a shared secret), `RS256` (RSA with a public/private key pair), and `ES256` (ECDSA). This field matters enormously — a mismatch between what the server expects and what the token contains causes a hard verification failure even if the signature is otherwise valid.
+
+### Payload
+
+The second segment contains the claims — assertions about the user and the token itself:
+
+```json
+{
+  "sub": "user_482",
+  "iss": "https://auth.example.com",
+  "aud": "https://api.example.com",
+  "iat": 1712400000,
+  "exp": 1712403600,
+  "email": "alice@example.com",
+  "roles": ["editor", "viewer"]
+}
+```
+
+The registered claim names defined in [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1) are:
+
+| Claim | Full name | What it means |
+|-------|-----------|---------------|
+| `sub` | Subject | The entity the token represents (usually a user ID) |
+| `iss` | Issuer | The server that created and signed the token |
+| `aud` | Audience | The recipient(s) the token is intended for |
+| `iat` | Issued At | Unix timestamp when the token was created |
+| `exp` | Expiration | Unix timestamp after which the token is invalid |
+| `nbf` | Not Before | Unix timestamp before which the token is invalid |
+| `jti` | JWT ID | Unique identifier for the token (used for revocation) |
+
+Everything outside these seven names — `email`, `roles`, `org_id`, etc. — is a custom claim. There is no schema enforcement; the fields are whatever the issuer chose to include.
+
+### Signature
+
+The third segment is the cryptographic signature over `base64url(header) + "." + base64url(payload)`. For `HS256` tokens, this is an HMAC-SHA256 hash computed with a shared secret. For `RS256` tokens, it is an RSA signature that can be verified with only the public key.
+
+The signature does not tell you anything diagnostic on its own — it either verifies or it doesn't. If it fails, the cause is almost always a key mismatch or a key rotation event. You can use [our Hash Generator](/tools/hash-generator) to independently compute an HMAC if you need to verify the raw signature math on an `HS256` token.
+
+For a broader explanation of how JWT works from first principles, see [What is JWT?](/blog/what-is-jwt).
+
+## Step-by-Step: Read a Token in 60 Seconds
+
+The fastest way to decode a token is [our JWT Decoder](/tools/jwt-decoder) — paste the token and all three segments render immediately with human-readable timestamps, no login required.
+
+**Step 1: Grab the token from your browser.**
+
+Open DevTools (F12), go to the Network tab, and click any authenticated API request. Look in the Request Headers for `Authorization: Bearer <token>`. Copy everything after `Bearer `.
+
+**Step 2: Paste it into the decoder.**
+
+Go to [/tools/jwt-decoder](/tools/jwt-decoder) and paste the full token. The tool splits the three segments and renders:
+- Header with algorithm and token type
+- Payload with all claims, with `exp` and `iat` converted to human-readable local time
+- Whether the token is currently expired
+
+**Step 3: Check the key fields in order.**
+
+Work through this checklist every time you debug a JWT 401:
+
+1. Is `exp` in the future? If not, the token is expired — full stop.
+2. Does `iss` match the issuer your API server trusts?
+3. Does `aud` match the identifier your API server registers as its audience?
+4. Does `alg` in the header match what your verification code expects?
+5. Are required custom claims present? (e.g., `roles`, `org_id`, `scope`)
+
+Most 401s are resolved at step 1 or 3.
+
+**Command-line alternative:**
+
+If you prefer your terminal, you can decode the payload without any tool:
+
+```bash
+# Replace <payload> with the second segment of the JWT (between the two dots)
+echo "<payload>" | base64 -d | jq
+```
+
+On macOS, `base64 -d` is `base64 -D`. If the padding is off (Base64URL uses `-` and `_` instead of `+` and `/`), add padding manually:
+
+```bash
+PAYLOAD="eyJzdWIiOiJ1c2VyXzQ4MiIsImV4cCI6MTcxMjQwMzYwMH0"
+# Pad to a multiple of 4 characters, then decode
+python3 -c "
+import base64, json, sys
+p = sys.argv[1] + '=' * (4 - len(sys.argv[1]) % 4)
+print(json.dumps(json.loads(base64.urlsafe_b64decode(p)), indent=2))
+" "$PAYLOAD"
+```
+
+## The 5 Most Common JWT Errors
+
+### 1. TokenExpiredError — `exp` is in the past
+
+**Error message (jsonwebtoken / Node.js):**
+```
+JsonWebTokenError: jwt expired
+TokenExpiredError: jwt expired
+  expiredAt: 2026-03-15T09:22:00.000Z
+```
+
+**What to look for in the decoded token:**
+
+```json
+{
+  "iat": 1741600000,
+  "exp": 1741603600
+}
+```
+
+Convert `exp` to a human timestamp: `new Date(1741603600 * 1000).toISOString()`. If that date is in the past, the token is expired. A 3600-second (1-hour) lifetime is the most common default — tokens issued during a long session expire silently.
+
+**Fix:** The client needs to refresh the token before it expires. Implement a silent refresh by checking `exp` before each API call and requesting a new token when fewer than 60 seconds remain.
+
+```javascript
+function isTokenExpiringSoon(token, thresholdSeconds = 60) {
+  const [, payload] = token.split(".");
+  const { exp } = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+  return Date.now() / 1000 > exp - thresholdSeconds;
+}
+```
+
+**Root cause in production:** Server and client clocks drifting out of sync. NIST SP 800-63B recommends allowing up to 5 minutes of clock skew for token validation. If you see intermittent expirations on freshly issued tokens, check NTP sync on both machines.
+
+### 2. Invalid Audience — `aud` mismatch
+
+**Error message:**
+```
+JsonWebTokenError: jwt audience invalid. expected: https://api.example.com
+```
+
+**What to look for:**
+
+```json
+{
+  "aud": "https://api-staging.example.com"
+}
+```
+
+The `aud` claim identifies which service the token was issued for. If your production API server validates `aud: "https://api.example.com"` but the token was issued for a staging environment, validation fails even if everything else is correct. This is a frequent cause of "works in staging, fails in prod" incidents.
+
+**Fix:** Ensure your auth server issues tokens with the correct `aud` for each environment. Never reuse tokens across environments. In your verification options:
+
+```javascript
+// Node.js / jsonwebtoken
+jwt.verify(token, publicKey, {
+  audience: "https://api.example.com",
+  issuer: "https://auth.example.com",
+});
+```
+
+### 3. Missing or Wrong Issuer — `iss` mismatch
+
+**Error message:**
+```
+JsonWebTokenError: jwt issuer invalid. expected: https://auth.example.com
+```
+
+**What to look for:**
+
+```json
+{
+  "iss": "https://auth.legacy.example.com"
+}
+```
+
+After migrating an auth provider — from Auth0 to a self-hosted service, for example — old tokens still carry the old `iss` value. Verification middleware that checks `iss` strictly will reject all pre-migration tokens simultaneously.
+
+**Fix:** During migrations, configure your API to temporarily accept both issuers and rotate users through a re-login flow. Log `iss` rejections separately from signature failures so you can track migration progress.
+
+### 4. Algorithm Mismatch — RS256 vs HS256
+
+**Error message:**
+```
+JsonWebTokenError: invalid algorithm
+```
+
+or, worse, no error at all — with a vulnerable library.
+
+**What to look for in the header:**
+
+```json
+{
+  "alg": "HS256"
+}
+```
+
+When your API expects `RS256` (asymmetric) but receives an `HS256` token (symmetric), a correctly configured library rejects it. However, some older libraries had a critical vulnerability: if the server's public key was passed to an `HS256` verification function, an attacker could craft a valid `HS256` token signed with that public key. This is the [algorithm confusion attack](https://portswigger.net/web-security/jwt/algorithm-confusion) described by PortSwigger.
+
+**Fix:** Always specify the expected algorithm explicitly — never let the token header dictate which algorithm to use:
+
+```javascript
+// Correct — algorithm is pinned server-side
+jwt.verify(token, publicKey, { algorithms: ["RS256"] });
+
+// Dangerous — allows the token to choose its own algorithm
+jwt.verify(token, publicKey); // do NOT do this
+```
+
+### 5. Invalid Signature — Key Rotation
+
+**Error message:**
+```
+JsonWebTokenError: invalid signature
+```
+
+**What to look for:**
+
+The token structure looks correct — valid `exp`, matching `iss` and `aud`, correct `alg`. But the signature fails. This almost always means the signing key changed after the token was issued.
+
+**Diagnosis steps:**
+1. Check when the token was issued (`iat`). Did a key rotation happen after that timestamp?
+2. Confirm the verification key your API is using matches the key that signed the token.
+3. For JWKs (JSON Web Key Sets), check the `kid` (key ID) header claim — it should match a key in your current JWKS endpoint.
+
+```json
+{
+  "alg": "RS256",
+  "kid": "key-2024-01-15"
+}
+```
+
+**Fix:** Implement a key ID (`kid`) strategy. When rotating keys, keep the old key active for the token lifetime window (e.g., 1 hour) before retiring it. Fetch your JWKS from the well-known endpoint and cache it with a short TTL:
+
+```javascript
+// Pseudo-code for kid-aware verification
+const jwks = await fetchJwks("https://auth.example.com/.well-known/jwks.json");
+const key = jwks.keys.find((k) => k.kid === decodedHeader.kid);
+if (!key) throw new Error(`Unknown key ID: ${decodedHeader.kid}`);
+jwt.verify(token, keyToPem(key), { algorithms: ["RS256"] });
+```
+
+## Security Caveat: JWT Payload Is Not Encrypted
+
+The payload is Base64URL-encoded, not encrypted. Any party that receives the token can decode it without a key. This is by design — JWTs are meant to be readable by the recipient, just not forgeable.
+
+**What this means in practice:**
+
+```javascript
+// Anyone can do this — no key required
+const [, payload] = token.split(".");
+const claims = JSON.parse(atob(payload));
+// claims.email, claims.role, claims.org_id — all visible
+```
+
+**Never store in the JWT payload:**
+- Passwords or password hashes
+- Credit card numbers or PII subject to GDPR/CCPA
+- API keys or secrets
+- Medical record identifiers (HIPAA)
+- Social security numbers
+
+The OWASP JWT Security Cheat Sheet specifically calls out payload exposure as a top JWT misuse. For background on how hashing protects sensitive values that need to be stored or compared, see [What is Hashing?](/blog/what-is-hashing).
+
+**Safe to store in the JWT payload:**
+- User ID (`sub`)
+- Roles and permissions (`roles`, `scope`)
+- Organization ID
+- Feature flags
+- Non-sensitive preferences
+
+If you need encrypted claims, look into JWE (JSON Web Encryption, RFC 7516), which adds a fourth and fifth segment to the token structure. JWE is far less common than JWS (the standard signed JWT) but provides genuine confidentiality.
+
+## Quick Reference: JWT Claim Fields
+
+| Claim | Type | Example value | Required by spec? |
+|-------|------|---------------|-------------------|
+| `sub` | string | `"user_482"` | Recommended |
+| `iss` | string (URI) | `"https://auth.example.com"` | Recommended |
+| `aud` | string or array | `"https://api.example.com"` | Recommended |
+| `exp` | NumericDate | `1712403600` | Recommended |
+| `iat` | NumericDate | `1712400000` | Optional |
+| `nbf` | NumericDate | `1712400000` | Optional |
+| `jti` | string | `"tok_a3f9..."` | Optional |
+
+`NumericDate` is an integer count of seconds since the Unix epoch (January 1, 1970 UTC), identical to the value returned by `Math.floor(Date.now() / 1000)` in JavaScript.
+
+## Common Mistakes
+
+**Storing the raw JWT in `localStorage`.** `localStorage` is accessible to any JavaScript running on the page, making tokens vulnerable to XSS. Prefer `httpOnly` cookies for token storage when possible — they are inaccessible to JavaScript.
+
+**Not validating `iss` and `aud` on the receiving service.** Checking only the signature means any valid token from any audience is accepted. An attacker who obtains a token for service A can replay it against service B if you don't validate `aud`.
+
+**Trusting the `alg` field in the header.** As covered in the algorithm mismatch section, always pin the expected algorithm on the server. The token header should not influence the verification logic.
+
+**Setting `exp` too far in the future.** A 30-day expiry on an access token is effectively no expiry — it gives attackers a 30-day window if the token is ever leaked. Keep access token lifetimes short (15–60 minutes) and use refresh tokens for session continuity.
+
+**Assuming an unexpired token is still valid.** Tokens cannot be revoked in the standard JWT model — only expired or rotated away. If you need immediate revocation, implement a token blocklist using a fast store like Redis, or use short-lived tokens with a refresh flow.
+
+## Frequently Asked Questions
+
+### How do I decode a JWT without a library?
+
+Split the token on `.` to get three segments. Take the second segment (the payload) and pass it to `atob()` in the browser, or `base64.urlsafe_b64decode()` in Python. The result is a JSON string you can parse normally. Note that `atob` does not handle Base64URL padding — you may need to append `=` characters to make the length a multiple of 4.
+
+### Can I decode a JWT without the secret key?
+
+Yes. Decoding (reading the payload) requires no key — it is just Base64URL decoding. Verifying the signature (confirming the token has not been tampered with) does require the key. Paste any JWT into [/tools/jwt-decoder](/tools/jwt-decoder) to read its contents instantly.
+
+### What causes a jwt expired error in jsonwebtoken?
+
+The `exp` claim in the token's payload is a Unix timestamp in the past. The `jsonwebtoken` library throws `TokenExpiredError` (a subclass of `JsonWebTokenError`) when this check fails. Convert the `exp` value to a human-readable date with `new Date(exp * 1000).toISOString()` to confirm when the token expired.
+
+### What is the difference between `iat` and `exp`?
+
+`iat` (Issued At) records when the token was created. `exp` (Expiration) records when it stops being valid. The difference between them is the token's intended lifetime. Neither is required by the JWT spec, but most auth libraries generate both by default. Many also use `iat` to enforce a maximum token age as a secondary check.
+
+### Why does my JWT fail in production but not in staging?
+
+The most common cause is an `aud` mismatch — your production API expects a different audience claim than staging. Check the decoded `aud` field and compare it to the value your production API is configured to accept. Clock skew, environment-specific keys, and different JWKS endpoints are the next most likely causes.
+
+### Is it safe to log JWTs for debugging?
+
+No. Even though the payload is not encrypted, a valid JWT is a bearer credential — possession equals authentication. Anyone with access to your logs can replay the token until it expires. If you need to log debugging information, log only the `sub`, `jti`, and `exp` claims after decoding, never the full token string.
+
+## Conclusion
+
+JWT debugging follows a consistent pattern: decode first, read the claims, compare against what your server expects. The five errors covered here — expiration, audience mismatch, issuer mismatch, algorithm confusion, and invalid signature after key rotation — account for the overwhelming majority of JWT 401 failures in production.
+
+Bookmark [our JWT Decoder](/tools/jwt-decoder) for quick token inspection — it's free, runs entirely in your browser, and converts Unix timestamps to readable dates automatically. No signup, no token data sent to any server.
+
+For deeper background on the cryptographic primitives behind JWT signatures, see [What is Hashing?](/blog/what-is-hashing) and [What is JWT?](/blog/what-is-jwt).

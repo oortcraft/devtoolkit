@@ -1,0 +1,481 @@
+---
+title: "JSON to YAML: Practical Guide for Kubernetes, Helm, Docker"
+description: "Convert JSON to YAML for Kubernetes, Helm, and Docker Compose. Covers yq, Python, js-yaml, multiline strings, boolean hazards, and null handling."
+pubDate: "2026-04-14"
+tags: ["yaml", "json", "kubernetes", "devops", "helm"]
+relatedTools: ["json-to-yaml", "yaml-validator", "json-formatter"]
+contentType: "traffic"
+---
+
+Kubernetes manifests, Helm charts, Docker Compose files, GitHub Actions workflows — DevOps tooling converged on YAML for one reason: humans have to read and edit these files every day. But your data starts somewhere else: an API response returns JSON, a script generates JSON, your CI pipeline outputs JSON. Converting that JSON to YAML correctly — without mangling booleans, breaking multiline strings, or confusing `null` with `~` — is a skill every platform engineer needs.
+
+## Why DevOps Standardized on YAML
+
+JSON was designed for machine-to-machine data exchange. YAML was designed for human-maintained configuration files. The difference is visible the moment you compare the same config in both formats.
+
+Here is a Kubernetes resource limit block in JSON:
+
+```json
+{
+  "resources": {
+    "requests": {
+      "cpu": "250m",
+      "memory": "128Mi"
+    },
+    "limits": {
+      "cpu": "500m",
+      "memory": "256Mi"
+    }
+  }
+}
+```
+
+And the same block in YAML:
+
+```yaml
+resources:
+  requests:
+    cpu: 250m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+```
+
+The YAML version has no quotes around strings, no commas, no curly braces, and no closing brackets. A 12-line JSON block becomes 7 lines of YAML. More importantly, YAML supports comments (`#`), which JSON does not — and comments are essential when configuration files are shared across teams.
+
+YAML also supports multiline strings natively using `|` (literal block) and `>` (folded block) syntax, which maps cleanly to environment variables, shell scripts embedded in manifests, and certificate data. JSON requires escaping every newline as `\n`, which becomes unreadable for anything longer than two lines.
+
+## JSON Is Already Valid YAML
+
+This is the most important fact for DevOps work: **every valid JSON document is also valid YAML**. The YAML 1.2 specification (published 2009) explicitly positions YAML as a superset of JSON.
+
+The practical implication is immediate: you can take a raw JSON API response and paste it directly into a Kubernetes manifest. The API server will parse it. You do not have to convert it first.
+
+```yaml
+# This entire block is valid YAML — it's also valid JSON
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": { "name": "app-config" },
+  "data": { "LOG_LEVEL": "info" }
+}
+```
+
+Most teams still convert to idiomatic YAML because it is easier to maintain at scale, but knowing that JSON-in-YAML is valid saves you when you need to quickly inject an API response into a manifest during an incident.
+
+## Three Conversion Methods
+
+### 1. yq (Command Line)
+
+[yq](https://github.com/mikefarah/yq) is the standard CLI tool for YAML/JSON processing. It has over 11,000 GitHub stars and is available in most package managers. Converting JSON to YAML is a single flag:
+
+```bash
+# Install
+brew install yq          # macOS
+apt-get install yq       # Debian/Ubuntu
+wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+
+# Convert a file
+yq -o=yaml input.json
+
+# Convert and write to file
+yq -o=yaml input.json > output.yaml
+
+# Convert inline JSON string
+echo '{"name":"my-app","replicas":3}' | yq -o=yaml -
+```
+
+The `-o=yaml` flag tells yq to output YAML regardless of the input format. yq auto-detects JSON input. This works well in CI/CD pipelines where you need to transform an API response before feeding it into `kubectl apply`.
+
+### 2. Python
+
+Python's standard library includes `json` and the third-party `PyYAML` (installed by default in most base images). This approach gives you full control over the conversion and is easy to extend:
+
+```python
+import json
+import yaml
+
+# Convert JSON file to YAML file
+with open("input.json", "r") as f:
+    data = json.load(f)
+
+with open("output.yaml", "w") as f:
+    yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
+
+# Convert JSON string to YAML string
+json_str = '{"apiVersion":"apps/v1","kind":"Deployment"}'
+data = json.loads(json_str)
+yaml_str = yaml.dump(data, default_flow_style=False)
+print(yaml_str)
+```
+
+The `default_flow_style=False` flag is critical. Without it, PyYAML outputs compact "flow style" YAML (`{key: value}`) instead of the indented block style that Kubernetes manifests expect. Always set it to `False`.
+
+For more control over indentation and key ordering:
+
+```python
+import json
+import yaml
+
+with open("input.json") as f:
+    data = json.load(f)
+
+# Sort keys alphabetically, 2-space indent (Kubernetes convention)
+print(yaml.dump(data, default_flow_style=False, sort_keys=True, indent=2))
+```
+
+### 3. JavaScript (js-yaml)
+
+`js-yaml` is the most-downloaded YAML library in the npm ecosystem — it averages over 80 million weekly downloads (npm, 2025). It is used internally by dozens of major tools including ESLint, Jest, and Webpack.
+
+```javascript
+import yaml from 'js-yaml';
+import fs from 'fs';
+
+// Read JSON, write YAML
+const data = JSON.parse(fs.readFileSync('input.json', 'utf8'));
+const yamlStr = yaml.dump(data, {
+  indent: 2,
+  lineWidth: 120,
+  noRefs: true,
+});
+fs.writeFileSync('output.yaml', yamlStr);
+```
+
+For a quick in-browser conversion without installing anything, use the [JSON to YAML converter](/tools/json-to-yaml) — paste your JSON and get clean YAML instantly.
+
+## Kubernetes Use Case: API Response to Deployment Manifest
+
+A common workflow: you query the Kubernetes API to get an existing deployment, modify it, and reapply. The API returns JSON. You need YAML.
+
+Here is a realistic JSON payload from `kubectl get deployment my-app -o json`:
+
+```json
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "my-app",
+    "namespace": "production",
+    "labels": {
+      "app": "my-app",
+      "version": "1.4.2"
+    }
+  },
+  "spec": {
+    "replicas": 3,
+    "selector": {
+      "matchLabels": {
+        "app": "my-app"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "my-app"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "app",
+            "image": "my-registry/my-app:1.4.2",
+            "ports": [{"containerPort": 8080}],
+            "resources": {
+              "requests": {"cpu": "250m", "memory": "128Mi"},
+              "limits": {"cpu": "500m", "memory": "256Mi"}
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+Convert it with yq in your pipeline:
+
+```bash
+# Fetch from API, strip managed fields, convert to YAML
+kubectl get deployment my-app -o json \
+  | jq 'del(.metadata.managedFields, .metadata.resourceVersion, .status)' \
+  | yq -o=yaml - \
+  > deployment.yaml
+```
+
+The resulting YAML is human-editable and can be committed to your GitOps repository. The `jq` step strips server-side metadata that breaks declarative workflows — always strip `managedFields`, `resourceVersion`, and `status` before committing a live resource.
+
+## Helm Use Case: values.yaml vs --set-json
+
+Helm supports two ways to pass dynamic values in CI/CD: a `values.yaml` file and the `--set-json` flag. Knowing when to use each is critical for maintainable pipelines.
+
+### values.yaml (preferred for complex config)
+
+For anything with more than a few keys, write a structured `values.yaml`:
+
+```yaml
+# values.yaml
+replicaCount: 3
+
+image:
+  repository: my-registry/my-app
+  tag: "1.4.2"
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+env:
+  LOG_LEVEL: info
+  FEATURE_FLAGS: "new-dashboard,beta-api"
+```
+
+Deploy with:
+
+```bash
+helm upgrade --install my-app ./chart -f values.yaml
+```
+
+### --set-json (for CI/CD single-value overrides)
+
+The `--set-json` flag (introduced in Helm 3.10) accepts a JSON value for a single key, which is useful when you need to inject a value from a CI environment variable without modifying the `values.yaml` file:
+
+```bash
+# Inject image tag from CI environment variable
+helm upgrade --install my-app ./chart \
+  -f values.yaml \
+  --set-json "image.tag=\"${CI_COMMIT_SHA}\""
+
+# Inject a structured object
+helm upgrade --install my-app ./chart \
+  -f values.yaml \
+  --set-json 'resources={"requests":{"cpu":"500m","memory":"256Mi"},"limits":{"cpu":"1","memory":"512Mi"}}'
+```
+
+Use `--set-json` for single-value CI overrides (image tags, replica counts, feature flags). Use `values.yaml` for everything else. Mixing both is fine — `--set-json` values override the file at the same key path.
+
+If you need to build a `values.yaml` dynamically from a JSON payload (a common pattern when deploying microservices with per-service configs), use the Python or yq approaches from the previous section, then validate the output with the [YAML Validator](/tools/yaml-validator) before passing it to Helm.
+
+## Docker Compose: JSON → Compose YAML
+
+Docker Compose v2 accepts both `docker-compose.yaml` and `docker-compose.json` (as of Compose Specification 1.0), but the tooling ecosystem — Portainer, Lens, GitHub Actions — primarily displays and diffs YAML. Converting a programmatically generated JSON Compose config to YAML keeps your repository readable.
+
+A JSON Compose config:
+
+```json
+{
+  "version": "3.9",
+  "services": {
+    "api": {
+      "image": "my-registry/api:latest",
+      "ports": ["8080:8080"],
+      "environment": {
+        "DATABASE_URL": "postgres://db:5432/app",
+        "LOG_LEVEL": "info"
+      },
+      "depends_on": ["db"]
+    },
+    "db": {
+      "image": "postgres:16",
+      "environment": {
+        "POSTGRES_PASSWORD": "secret"
+      },
+      "volumes": ["pgdata:/var/lib/postgresql/data"]
+    }
+  },
+  "volumes": {
+    "pgdata": {}
+  }
+}
+```
+
+Convert with yq:
+
+```bash
+yq -o=yaml docker-compose.json > docker-compose.yaml
+```
+
+Result:
+
+```yaml
+version: "3.9"
+services:
+  api:
+    image: my-registry/api:latest
+    ports:
+      - 8080:8080
+    environment:
+      DATABASE_URL: postgres://db:5432/app
+      LOG_LEVEL: info
+    depends_on:
+      - db
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata: {}
+```
+
+Note that yq converts the `ports` array from `["8080:8080"]` to the YAML block sequence format automatically. The resulting file is directly usable by `docker compose up`.
+
+## Common Pitfalls
+
+### 1. Multiline String Hazard
+
+JSON encodes newlines as `\n`. When you convert naively, PyYAML and yq will output the escaped string on one line rather than a readable block. For shell scripts embedded in ConfigMaps or environment variables with embedded newlines, use the `|` literal block style explicitly.
+
+Wrong (what naive converters produce):
+
+```yaml
+script: "#!/bin/bash\nset -e\necho 'deploying'\n"
+```
+
+Correct (readable, used in Kubernetes ConfigMaps):
+
+```yaml
+script: |
+  #!/bin/bash
+  set -e
+  echo 'deploying'
+```
+
+In Python, use a custom representer to force literal block style for strings containing newlines:
+
+```python
+import yaml
+
+def str_representer(dumper, data):
+    if '\n' in data:
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+
+yaml.add_representer(str, str_representer)
+```
+
+Use `>` (folded style) when the string is prose text that wraps for readability, and `|` when every newline is semantically significant (shell scripts, certificate PEM blocks, SQL queries).
+
+### 2. Boolean String Hazard
+
+YAML 1.1 (used by most tools as of 2025 — including PyYAML 5.x and many Kubernetes tooling libraries) treats `yes`, `no`, `on`, `off`, `true`, `false` as boolean values even without quotes. JSON always keeps these as strings if they are quoted.
+
+This conversion is dangerous:
+
+```json
+{ "ssl_enabled": "yes", "debug_mode": "off" }
+```
+
+Naive YAML output (YAML 1.1 parser will read `yes` and `off` as booleans):
+
+```yaml
+ssl_enabled: yes   # parsed as true
+debug_mode: off    # parsed as false
+```
+
+Safe YAML output (always quote ambiguous strings):
+
+```yaml
+ssl_enabled: "yes"
+debug_mode: "off"
+```
+
+In Python, PyYAML 6.0+ follows YAML 1.2 and no longer auto-converts `yes`/`no`. If you are on an older version, explicitly quote such values. In yq, use the `--unwrapScalar=false` flag or check your yq version: v4+ defaults to YAML 1.2 behavior.
+
+### 3. Null Handling
+
+JSON `null` maps to YAML `null`, `~`, or an empty value — all three are equivalent in YAML 1.2, but not all parsers agree.
+
+```json
+{ "optional_field": null, "another": null }
+```
+
+yq converts this to:
+
+```yaml
+optional_field: null
+another: null
+```
+
+PyYAML converts this to:
+
+```yaml
+optional_field: null
+another: null
+```
+
+The problem arises when downstream tools use strict YAML 1.1 parsers that only recognize `~` as null. Helm's Go-based parser (`gopkg.in/yaml.v3`) correctly handles all three forms. `kubectl` uses the same library. For cross-tool compatibility, `null` (lowercase) is the safest choice — avoid the `~` shorthand unless your entire toolchain is known to support it.
+
+### 4. Integer vs String Keys
+
+YAML allows integer keys in mappings; JSON does not (all JSON keys are strings). When converting YAML back to JSON or comparing objects, key types can cause unexpected mismatches. If your JSON has numeric-looking keys (`"1"`, `"200"`), ensure your YAML renderer quotes them:
+
+```json
+{ "200": "OK", "404": "Not Found" }
+```
+
+Without quoting, some YAML parsers read these as integer keys:
+
+```yaml
+200: OK     # integer key — not the same as "200"
+404: Not Found
+```
+
+Force string keys in Python:
+
+```python
+# Pre-process to ensure numeric-string keys stay quoted
+data = {str(k): v for k, v in data.items()}
+yaml.dump(data, default_flow_style=False)
+```
+
+### 5. Trailing Newlines and Document Markers
+
+YAML files should end with a single trailing newline. Files with multiple documents use `---` as a separator. When programmatically generating YAML for `kubectl apply -f -`, include `---` at the top to be explicit:
+
+```bash
+echo "---" | cat - output.yaml | kubectl apply -f -
+```
+
+Validate your generated YAML before applying with the [YAML Validator](/tools/yaml-validator) — it catches syntax errors, indentation issues, and duplicate keys before they reach the cluster.
+
+## Frequently Asked Questions
+
+### Is JSON valid YAML?
+
+Yes. The YAML 1.2 specification (published 2009) defines JSON as a subset of YAML. Any valid JSON document can be parsed by a YAML 1.2 parser without modification. This means you can paste a raw JSON API response directly into a Kubernetes manifest and `kubectl` will accept it.
+
+### What is the fastest way to convert JSON to YAML on the command line?
+
+Use `yq -o=yaml input.json`. The `yq` tool (v4+) auto-detects JSON input and outputs idiomatic block-style YAML in one command. It is available via `brew install yq` on macOS and in most Linux package managers.
+
+### Why does my YAML have `yes`/`no` instead of `true`/`false` after conversion?
+
+This is a YAML 1.1 boolean hazard. YAML 1.1 treats `yes`, `no`, `on`, and `off` as booleans. If your JSON source has these as string values, a YAML 1.1-compliant tool will interpret them as booleans during conversion. Use a YAML 1.2-compliant tool (yq v4+, PyYAML 6.0+) or explicitly quote the values in the output.
+
+### What is the difference between `|` and `>` in YAML multiline strings?
+
+`|` is the literal block scalar — every newline in the string is preserved exactly. Use it for shell scripts, certificate PEM blocks, and any content where line breaks are meaningful. `>` is the folded block scalar — single newlines are replaced with spaces, and only blank lines produce actual newlines. Use it for long prose strings that wrap for readability in the YAML file but should render as a single paragraph.
+
+### How do I convert JSON to YAML in a Kubernetes CI/CD pipeline?
+
+The standard pattern is: fetch JSON from the API or generate it programmatically, strip server-managed metadata with `jq` (`del(.metadata.managedFields, .metadata.resourceVersion, .status)`), then pipe through `yq -o=yaml -` to produce YAML. Validate the output with a linter before applying.
+
+### When should I use Helm's `--set-json` instead of `values.yaml`?
+
+Use `--set-json` for single-value overrides injected from CI environment variables (image tags, replica counts, build SHA). Use `values.yaml` for any structured config that has more than 2-3 keys, any config that needs to be reviewed in a pull request, or any defaults that should persist across deployments. Mixing both is standard: `values.yaml` holds defaults, `--set-json` overrides the specific key for each deployment.
+
+## Conclusion
+
+JSON and YAML are not competing formats — they are complementary layers of the same ecosystem. JSON travels well over APIs and between services; YAML lives in repositories and configuration files where humans need to read, comment, and diff it daily. Understanding that JSON is valid YAML removes the artificial boundary between the two.
+
+For quick conversions without installing anything, bookmark the [JSON to YAML converter](/tools/json-to-yaml) — it runs entirely in your browser, requires no signup, and handles all the edge cases covered in this post. For validating the YAML output before it reaches your cluster or CI pipeline, the [YAML Validator](/tools/yaml-validator) catches syntax errors and structural issues instantly.
+
+For deeper background on YAML syntax, anchors, and merge keys, see the [YAML Tutorial](/blog/yaml-tutorial). For schema-based validation of your Kubernetes manifests and Helm values files, see [YAML Validation Best Practices](/blog/yaml-validation-best-practices).

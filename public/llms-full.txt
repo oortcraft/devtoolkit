@@ -311,6 +311,14 @@ The DevToolkit blog publishes developer tutorials and guides related to the tool
     URL: https://oortcraft.dev/blog/bcrypt-vs-scrypt-vs-argon2
     Topics: Password hashing algorithms, bcrypt cost factors, scrypt memory-hardness, Argon2id, GPU attack resistance, OWASP recommendations, migration strategies, benchmark data.
 
+34. **How to Debug JWT Authentication Issues: A Practical Decoder Guide**
+    URL: https://oortcraft.dev/blog/jwt-debugging-guide
+    Topics: JWT decoding, jwt decode, debugging JWT errors, TokenExpiredError, invalid signature, algorithm mismatch, aud/iss validation, base64url decoding, security best practices.
+
+35. **JSON to YAML Conversion: A Practical Guide for Kubernetes, Docker, and Helm**
+    URL: https://oortcraft.dev/blog/json-to-yaml-devops
+    Topics: JSON to YAML, yq converter, Kubernetes manifests, Helm values.yaml, Docker Compose, Python yaml.dump, js-yaml, multiline strings, boolean hazards, DevOps config formats.
+
 ---
 
 ## Tool Categories
