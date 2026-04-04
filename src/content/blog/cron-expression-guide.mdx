@@ -1,6 +1,6 @@
 ---
-title: "Cron Expressions Explained: A Complete Guide"
-description: "Master cron syntax with this comprehensive guide. Learn the five-field format, special characters, common patterns, and best practices for scheduling tasks."
+title: "Cron Syntax: Fields, Examples & Tips"
+description: "Learn the 5-field cron format (* * * * *) with 15+ scheduling examples. Covers Kubernetes CronJobs, GitHub Actions, and common pitfalls."
 pubDate: "2026-03-16"
 tags: ["cron", "devops", "scheduling"]
 relatedTools: ["cron-builder"]
@@ -295,6 +295,12 @@ When a cron job fails silently, work through this checklist:
 4. **Check the environment** — add `env > /tmp/cron-env.log` as a test job to see what cron sees
 5. **Check permissions** — the cron user must have execute permission on the script
 6. **Check the exit code** — a non-zero exit code means the job failed; redirect stderr to capture the error
+
+## Further Reading
+
+- [Crontab Cheat Sheet: 30+ Cron Job Examples](/blog/crontab-cheat-sheet) — ready-to-use cron expressions for common scheduling scenarios
+- [Epoch to Date: Convert Unix Timestamps](/blog/epoch-to-date-conversion) — understand the time values your cron jobs work with
+- [YAML Tutorial for Beginners](/blog/yaml-tutorial) — essential for writing Kubernetes CronJob manifests
 
 ## Summary
 

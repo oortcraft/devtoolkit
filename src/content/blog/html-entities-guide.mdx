@@ -388,6 +388,12 @@ Modern browsers parse and render entities instantly. There is no performance pen
 
 Use the numeric form. Every Unicode character has a code point, so you can always use `&#number;` or `&#xhex;` as a fallback. However, the browser must support rendering that character (which requires an appropriate font), so some rare or very new Unicode characters may not display if the user's system lacks the font.
 
+## Further Reading
+
+- [URL Encoding Explained: Why and How It Works](/blog/url-encoding-explained) — the companion encoding system for URLs vs HTML
+- [What is Base64 Encoding?](/blog/what-is-base64) — another encoding scheme developers encounter daily
+- [Base64 Encoding in JavaScript, Python & Go](/blog/base64-encoding-examples) — practical code for the most common encoding tasks
+
 ## Conclusion
 
 HTML entities are a foundational part of HTML syntax. While modern UTF-8 encoding has reduced the need for entities, they remain essential for encoding reserved characters and providing semantic clarity in markup. Master the essential entities (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`, `&nbsp;`), use named entities for common symbols, and rely on numeric entities for everything else.

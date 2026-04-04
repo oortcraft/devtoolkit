@@ -277,6 +277,11 @@ function multiply(a, b) { return a * b; }
 
 The shortest diff could be interpreted as "changed the function name and operator" or "deleted the entire function and added a new one." Myers picks the representation with fewest operations, which is usually — but not always — what makes sense semantically.
 
+## Further Reading
+
+- [The Algorithm Behind git diff: How Myers Diff Works](/blog/myers-diff-algorithm) — a deep dive into the algorithm that powers the diffs you see every day
+- [Regex Cheat Sheet for Developers](/blog/regex-cheat-sheet) — another essential text processing tool for pattern matching and extraction
+
 ## Summary
 
 Text diff algorithms are elegant solutions to a practical problem. Simple line-based comparison is fast but coarse. The LCS algorithm is theoretically pure but computationally expensive. Myers algorithm balances speed and accuracy, which is why it powers Git.
