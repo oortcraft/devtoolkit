@@ -18,6 +18,7 @@
 - [x] https://oortcraft.dev/tools/html-entity-encoder/
 - [x] https://oortcraft.dev/tools/json-schema-validator/
 - [x] https://oortcraft.dev/tools/regex-tester/
+- [x] https://oortcraft.dev/tools/diff-checker/
 - [x] https://oortcraft.dev/blog/cron-expression-guide/
 - [x] https://oortcraft.dev/blog/what-is-jwt/
 - [x] https://oortcraft.dev/blog/unix-timestamp-guide/
@@ -41,8 +42,7 @@
 - [ ] https://oortcraft.dev/tools/json-to-yaml/
 - [ ] https://oortcraft.dev/tools/case-converter/
 - [ ] https://oortcraft.dev/tools/lorem-ipsum/
-- [ ] https://oortcraft.dev/tools/diff-checker/
-- [ ] https://oortcraft.dev/tools/regex-tester/
+- [ ] https://oortcraft.dev/tools/css-formatter/
 - [ ] https://oortcraft.dev/tools/base-converter/
 - [ ] https://oortcraft.dev/tools/yaml-validator/
 - [ ] https://oortcraft.dev/tools/sql-formatter/
@@ -78,6 +78,13 @@
 - [ ] https://oortcraft.dev/blog/jsonpath-tutorial/
 - [ ] https://oortcraft.dev/blog/qr-code-guide/
 - [ ] https://oortcraft.dev/blog/csv-to-json-conversion/
+- [ ] https://oortcraft.dev/blog/jwt-debugging-guide/
+- [ ] https://oortcraft.dev/blog/json-to-yaml-devops/
+- [ ] https://oortcraft.dev/blog/css-performance-guide/
+- [ ] https://oortcraft.dev/blog/myers-diff-algorithm/
+- [ ] https://oortcraft.dev/blog/regex-email-validation/
+- [ ] https://oortcraft.dev/blog/epoch-to-date-conversion/
+- [ ] https://oortcraft.dev/blog/css-formatter-guide/
 
 ---
 

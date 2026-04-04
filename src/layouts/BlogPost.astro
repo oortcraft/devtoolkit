@@ -10,32 +10,50 @@ interface Props {
   pubDate: Date;
   updatedDate?: Date;
   relatedTools?: string[];
+  faq?: Array<{ question: string; answer: string }>;
 }
 
-const { title, description, pubDate, updatedDate, relatedTools } = Astro.props;
+const { title, description, pubDate, updatedDate, relatedTools, faq } = Astro.props;
 
 const toolLinks = Object.fromEntries(
   tools.map((t) => [t.slug, { name: t.name, href: `/tools/${t.slug}` }])
 );
 
+const graphItems: Record<string, any>[] = [
+  {
+    '@type': 'BlogPosting',
+    headline: title,
+    description,
+    image: 'https://oortcraft.dev/og-image.png',
+    datePublished: pubDate.toISOString(),
+    ...(updatedDate && { dateModified: updatedDate.toISOString() }),
+    author: {
+      '@type': 'Organization',
+      name: 'DevToolkit',
+      url: 'https://oortcraft.dev',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'DevToolkit',
+      url: 'https://oortcraft.dev',
+    },
+  },
+];
+
+if (faq && faq.length > 0) {
+  graphItems.push({
+    '@type': 'FAQPage',
+    mainEntity: faq.map(({ question, answer }) => ({
+      '@type': 'Question',
+      name: question,
+      acceptedAnswer: { '@type': 'Answer', text: answer },
+    })),
+  });
+}
+
 const structuredData = {
   '@context': 'https://schema.org',
-  '@type': 'BlogPosting',
-  headline: title,
-  description,
-  image: 'https://oortcraft.dev/og-image.png',
-  datePublished: pubDate.toISOString(),
-  ...(updatedDate && { dateModified: updatedDate.toISOString() }),
-  author: {
-    '@type': 'Organization',
-    name: 'DevToolkit',
-    url: 'https://oortcraft.dev',
-  },
-  publisher: {
-    '@type': 'Organization',
-    name: 'DevToolkit',
-    url: 'https://oortcraft.dev',
-  },
+  '@graph': graphItems,
 };
 ---
 

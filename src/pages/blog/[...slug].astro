@@ -12,6 +12,40 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await render(post);
+
+// Extract FAQ from MDX body for structured data
+function extractFaq(body: string): Array<{ question: string; answer: string }> {
+  const faqMatch = body.match(/\n##\s+(?:FAQ|Frequently Asked Questions)\s*\n([\s\S]*?)(?=\n## (?!#)|$)/);
+  if (!faqMatch) return [];
+  const faqSection = faqMatch[1];
+  const pairs: Array<{ question: string; answer: string }> = [];
+
+  // Format 1: ### Question heading
+  // Format 2: **Question** bold text
+  const qBlocks = faqSection.split(/\n(?=### |\*\*[A-Z])/);
+  for (const block of qBlocks) {
+    const trimmed = block.trim();
+    if (!trimmed) continue;
+    const lines = trimmed.split('\n');
+    const firstLine = lines[0].trim();
+    // Extract question from ### heading or **bold** format
+    let question = '';
+    if (firstLine.startsWith('### ')) {
+      question = firstLine.replace(/^### /, '').trim();
+    } else if (firstLine.startsWith('**') && firstLine.endsWith('**')) {
+      question = firstLine.replace(/^\*\*/, '').replace(/\*\*$/, '').trim();
+    } else {
+      continue;
+    }
+    const answer = lines.slice(1).join(' ').replace(/\n/g, ' ').replace(/\*\*/g, '').replace(/`([^`]+)`/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim();
+    if (question && answer) {
+      pairs.push({ question, answer });
+    }
+  }
+  return pairs;
+}
+
+const faq = post.body ? extractFaq(post.body) : [];
 ---
 
 <BlogPost
@@ -20,6 +54,7 @@ const { Content } = await render(post);
   pubDate={post.data.pubDate}
   updatedDate={post.data.updatedDate}
   relatedTools={post.data.relatedTools}
+  faq={faq.length > 0 ? faq : undefined}
 >
   <Content />
 </BlogPost>
