@@ -11,6 +11,9 @@ import UrlEncoder from '../../components/tools/UrlEncoder';
   faq={[
     { question: 'What is the difference between encodeURI and encodeURIComponent?', answer: 'This tool uses encodeURIComponent, which encodes all special characters including /, ?, and =. Use it to encode individual query parameter values. encodeURI is used for full URLs and leaves those characters intact.' },
     { question: 'Is my data safe?', answer: 'Yes. All encoding and decoding happens in your browser. No data is sent to any server.' },
+    { question: 'Why do spaces sometimes become + and sometimes %20?', answer: 'It depends on the context. In HTML form data encoded as application/x-www-form-urlencoded, spaces are encoded as +. In URL path and query components per RFC 3986, spaces must be encoded as %20. When constructing URLs in JavaScript with encodeURIComponent, you always get %20. The + form is only valid inside form payloads and is not universally accepted in all URL contexts.' },
+    { question: 'What happens if I encode an already-encoded string?', answer: 'You get double-encoding. For example, %20 becomes %2520 because the percent sign % itself gets encoded to %25. This is a common bug when encoding data in a loop or applying encoding at multiple layers. Always check whether a string has already been encoded before encoding it again. You can decode first and then re-encode to be safe.' },
+    { question: 'Do I need to encode the entire URL?', answer: 'No. You should only encode individual query parameter values, not the entire URL. Encoding a full URL would turn the slashes, colons, and question marks into percent-sequences, making the URL unusable. Use encodeURIComponent for values and encodeURI only when you need to encode a full URL while preserving its structural characters.' },
   ]}
 >
   <div slot="tool">
@@ -18,25 +21,54 @@ import UrlEncoder from '../../components/tools/UrlEncoder';
   </div>
   <Fragment slot="content">
     <h2>How to Use the URL Encoder / Decoder</h2>
-    <p>Select <strong>Encode</strong> to convert plain text into a URL-safe format, or <strong>Decode</strong> to convert a URL-encoded string back to readable text. The conversion happens automatically as you type — no button click needed.</p>
+    <p>Select <strong>Encode</strong> to convert plain text into a URL-safe format, or <strong>Decode</strong> to convert a URL-encoded string back to readable text. The conversion happens automatically as you type — no button click needed, no form submission required.</p>
+    <p>To encode a value, paste or type your raw text into the input field and make sure the <strong>Encode</strong> mode is selected. The tool immediately produces the percent-encoded output, ready to paste into a query string or API request body. To go the other direction, switch to <strong>Decode</strong> mode and paste in a percent-encoded string such as <code>Hello%20World%21</code> — the tool converts it back to <code>Hello World!</code> instantly.</p>
+    <p>When working with non-ASCII text — for instance, Japanese characters, Arabic script, or emoji — each character is first converted to its UTF-8 byte representation, and then each byte is percent-encoded individually. A single emoji can expand into a sequence of six or more percent-encoded bytes. This tool handles that conversion automatically, so you can paste any Unicode text and receive a fully compliant encoded string without thinking about the byte-level details.</p>
+    <p>If you are building a URL dynamically in code and want to verify that your encoding logic produces the right output, paste your raw value here, compare the result against what your code generates, and check for any discrepancies. This is especially useful when debugging URLs that contain nested query parameters, hash fragments, or characters like <code>&amp;</code>, <code>=</code>, and <code>#</code> that carry structural meaning in a URL.</p>
 
     <h2>What is URL Encoding?</h2>
-    <p>URL encoding (also called percent-encoding) converts characters that are not allowed in a URL into a format that can be transmitted over the internet. Special characters like spaces, <code>@</code>, <code>#</code>, and <code>$</code> are replaced with a percent sign followed by two hexadecimal digits (e.g., space becomes <code>%20</code>).</p>
+    <p>URL encoding — formally called <strong>percent-encoding</strong> and defined in <a href="https://www.rfc-editor.org/rfc/rfc3986">RFC 3986</a> — is the mechanism for representing arbitrary data within a Uniform Resource Identifier using only the characters that the URI specification permits. The URI syntax divides characters into two categories: <em>unreserved characters</em> (<code>A–Z</code>, <code>a–z</code>, <code>0–9</code>, <code>-</code>, <code>_</code>, <code>.</code>, <code>~</code>) which may appear literally, and <em>reserved characters</em> (<code>:</code>, <code>/</code>, <code>?</code>, <code>#</code>, <code>[</code>, <code>]</code>, <code>@</code>, <code>!</code>, <code>$</code>, <code>&amp;</code>, <code>'</code>, <code>(</code>, <code>)</code>, <code>*</code>, <code>+</code>, <code>,</code>, <code>;</code>, <code>=</code>) which have structural roles and must be encoded when they appear as data rather than syntax.</p>
+    <p>The encoding works by replacing each byte of the character's UTF-8 representation with a triplet: a percent sign followed by two uppercase hexadecimal digits. A space character is a single byte <code>0x20</code>, so it becomes <code>%20</code>. The euro sign <code>€</code> is three bytes in UTF-8 (<code>0xE2 0x82 0xAC</code>), so it encodes to <code>%E2%82%AC</code>. This means that encoding is not just a character substitution — it is a byte-level transformation that ensures any Unicode text can be safely embedded in a URL regardless of the character set used by the browser or server.</p>
+    <p>The <code>+</code> encoding for spaces is a separate convention defined by the <code>application/x-www-form-urlencoded</code> media type (used in HTML forms) and is not part of RFC 3986. The two conventions are not interchangeable: a server expecting <code>%20</code> may misinterpret a literal <code>+</code> as a plus sign, not a space.</p>
 
     <h2>Common Use Cases</h2>
     <ul>
-      <li>Encoding query string parameters before appending to URLs</li>
-      <li>Preparing form data for HTTP POST requests</li>
-      <li>Encoding special characters in API endpoints</li>
-      <li>Debugging malformed URLs with encoded characters</li>
-      <li>Building dynamic links that include user-generated content</li>
+      <li><strong>Encoding query string parameters</strong> — When you append user-supplied data to a URL as a query parameter, characters like <code>&amp;</code> and <code>=</code> would break the parameter structure if left unencoded. For example, a search query of <code>fish &amp; chips</code> must become <code>fish%20%26%20chips</code> so the ampersand is not interpreted as a parameter separator.</li>
+      <li><strong>Preparing form data for HTTP POST requests</strong> — Form submissions using <code>application/x-www-form-urlencoded</code> encode each field name and value before including them in the request body. Understanding this encoding helps when inspecting network traffic or building raw HTTP requests in test tools like Postman or curl.</li>
+      <li><strong>Encoding special characters in API endpoints</strong> — REST APIs sometimes include resource identifiers in the URL path that may contain slashes, spaces, or Unicode characters. Path segments need to be encoded so that the routing layer does not confuse data slashes with path delimiter slashes.</li>
+      <li><strong>Debugging malformed URLs with encoded characters</strong> — When a server returns a redirect URL or a link contains a long string of percent-sequences, decoding it makes the actual content readable in seconds. This saves time compared to manually translating hex values.</li>
+      <li><strong>Building dynamic links with user-generated content</strong> — Any time you construct a shareable link from data the user typed — a search phrase, a document title, a username — you must encode it to prevent injection of structural characters that could alter the URL's meaning or expose a security vulnerability.</li>
+    </ul>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p>A few principles will save you from the most common URL encoding bugs in production:</p>
+    <p><strong>Encode individual values, not entire URLs.</strong> Apply encoding only to the data portions — the values of query parameters or path segments — not to the structural characters of the URL itself. Encoding a full URL destroys its structure by turning <code>https://</code> into <code>https%3A%2F%2F</code>.</p>
+    <p><strong>Decode before logging for readability.</strong> Log files full of percent-encoded strings are hard to read. Decode URL parameters before writing them to logs so that search and pattern matching work against human-readable text. Just make sure you do not log sensitive values in the process.</p>
+    <p><strong>Watch out for double-encoding.</strong> If a value has already been encoded and you encode it again, the percent signs themselves get encoded: <code>%20</code> becomes <code>%2520</code>. This is one of the trickiest bugs to diagnose because the URL looks almost correct. Before encoding, check whether the string already contains percent-sequences and decode it first if needed.</p>
+    <p><strong>Use the right function for the right scope.</strong> In JavaScript, use <code>encodeURIComponent</code> for individual query parameter values and fragment identifiers. Use <code>encodeURI</code> only when encoding a complete URL that should retain its slashes and colons. Never use the deprecated <code>escape()</code> function — it handles Unicode incorrectly and produces non-standard output.</p>
+    <p><strong>Test with boundary characters.</strong> Always verify your encoding with inputs that contain <code>&amp;</code>, <code>=</code>, <code>#</code>, <code>+</code>, <code>%</code>, and multi-byte Unicode characters. These are the characters most likely to cause silent failures where the URL parses without error but delivers the wrong data.</p>
+
+    <h2>Related Guides</h2>
+    <ul>
+      <li><a href="/blog/url-encoding-explained">URL Encoding Explained</a> — a deeper dive into RFC 3986, percent-encoding, and real-world examples</li>
+      <li>For binary data encoding, try our <a href="/tools/base64">Base64 Encoder</a></li>
+      <li>For encoding HTML special characters like <code>&lt;</code>, <code>&gt;</code>, and <code>&amp;</code>, use our <a href="/tools/html-entity-encoder">HTML Entity Encoder</a></li>
     </ul>
 
     <h2>FAQ</h2>
     <h3>What is the difference between encodeURI and encodeURIComponent?</h3>
-    <p>This tool uses <code>encodeURIComponent</code>, which encodes all special characters including <code>/</code>, <code>?</code>, and <code>=</code>. Use it to encode individual query parameter values. <code>encodeURI</code> is used for full URLs and leaves those characters intact.</p>
+    <p>This tool uses <code>encodeURIComponent</code>, which encodes all special characters including <code>/</code>, <code>?</code>, and <code>=</code>. Use it to encode individual query parameter values. <code>encodeURI</code> is used for full URLs and leaves those structural characters intact.</p>
 
     <h3>Is my data safe?</h3>
     <p>Yes. All encoding and decoding happens in your browser. No data is sent to any server.</p>
+
+    <h3>Why do spaces sometimes become + and sometimes %20?</h3>
+    <p>It depends on the context. In HTML form data encoded as <code>application/x-www-form-urlencoded</code>, spaces are encoded as <code>+</code>. In URL path and query components per RFC 3986, spaces must be encoded as <code>%20</code>. When constructing URLs in JavaScript with <code>encodeURIComponent</code>, you always get <code>%20</code>. The <code>+</code> form is only valid inside form payloads and is not universally accepted in all URL contexts — a server that does not expect form-encoded data will treat <code>+</code> as a literal plus sign, not a space.</p>
+
+    <h3>What happens if I encode an already-encoded string?</h3>
+    <p>You get double-encoding. For example, <code>%20</code> becomes <code>%2520</code> because the percent sign <code>%</code> itself gets encoded to <code>%25</code>. This is a common bug when encoding data in a loop or when encoding is applied at multiple layers of a system — for instance, once in client code and again in a shared utility. Always check whether a string has already been encoded before encoding it again. When in doubt, decode first, then re-encode exactly once.</p>
+
+    <h3>Do I need to encode the entire URL?</h3>
+    <p>No. You should only encode individual query parameter values and path segments that contain data, not the entire URL. Encoding a full URL converts the slashes, colons, and question marks into percent-sequences, making it unusable as a URL. Use <code>encodeURIComponent</code> for values, and reserve <code>encodeURI</code> for cases where you genuinely need to encode a full URL string while preserving its structural characters.</p>
   </Fragment>
 </ToolLayout>

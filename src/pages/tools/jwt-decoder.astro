@@ -12,6 +12,8 @@ import JwtDecoder from '../../components/tools/JwtDecoder';
     { question: 'Is it safe to paste my JWT here?', answer: 'Yes. All decoding happens entirely in your browser using JavaScript. No data is sent to any server.' },
     { question: 'Can this tool verify JWT signatures?', answer: 'This tool decodes and displays JWT contents. Full cryptographic signature verification requires the signing secret or public key, which is not sent to the browser for security reasons.' },
     { question: 'What JWT algorithms are supported?', answer: 'The decoder works with any JWT regardless of algorithm (HS256, RS256, ES256, etc.). It decodes the Base64URL-encoded header and payload without needing the signing key.' },
+    { question: 'Why can I see the JWT payload without a key?', answer: 'JWT payloads are Base64URL-encoded, not encrypted. Anyone who holds the token string can decode the header and payload. This is by design — the security guarantee comes from the signature, which proves the token was issued by a trusted party and has not been tampered with. Never store sensitive data such as passwords or credit card numbers in a JWT payload.' },
+    { question: 'How do I check if a JWT is expired?', answer: 'Look at the exp claim in the decoded payload. It is a Unix timestamp (seconds since January 1, 1970 UTC). Compare it to the current time — if exp is in the past, the token has expired and should be rejected. Our decoder highlights the expiration status automatically so you do not need to convert the timestamp manually.' },
   ]}
 >
   <div slot="tool">
@@ -19,15 +21,22 @@ import JwtDecoder from '../../components/tools/JwtDecoder';
   </div>
   <Fragment slot="content">
     <h2>How to Use the JWT Decoder</h2>
-    <p>Paste a JSON Web Token into the input field. The tool instantly decodes the Base64URL-encoded header and payload, displaying the contents in a readable JSON format. The signature section shows the algorithm used.</p>
+    <p>Paste any JSON Web Token into the input field at the top of the page. The decoder works automatically — as soon as a valid three-part token is detected, it splits the string at the two dot separators and Base64URL-decodes each segment without requiring any interaction from you.</p>
+    <p>The results are presented in three tabs. The <strong>Header</strong> tab shows the algorithm (<code>alg</code>) and token type (<code>typ</code>). The <strong>Payload</strong> tab displays all claims in formatted JSON, including registered claims such as <code>exp</code>, <code>iat</code>, <code>sub</code>, and <code>iss</code> alongside any custom claims your application defines. The <strong>Signature</strong> tab shows the raw Base64URL-encoded signature string along with the algorithm used to create it.</p>
+    <p>The decoder also checks the <code>exp</code> claim against the current time and displays a clear expiration status — active, expired, or no expiration set — so you can immediately tell whether a token is still valid without manually converting a Unix timestamp. You can copy any individual section to the clipboard with a single click, which is useful when you need to inspect a header or payload in isolation or paste it into another tool. JWTs use Base64URL encoding — try our <a href="/tools/base64">Base64 Encoder</a> to understand the encoding format in more detail.</p>
+
     <h2>What is a JWT?</h2>
-    <p>A JSON Web Token (JWT) is a compact, URL-safe token format used for securely transmitting information between parties. It consists of three parts separated by dots: a header (algorithm and token type), a payload (claims and data), and a signature (for verification).</p>
+    <p>A JSON Web Token (JWT) is a compact, URL-safe token format defined in RFC 7519 for securely transmitting claims between two parties. Unlike traditional server-side session cookies, JWTs are stateless — the server does not need to store session data in a database or memory store because all the information the server needs is embedded in the token itself and protected by a cryptographic signature.</p>
+    <p>A JWT consists of three parts separated by dots: a <strong>header</strong>, a <strong>payload</strong>, and a <strong>signature</strong>. Each part is independently Base64URL-encoded, making the entire token safe to use in URLs and HTTP headers. The header and payload are plain JSON objects that anyone can read; the signature is what prevents tampering. When the server receives a token, it re-computes the expected signature from the header and payload using its secret key and compares it to the signature in the token. If they match, the token is authentic.</p>
+    <p>JWTs replaced session cookies as the dominant auth mechanism in single-page applications and microservices because they are self-contained — a downstream service can verify a token without making a network call to a central auth server, which dramatically reduces latency and infrastructure complexity.</p>
+
     <h2>JWT Structure</h2>
     <ul>
       <li><strong>Header</strong> — Contains the signing algorithm (e.g., HS256, RS256) and token type (JWT).</li>
       <li><strong>Payload</strong> — Contains claims: registered (iss, exp, sub), public, and private claims.</li>
       <li><strong>Signature</strong> — Created by signing the encoded header and payload with a secret or private key.</li>
     </ul>
+
     <h2>Common JWT Claims</h2>
     <ul>
       <li><strong>iss</strong> (Issuer) — Who issued the token.</li>
@@ -36,11 +45,29 @@ import JwtDecoder from '../../components/tools/JwtDecoder';
       <li><strong>iat</strong> (Issued At) — When the token was issued.</li>
       <li><strong>aud</strong> (Audience) — Intended recipient of the token.</li>
     </ul>
+
+    <h2>Common Use Cases</h2>
+    <p>JWTs are used extensively across modern web and mobile infrastructure. Understanding where tokens appear in practice helps you know when to reach for this decoder during development and debugging.</p>
+    <p><strong>API authentication with Bearer tokens</strong> is the most common pattern. A client authenticates once, receives a JWT, and then includes it in every subsequent request as an <code>Authorization: Bearer &lt;token&gt;</code> header. The API validates the token on each request without a session lookup.</p>
+    <p><strong>OAuth 2.0 access and refresh tokens</strong> are frequently issued as JWTs by authorization servers such as Auth0, Okta, and AWS Cognito. The access token carries the user's scopes and identity; the refresh token is used to obtain a new access token after expiry.</p>
+    <p><strong>Single Sign-On (SSO)</strong> systems use JWTs to pass identity assertions between an identity provider and multiple service providers. A user logs in once and the JWT is accepted by all services in the federation without re-authentication.</p>
+    <p><strong>Inter-service communication in microservices</strong> architectures relies on JWTs to propagate identity and authorization context as requests fan out across services. Each service can independently verify the token using the issuer's public key.</p>
+    <p><strong>Mobile application authentication</strong> uses JWTs because they can be stored on-device and included in requests to backend APIs, and because the stateless verification model works well when clients may be offline or on unreliable connections.</p>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p>Working with JWTs safely requires understanding both what they protect and what they do not.</p>
+    <p><strong>Always check <code>exp</code> before trusting a token.</strong> A token that was valid yesterday may be expired today. Validate the expiration claim on every request server-side — do not rely on the client to discard expired tokens.</p>
+    <p><strong>Never store secrets in the JWT payload.</strong> The payload is Base64URL-encoded, not encrypted. Anyone who intercepts or obtains the token string can decode and read every claim. Store only non-sensitive identifiers such as user IDs and role names.</p>
+    <p><strong>Use short expiration times.</strong> Access tokens should typically expire in 15 minutes to 1 hour. Use refresh tokens with longer lifetimes to issue new access tokens without forcing the user to re-authenticate. Short-lived tokens limit the damage if a token is stolen.</p>
+    <p><strong>Validate the signature server-side on every request.</strong> Client-side decoding (like this tool does) is useful for inspection and debugging, but production systems must verify the signature cryptographically before acting on any claim. JWT signatures use HMAC-SHA256 — explore hashing with our <a href="/tools/hash-generator">Hash Generator</a>.</p>
+    <p><strong>Prefer RS256 over HS256 for public clients.</strong> RS256 uses an asymmetric key pair — the private key signs tokens and only your server holds it, while the public key can be distributed to any service that needs to verify tokens. HS256 requires sharing the same secret with every verifier, which is a security risk at scale.</p>
+    <p><strong>Store tokens in <code>httpOnly</code> cookies rather than <code>localStorage</code>.</strong> Tokens stored in <code>localStorage</code> are accessible to any JavaScript running on the page, making them vulnerable to XSS attacks. An <code>httpOnly</code> cookie is inaccessible to JavaScript and is sent automatically by the browser.</p>
+
     <h2>Related Guides</h2>
     <ul>
       <li><a href="/blog/what-is-jwt">What is JWT? JSON Web Tokens Explained</a> — understand the structure, claims, and security of JWTs</li>
       <li><a href="/blog/jwt-debugging-guide">How to Debug JWT Authentication Issues</a> — step-by-step troubleshooting for common JWT errors</li>
-      <li><a href="/blog/what-is-hashing">Hashing Explained: MD5, SHA-256 & More</a> — the cryptography behind JWT signatures</li>
+      <li><a href="/blog/what-is-hashing">Hashing Explained: MD5, SHA-256 &amp; More</a> — the cryptography behind JWT signatures</li>
     </ul>
   </Fragment>
 </ToolLayout>

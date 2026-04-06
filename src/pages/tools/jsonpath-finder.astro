@@ -12,6 +12,8 @@ import JsonPathFinder from '../../components/tools/JsonPathFinder';
     { question: 'What is JSONPath?', answer: 'JSONPath is a query language for JSON, similar to XPath for XML. It lets you extract specific values from JSON data using expressions like $.store.books[*].title.' },
     { question: 'Which JSONPath spec is used?', answer: 'This tool uses the Goessner JSONPath specification via jsonpath-plus library.' },
     { question: 'Is my data safe?', answer: 'Yes. All querying happens in your browser. No data is sent to any server.' },
+    { question: 'What is the difference between dot notation and bracket notation in JSONPath?', answer: 'Dot notation ($.user.name) is the shorthand form and works for keys that are valid identifiers. Bracket notation ($["user"]["name"]) is more flexible and required for keys that contain spaces, hyphens, or start with a digit.' },
+    { question: 'How do I filter array elements by a property value?', answer: 'Use a filter expression: $[?(@.status == "active")] selects all array elements where the status field equals "active". The @ symbol refers to the current element being evaluated.' },
   ]}
 >
   <div slot="tool">
@@ -19,8 +21,124 @@ import JsonPathFinder from '../../components/tools/JsonPathFinder';
   </div>
   <Fragment slot="content">
     <h2>How to Use the JSON Path Finder</h2>
-    <p>Paste JSON in the left panel and enter a JSONPath expression in the path field. Results update in real time. Use the quick-insert buttons for common expressions.</p>
-    <h2>JSONPath Syntax</h2>
+    <p>
+      Paste your JSON document into the left panel. The editor accepts any valid JSON — objects,
+      arrays, or nested combinations. Once your JSON is loaded, enter a JSONPath expression in the
+      path field at the top. Results update in real time with every keystroke, so you can refine your
+      query interactively without pressing any button.
+    </p>
+    <p>
+      The right panel displays the matched values, along with a match count showing how many elements
+      the expression selected. This is especially useful when querying large arrays — you can confirm
+      at a glance that your filter expression is selecting the right subset of records. Use the
+      quick-insert buttons below the path field to insert common expressions like <code>$.*</code>,
+      <code>$..[*]</code>, or filter templates, which speeds up exploration of unfamiliar JSON
+      structures.
+    </p>
+    <p>
+      Click <strong>Copy</strong> to copy the matched results to your clipboard as a JSON array. If
+      the expression matches a single scalar value, that value is returned directly rather than
+      wrapped in an array. The tool also highlights syntax errors in the path expression and
+      distinguishes between "no match" (valid expression, zero results) and "invalid expression"
+      (parse error), so you always know whether to adjust your JSON or your query. All processing
+      runs locally in your browser — no data is uploaded, making it safe to use with confidential API
+      payloads and production data samples.
+    </p>
+
+    <h2>What is JSONPath?</h2>
+    <p>
+      JSONPath is a query language for navigating and extracting data from JSON documents. It was
+      originally proposed by Stefan Goessner in 2007, inspired by XPath — the path language used to
+      query XML documents. Just as XPath lets you pinpoint any node in an XML tree, JSONPath lets you
+      address any value, array element, or nested object in a JSON structure using a concise
+      expression.
+    </p>
+    <p>
+      Every JSONPath expression starts with <code>$</code>, which represents the root of the
+      document. From there you navigate the structure using either <strong>dot notation</strong> or
+      <strong>bracket notation</strong>:
+    </p>
+    <ul>
+      <li><strong>Dot notation</strong> — <code>$.user.address.city</code> — clean and readable for simple key access</li>
+      <li><strong>Bracket notation</strong> — <code>$["user"]["address"]["city"]</code> — required when keys contain spaces, hyphens, or special characters</li>
+      <li><strong>Wildcard</strong> — <code>$.*</code> or <code>$[*]</code> — selects all children of an object or array</li>
+      <li><strong>Recursive descent</strong> — <code>$..</code> — searches all levels of nesting, similar to XPath's <code>//</code></li>
+      <li><strong>Array slicing</strong> — <code>$[0:3]</code> — selects elements by index range, following Python slice syntax</li>
+      <li><strong>Filter expressions</strong> — <code>$[?(@.price &lt; 10)]</code> — selects elements matching a boolean condition</li>
+    </ul>
+    <p>
+      JSONPath has been standardised as RFC 9535 (2024), bringing consistent behaviour across
+      implementations. This tool uses the jsonpath-plus library, which follows the Goessner
+      specification with RFC 9535 extensions.
+    </p>
+
+    <h2>Common Use Cases</h2>
+    <p>
+      <strong>Extracting nested API response data</strong> is the most common reason developers reach
+      for JSONPath. Modern REST and GraphQL APIs often return deeply nested JSON with dozens of fields.
+      If you only need a specific value — say, every product ID in a paginated list response —
+      a single JSONPath expression like <code>$.data.products[*].id</code> extracts exactly that,
+      without writing any transformation code.
+    </p>
+    <p>
+      <strong>Filtering arrays by conditions</strong> is where JSONPath becomes especially powerful.
+      Suppose an API returns an array of orders and you need only the ones with status
+      <code>"shipped"</code>. The expression <code>$[?(@.status == "shipped")]</code> returns the
+      matching subset immediately. You can combine conditions with <code>&amp;&amp;</code> and
+      <code>||</code> for more complex filters.
+    </p>
+    <p>
+      <strong>Debugging complex JSON payloads</strong> from webhooks or third-party integrations is
+      another high-value use case. When a webhook delivers a 200-field payload and you need to find
+      where a particular value lives, recursive descent (<code>$..fieldName</code>) searches the
+      entire document tree and returns every match regardless of depth.
+    </p>
+    <p>
+      <strong>Building and testing API transformations</strong> is also well-served here. Before
+      writing transformation code in your backend, you can prototype the JSONPath expression
+      interactively, confirm it selects the right data, then translate it into code in your language
+      of choice. Pair this tool with our <a href="/tools/json-formatter">JSON Formatter</a> to
+      pretty-print raw payloads before querying, and with our
+      <a href="/tools/json-validator">JSON Validator</a> to confirm the document is well-formed first.
+      For a full introduction to JSONPath syntax and expressions, see our
+      <a href="/blog/jsonpath-tutorial">JSONPath Tutorial</a>.
+    </p>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p>
+      <strong>Always start your expression with <code>$</code>.</strong> The dollar sign is mandatory
+      — it anchors the expression to the root of the document. An expression without it is invalid.
+      If you are getting zero results, verify that your expression begins with <code>$</code> and
+      that the key path matches the actual structure of your JSON.
+    </p>
+    <p>
+      <strong>Prefer dot notation for readability.</strong> Use <code>$.user.name</code> rather than
+      <code>$["user"]["name"]</code> whenever keys are simple identifiers. Reserve bracket notation
+      for keys that contain hyphens, spaces, or start with a digit — for example,
+      <code>$["content-type"]</code> or <code>$["0-indexed-field"]</code>.
+    </p>
+    <p>
+      <strong>Use filter expressions for conditional array access.</strong> The syntax
+      <code>$[?(@.field == value)]</code> is concise but powerful. The <code>@</code> symbol always
+      refers to the current element being tested. You can access nested fields too:
+      <code>$[?(@.meta.active == true)]</code> works across nested objects without needing multiple
+      passes.
+    </p>
+    <p>
+      <strong>Use recursive descent sparingly in production.</strong> The <code>$..</code> operator
+      is excellent for exploration and debugging, but scanning an entire document tree can be slow on
+      very large JSON payloads. Once you have identified the exact path using recursive descent, pin
+      it to a specific path (<code>$.data.items[*].id</code>) in your production code for
+      predictable performance.
+    </p>
+    <p>
+      <strong>Validate your JSON before querying.</strong> A JSONPath expression running against
+      malformed JSON will produce no results or throw an error. Use the
+      <a href="/tools/json-validator">JSON Validator</a> to confirm your document is valid before
+      building a query.
+    </p>
+
+    <h2>JSONPath Syntax Reference</h2>
     <ul>
       <li><code>$</code> — Root object</li>
       <li><code>$.key</code> — Child property</li>
@@ -29,12 +147,21 @@ import JsonPathFinder from '../../components/tools/JsonPathFinder';
       <li><code>$..*</code> — Recursive descent (all values)</li>
       <li><code>$[?(@.price &lt; 10)]</code> — Filter expression</li>
     </ul>
+
     <h2>FAQ</h2>
     <h3>What is JSONPath?</h3>
     <p>JSONPath is a query language for JSON, similar to XPath for XML. It lets you extract specific values from JSON data using expressions like <code>$.store.books[*].title</code>.</p>
+
     <h3>Which JSONPath spec is used?</h3>
     <p>This tool uses the Goessner JSONPath specification via the jsonpath-plus library.</p>
+
     <h3>Is my data safe?</h3>
     <p>Yes. All querying happens in your browser. No data is sent to any server.</p>
+
+    <h3>What is the difference between dot notation and bracket notation in JSONPath?</h3>
+    <p>Dot notation (<code>$.user.name</code>) is the shorthand form and works for keys that are valid identifiers. Bracket notation (<code>$["user"]["name"]</code>) is more flexible and required for keys that contain spaces, hyphens, or start with a digit.</p>
+
+    <h3>How do I filter array elements by a property value?</h3>
+    <p>Use a filter expression: <code>$[?(@.status == "active")]</code> selects all array elements where the status field equals "active". The <code>@</code> symbol refers to the current element being evaluated.</p>
   </Fragment>
 </ToolLayout>

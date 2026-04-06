@@ -10,6 +10,9 @@ import JsonFormatter from '../../components/tools/JsonFormatter';
   faq={[
     { question: 'Is my data safe?', answer: 'Yes. All formatting happens in your browser. No data is sent to any server.' },
     { question: 'What is the maximum input size?', answer: 'The formatter supports inputs up to 1MB in size.' },
+    { question: 'Can I format invalid JSON?', answer: 'No. The formatter requires valid JSON as input. If your JSON contains syntax errors — such as missing commas, unquoted keys, or trailing commas — the tool will highlight the problem and refuse to format until you fix it. Use the error message to locate the exact line causing the issue.' },
+    { question: 'What indentation options are available?', answer: '2 spaces, 4 spaces, or a hard tab character. Two-space indentation is the most widely used convention in JavaScript and TypeScript projects. Four spaces are common in Python-adjacent workflows. Tabs are preferred by some style guides for accessibility reasons.' },
+    { question: 'What is the difference between formatting and validating JSON?', answer: 'Formatting changes only the visual appearance of JSON — it adds or removes whitespace without altering the data. Validation checks whether the JSON is syntactically correct and, optionally, whether it conforms to a JSON Schema. Formatting cannot succeed on invalid JSON, but valid JSON can still fail schema validation.' },
   ]}
 >
   <div slot="tool">
@@ -17,26 +20,59 @@ import JsonFormatter from '../../components/tools/JsonFormatter';
   </div>
   <Fragment slot="content">
     <h2>How to Use the JSON Formatter</h2>
-    <p>Paste your raw or minified JSON into the input area on the left. Click "Format" to beautify it with your preferred indentation (2 spaces, 4 spaces, or tabs). Use "Minify" to compress formatted JSON into a single line.</p>
+    <p>Using the formatter is straightforward, but knowing what each step does helps you get the most out of it.</p>
+    <ol>
+      <li><strong>Paste your JSON</strong> — copy your raw, minified, or partially formatted JSON text and paste it into the input area on the left. The input accepts any valid JSON value: objects (<code>{"{}"}</code>), arrays (<code>{"[]"}</code>), strings, numbers, booleans, or <code>null</code>.</li>
+      <li><strong>Choose indentation</strong> — select 2 spaces, 4 spaces, or tabs from the indentation dropdown. Most JavaScript and TypeScript projects follow 2-space indentation. If you are unsure, 2 spaces is a safe default.</li>
+      <li><strong>Click Format</strong> — the output panel immediately shows your JSON with consistent indentation, each key-value pair on its own line, and nested structures indented relative to their parent. The original data is unchanged; only whitespace is modified.</li>
+      <li><strong>Click Minify</strong> — if you want to strip all whitespace and compress the JSON into a single line, use the Minify button. This is useful when you are preparing JSON to include in a network request payload or an environment variable where file size matters.</li>
+      <li><strong>Copy the result</strong> — use the Copy button to copy the formatted or minified output to your clipboard without selecting text manually.</li>
+    </ol>
+    <p>If your input contains a syntax error, the formatter will not attempt to guess your intent. Instead it displays an error message pointing to the approximate location of the problem — a missing comma, an extra closing brace, or an unquoted key. Fix the error and try again. For systematic validation beyond syntax, consider running your JSON through our <a href="/tools/json-validator">JSON Validator</a> before formatting.</p>
+
     <h2>What is JSON Formatting?</h2>
-    <p>JSON (JavaScript Object Notation) formatting transforms compact, hard-to-read JSON data into a well-structured, indented format. This makes it easier to read, debug, and understand complex data structures. Our formatter preserves all data while adding proper whitespace and line breaks.</p>
+    <p>JSON (JavaScript Object Notation) is a lightweight data interchange format that is easy for machines to parse but can be difficult for humans to read when it appears as a single dense line. JSON formatting, also called beautification or pretty-printing, transforms that compact representation into a structured layout with consistent indentation, line breaks between each key-value pair, and visual alignment that mirrors the hierarchy of the data.</p>
+    <p>Formatting does not change any data values — it only modifies whitespace. A formatted JSON file and its minified counterpart are byte-for-byte equivalent when parsed. This means you can freely switch between the two without any risk to data integrity.</p>
+    <p>The counterpart to formatting is <strong>minification</strong>, which removes all non-essential whitespace to reduce file size. Minified JSON is harder for a human to read but parses faster and transfers over the network with fewer bytes. A common workflow is to keep formatted JSON in source control for readability and minify it automatically during a build step before deploying to production.</p>
+
     <h2>Common Use Cases</h2>
     <ul>
-      <li>Debugging API responses</li>
-      <li>Reading configuration files</li>
-      <li>Preparing JSON for documentation</li>
-      <li>Minifying JSON for production use</li>
+      <li><strong>Debugging API responses</strong> — when an API returns a compressed JSON payload, pasting it into the formatter instantly reveals the structure. You can scan through nested objects and arrays to find unexpected <code>null</code> values or missing fields that are causing bugs in your application.</li>
+      <li><strong>Reading configuration files</strong> — tools like ESLint, TypeScript, and Prettier use JSON or JSON-with-comments (<code>.jsonc</code>) for configuration. A badly indented config file is easy to misread. Formatting it first reduces the chance of editing the wrong level of nesting.</li>
+      <li><strong>Preparing JSON for documentation</strong> — API documentation, README files, and technical specs often include example JSON payloads. Formatted examples are far easier for readers to follow than raw compressed output.</li>
+      <li><strong>Minifying JSON for production use</strong> — removing whitespace from a large JSON file can cut its size by 20–30%. For files that are served over HTTP on every page load, that reduction is worth doing as part of your build pipeline.</li>
+      <li><strong>Comparing JSON payloads side by side</strong> — when two API responses look similar but behave differently, format both and paste them into a diff tool. Consistent formatting ensures that whitespace differences do not show up as false positives in the diff output.</li>
+      <li><strong>Cleaning up auto-generated JSON from APIs</strong> — many code generators and SDK clients produce JSON with inconsistent indentation or mixed formatting styles. Running the output through this formatter normalises it before you commit it to your repository or share it with your team.</li>
     </ul>
+
+    <h2>Best Practices and Tips</h2>
+    <p>Getting clean JSON output is only part of the story. Here are practices that will save you time when working with JSON regularly.</p>
+    <ul>
+      <li><strong>Validate before you format.</strong> The formatter will reject invalid JSON, but if you are dealing with untrusted input it is worth explicitly checking for errors first. Use our <a href="/tools/json-validator">JSON Validator</a> to get a clear error report before committing to any transformation.</li>
+      <li><strong>Standardise on 2-space indentation.</strong> Many popular style guides — including Google, Airbnb, and the Node.js community — use 2 spaces. Consistent indentation across your team means diffs stay clean and code reviews focus on logic rather than formatting disputes.</li>
+      <li><strong>Minify before sending over the network.</strong> Any JSON that is serialised into an HTTP request body or embedded in a response payload should be minified. The savings compound: a 50 KB formatted config file might compress to 35 KB minified, and further to 8 KB with gzip.</li>
+      <li><strong>Use JSON Schema for large projects.</strong> Once a JSON structure grows beyond a few keys, documenting it with a <a href="/blog/json-schema-tutorial">JSON Schema</a> pays dividends. A schema acts as machine-readable documentation and lets you catch structural mismatches automatically in CI. Convert between JSON and YAML schemas with our <a href="/tools/json-to-yaml">JSON to YAML converter</a>.</li>
+      <li><strong>Keep a backup of the original JSON.</strong> Before minifying or transforming a JSON file you did not author, keep the original. Minification is reversible by reformatting, but if you also reorder keys or strip comments from a <code>.jsonc</code> file, that context is gone permanently.</li>
+      <li><strong>Avoid trailing commas.</strong> Standard JSON — as specified by RFC 8259 — does not allow trailing commas after the last element in an array or object. Some parsers are lenient about this, but it is safer to remove trailing commas before sharing JSON externally, especially when targeting APIs or browser <code>JSON.parse()</code>.</li>
+    </ul>
+
     <h2>Related Guides</h2>
     <ul>
       <li><a href="/blog/what-is-json">What is JSON? A Complete Guide</a> — learn JSON syntax, data types, and best practices</li>
       <li><a href="/blog/json-schema-tutorial">JSON Schema Tutorial</a> — validate your formatted JSON against a schema</li>
       <li><a href="/blog/json-vs-xml">JSON vs XML: A Complete Comparison</a> — when to use each format</li>
     </ul>
+
     <h2>FAQ</h2>
     <h3>Is my data safe?</h3>
     <p>Yes. All formatting happens in your browser. No data is sent to any server.</p>
     <h3>What is the maximum input size?</h3>
     <p>The formatter supports inputs up to 1MB in size.</p>
+    <h3>Can I format invalid JSON?</h3>
+    <p>No. The formatter requires valid JSON as input. If your JSON contains syntax errors — such as missing commas, unquoted keys, or trailing commas — the tool will display an error message pointing to the approximate location of the problem. Fix the error and try again.</p>
+    <h3>What indentation options are available?</h3>
+    <p>2 spaces, 4 spaces, or a hard tab character. Two-space indentation is the most widely used convention in JavaScript and TypeScript projects. Four spaces are common in Python-adjacent workflows. Tabs are preferred by some style guides for accessibility reasons.</p>
+    <h3>What is the difference between formatting and validating JSON?</h3>
+    <p>Formatting changes only the visual appearance of JSON — it adds or removes whitespace without altering the data. Validation checks whether the JSON is syntactically correct and, optionally, whether it conforms to a JSON Schema. Formatting cannot succeed on invalid JSON, but valid JSON can still fail schema validation.</p>
   </Fragment>
 </ToolLayout>

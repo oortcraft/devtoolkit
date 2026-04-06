@@ -12,6 +12,8 @@ import TimestampConverter from '../../components/tools/TimestampConverter';
     { question: 'What is a Unix timestamp?', answer: 'A Unix timestamp (also called epoch time) is the number of seconds that have elapsed since January 1, 1970 at 00:00:00 UTC. It is a simple, timezone-independent way to represent a point in time used universally in programming and databases.' },
     { question: 'What is the difference between seconds and milliseconds timestamps?', answer: 'Most Unix timestamps are in seconds (10 digits for dates around 2001–2286). JavaScript\'s Date.now() and many APIs return milliseconds (13 digits). This tool supports both — use the s/ms toggle to select the correct unit.' },
     { question: 'Is the Y2038 problem real?', answer: 'Yes. Systems that store Unix timestamps as a signed 32-bit integer will overflow on January 19, 2038 at 03:14:07 UTC. Modern 64-bit systems and languages like JavaScript (which uses 64-bit floats) are not affected, but legacy embedded systems and old databases may still be at risk.' },
+    { question: 'How do I get the current Unix timestamp?', answer: 'In JavaScript: Date.now() returns milliseconds; Math.floor(Date.now() / 1000) gives seconds. In Python: import time; int(time.time()). In Bash: date +%s. In SQL (PostgreSQL): EXTRACT(EPOCH FROM NOW())::int.' },
+    { question: 'What date formats can I input?', answer: 'ISO 8601 (2024-03-29T00:00:00Z), common date strings (March 29 2024, 2024-03-29), and RFC 2822 format (Fri, 29 Mar 2024 00:00:00 +0000). Ambiguous formats without a timezone are interpreted as local time.' },
   ]}
 >
   <div slot="tool">
@@ -19,23 +21,30 @@ import TimestampConverter from '../../components/tools/TimestampConverter';
   </div>
   <Fragment slot="content">
     <h2>What is a Unix Timestamp?</h2>
-    <p>A Unix timestamp is an integer representing the number of seconds elapsed since the <strong>Unix epoch</strong> — January 1, 1970 at 00:00:00 Coordinated Universal Time (UTC). It is also commonly called <em>epoch time</em> or <em>POSIX time</em>. Because it is timezone-agnostic, Unix timestamps are the universal currency of time in computing: databases store them, APIs return them, and log files record them.</p>
+    <p>A Unix timestamp is an integer representing the number of seconds elapsed since the <strong>Unix epoch</strong> — January 1, 1970 at 00:00:00 Coordinated Universal Time (UTC). It is also commonly called <em>epoch time</em> or <em>POSIX time</em>. Because it is timezone-agnostic, Unix timestamps are the universal currency of time in computing: databases store them, APIs return them, and log files record them. A single integer is far more portable than a formatted date string, which requires parsing rules, locale handling, and timezone context to interpret correctly.</p>
 
     <h2>How to Use This Tool</h2>
-    <ul>
-      <li><strong>Timestamp to date:</strong> Enter a Unix timestamp (seconds or milliseconds) and the tool instantly shows the ISO 8601, UTC, local, and relative representations.</li>
-      <li><strong>Date to timestamp:</strong> Type any human-readable date string (e.g. <code>2024-03-29T00:00:00Z</code> or <code>March 29 2024</code>) to get the Unix timestamp in both seconds and milliseconds.</li>
-      <li><strong>Now:</strong> Click the "Now" button to load the current timestamp.</li>
-      <li><strong>s / ms toggle:</strong> Switch between seconds (10-digit) and milliseconds (13-digit) input.</li>
-    </ul>
+    <p>The converter works in both directions. To convert a timestamp to a human-readable date, enter a numeric Unix timestamp into the input field. The tool automatically detects whether it is in seconds (typically 10 digits, representing dates from 2001 through 2286) or milliseconds (13 digits, as returned by JavaScript's <code>Date.now()</code> and many REST APIs). Use the <strong>s / ms toggle</strong> to override the automatic detection if your value is ambiguous.</p>
+    <p>To go the other direction — converting a date string to a timestamp — type any recognizable date into the same input. Supported formats include ISO 8601 (<code>2024-03-29T00:00:00Z</code>), plain date strings (<code>March 29 2024</code> or <code>2024-03-29</code>), and RFC 2822 formatted strings. The tool outputs both the seconds and milliseconds representations simultaneously. Click the <strong>Now</strong> button at any time to populate the input with the current Unix timestamp, which is useful for quickly checking the current epoch value or establishing a reference point before calculating time differences. All processing runs locally in your browser — no timestamp is ever sent to a server.</p>
 
     <h2>Output Formats Explained</h2>
     <ul>
-      <li><strong>ISO 8601</strong> — The international standard format: <code>2024-03-29T00:00:00.000Z</code>. Used in APIs, JSON payloads, and HTML datetime attributes.</li>
-      <li><strong>UTC</strong> — The long-form UTC date string: <code>Fri, 29 Mar 2024 00:00:00 GMT</code>. Used in HTTP headers (<code>Date</code>, <code>Last-Modified</code>).</li>
-      <li><strong>Local</strong> — The timestamp converted to your browser's local timezone.</li>
-      <li><strong>Relative</strong> — A human-friendly relative description: "2 hours ago", "in 3 days".</li>
+      <li><strong>ISO 8601</strong> — The international standard format: <code>2024-03-29T00:00:00.000Z</code>. Used in APIs, JSON payloads, and HTML <code>datetime</code> attributes. The trailing <code>Z</code> explicitly denotes UTC, eliminating ambiguity.</li>
+      <li><strong>UTC</strong> — The long-form UTC date string: <code>Fri, 29 Mar 2024 00:00:00 GMT</code>. Used in HTTP headers such as <code>Date</code>, <code>Last-Modified</code>, and <code>Expires</code>.</li>
+      <li><strong>Local</strong> — The timestamp converted to your browser's local timezone. Useful for verifying that a UTC timestamp corresponds to the correct local time for your region.</li>
+      <li><strong>Relative</strong> — A human-friendly relative description: "2 hours ago", "in 3 days". Helpful for quickly understanding whether a timestamp is recent or distant without doing date arithmetic.</li>
     </ul>
+
+    <h2>Common Use Cases</h2>
+    <p>The most common scenario is <strong>debugging API responses</strong> that return numeric epoch values. When a REST endpoint returns <code>"created_at": 1711670400</code>, pasting that number here immediately tells you the human-readable date without writing a one-off script. Similarly, log files from servers and cloud services often record events as Unix timestamps — converting them helps correlate events across services that may be in different timezones.</p>
+    <p>Developers working with <strong>cron jobs</strong> frequently need to verify that a scheduled time corresponds to the correct epoch value. You can use this tool to find the timestamp for a future date and then cross-check it against your scheduler configuration. To set up recurring tasks based on time, <a href="/tools/cron-builder">Cron Expression Builder</a> pairs well with this tool. Calculating <strong>time differences</strong> between two events is straightforward once both are expressed as integers — subtract one from the other and divide by 3600 for hours or 86400 for days. Comparing timestamps across timezones is also simplified because epoch values are always UTC: two timestamps from different systems can be directly compared numerically without any timezone conversion.</p>
+    <p>Database engineers often need to troubleshoot <strong>timestamp columns</strong> that store integers rather than datetime types. Pasting the raw value here confirms the stored date and helps identify off-by-one errors caused by seconds vs. milliseconds mismatches. When APIs return JSON with embedded timestamps, <a href="/tools/json-formatter">JSON Formatter</a> can help structure the response before you extract the timestamp values for conversion.</p>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p><strong>Always store timestamps in UTC.</strong> Storing local time in a database creates ambiguity during daylight saving transitions and makes it impossible to reliably sort or compare records from users in different regions. Unix timestamps are inherently UTC, which is one reason they remain the preferred storage format in most backend systems.</p>
+    <p><strong>Choose the right unit for your platform.</strong> Use milliseconds for JavaScript and frontend work — <code>Date.now()</code> returns milliseconds, and the <code>Date</code> constructor expects milliseconds. Use seconds for Unix shell scripting, Python's <code>time.time()</code>, and most SQL databases. A common bug is passing a milliseconds timestamp to a function expecting seconds, producing a date in the year 33658.</p>
+    <p><strong>Be explicit about timezone offsets</strong> when displaying timestamps to users. Always convert UTC epoch to the user's local timezone at render time, not at storage time. Use <code>Intl.DateTimeFormat</code> in JavaScript or <code>pytz</code> / <code>zoneinfo</code> in Python for reliable timezone-aware formatting.</p>
+    <p><strong>Use ISO 8601 for human-readable logging.</strong> When writing timestamps to log files that humans will read, ISO 8601 with a <code>Z</code> suffix is unambiguous and sortable lexicographically. Watch out for <strong>Y2038</strong> on 32-bit systems — signed 32-bit integers overflow at Unix timestamp 2147483647, which corresponds to January 19, 2038. Validate that your timestamp input falls within a reasonable range before conversion, particularly when processing user-supplied data.</p>
 
     <h2>Unix Time in Programming</h2>
     <p>Every major language has built-in support for Unix timestamps.</p>
@@ -44,11 +53,24 @@ import TimestampConverter from '../../components/tools/TimestampConverter';
       <li><strong>Python:</strong> <code>import time; time.time()</code> returns a float in seconds. Use <code>datetime.fromtimestamp(ts)</code> to convert.</li>
       <li><strong>SQL:</strong> <code>UNIX_TIMESTAMP()</code> in MySQL, <code>EXTRACT(EPOCH FROM NOW())</code> in PostgreSQL.</li>
     </ul>
+
     <h2>Related Guides</h2>
     <ul>
-      <li><a href="/blog/unix-timestamp-guide">Unix Timestamps & Epoch Time Guide</a> — everything about epoch time, Y2038, and timezone pitfalls</li>
+      <li><a href="/blog/unix-timestamp-guide">Unix Timestamps &amp; Epoch Time Guide</a> — everything about epoch time, Y2038, and timezone pitfalls</li>
       <li><a href="/blog/epoch-to-date-conversion">Epoch to Date Conversion in 6 Languages</a> — code snippets for JS, Python, Go, Java, PHP, and Rust</li>
-      <li><a href="/blog/cron-expression-guide">Cron Syntax: Fields, Examples & Tips</a> — schedule tasks using Unix time</li>
+      <li><a href="/blog/cron-expression-guide">Cron Syntax: Fields, Examples &amp; Tips</a> — schedule tasks using Unix time</li>
     </ul>
+
+    <h2>FAQ</h2>
+    <h3>What is a Unix timestamp?</h3>
+    <p>A Unix timestamp (also called epoch time) is the number of seconds that have elapsed since January 1, 1970 at 00:00:00 UTC. It is a simple, timezone-independent way to represent a point in time used universally in programming and databases.</p>
+    <h3>What is the difference between seconds and milliseconds timestamps?</h3>
+    <p>Most Unix timestamps are in seconds (10 digits for dates around 2001–2286). JavaScript's <code>Date.now()</code> and many APIs return milliseconds (13 digits). This tool supports both — use the s/ms toggle to select the correct unit.</p>
+    <h3>Is the Y2038 problem real?</h3>
+    <p>Yes. Systems that store Unix timestamps as a signed 32-bit integer will overflow on January 19, 2038 at 03:14:07 UTC. Modern 64-bit systems and languages like JavaScript (which uses 64-bit floats) are not affected, but legacy embedded systems and old databases may still be at risk.</p>
+    <h3>How do I get the current Unix timestamp?</h3>
+    <p>In JavaScript: <code>Date.now()</code> returns milliseconds; <code>Math.floor(Date.now() / 1000)</code> gives seconds. In Python: <code>import time; int(time.time())</code>. In Bash: <code>date +%s</code>. In SQL (PostgreSQL): <code>EXTRACT(EPOCH FROM NOW())::int</code>.</p>
+    <h3>What date formats can I input?</h3>
+    <p>ISO 8601 (<code>2024-03-29T00:00:00Z</code>), common date strings (<code>March 29 2024</code>, <code>2024-03-29</code>), and RFC 2822 format (<code>Fri, 29 Mar 2024 00:00:00 +0000</code>). Ambiguous formats without a timezone are interpreted as local time.</p>
   </Fragment>
 </ToolLayout>

@@ -13,6 +13,8 @@ import JsonSchemaValidator from '../../components/tools/JsonSchemaValidator';
     { question: 'Is my data safe?', answer: 'Yes. All validation happens in your browser. No data is sent to any server.' },
     { question: 'What happens if my JSON is invalid?', answer: 'You will see detailed error messages showing the exact path, the validation keyword that failed, and a human-readable description of the issue.' },
     { question: 'Can I use $ref in my schema?', answer: 'Local $ref references within the same schema are supported. External $ref URLs are not loaded for security reasons.' },
+    { question: 'Can I validate arrays of objects?', answer: 'Yes. Use the "items" keyword to describe the schema for each element in an array. You can combine it with "minItems" and "maxItems" to enforce length constraints.' },
+    { question: 'How do I mark a field as required?', answer: 'Add the field name to the "required" array at the same level as the "properties" keyword. Fields not listed in "required" are optional by default.' },
   ]}
 >
   <div slot="tool">
@@ -20,31 +22,65 @@ import JsonSchemaValidator from '../../components/tools/JsonSchemaValidator';
   </div>
   <Fragment slot="content">
     <h2>How to Use the JSON Schema Validator</h2>
-    <p>Enter your JSON Schema in the left editor and your JSON data in the right editor. Click "Validate" to check if the data conforms to the schema. Use "Load Sample" to see an example.</p>
+    <p>The validator has two panels side by side. The left panel is for your <strong>JSON Schema</strong> — the blueprint that describes the expected structure and constraints of your data. The right panel is for the <strong>JSON data</strong> you want to validate against that schema. Once both panels have content, click the <strong>Validate</strong> button to run the check.</p>
+    <p>If validation passes, a green success indicator appears. If it fails, you will see a list of detailed error messages. Each error includes the <strong>data path</strong> (for example, <code>/user/email</code>) pointing to the exact location in the JSON where the violation occurred, the <strong>schema path</strong> showing which part of your schema triggered the error, and a human-readable description of the problem — such as "must be string" or "must have required property 'id'".</p>
+    <p>Click <strong>Load Sample</strong> to populate both panels with a working schema and data example. This is a useful starting point if you are new to JSON Schema — you can study the relationship between the schema keywords and the data they constrain, then modify both panels to match your own use case.</p>
+    <p>The validator uses <strong>Ajv</strong> (Another JSON Validator), the most widely adopted JSON Schema validation library in the JavaScript ecosystem. All processing happens in your browser — your schemas and data never leave your machine. If you need to validate raw JSON structure before applying a schema, the <a href="/tools/json-validator">JSON Validator</a> and <a href="/tools/json-formatter">JSON Formatter</a> are useful companion tools.</p>
+
     <h2>What is JSON Schema?</h2>
-    <p>JSON Schema is a vocabulary that allows you to annotate and validate JSON documents. It describes the structure, types, and constraints of JSON data — like a blueprint for your API payloads, configuration files, or database records.</p>
+    <p>JSON Schema is a vocabulary — published as an IETF draft standard — that lets you describe the structure, types, and constraints of a JSON document in JSON itself. Think of it as a type system for your API payloads, configuration files, and database records. A schema is a JSON object containing keywords that express rules: which fields are required, what data types are expected, what string patterns are valid, and what numeric ranges are acceptable.</p>
+    <p>The most widely deployed version is <strong>Draft-07</strong>, which introduced <code>if/then/else</code> conditional validation and <code>readOnly</code> / <code>writeOnly</code> annotations. The newer <strong>Draft 2020-12</strong> overhauled how <code>$ref</code> and dynamic references work and clarified several ambiguities. Both drafts share the same core keyword set, so schemas written for Draft-07 are largely compatible with 2020-12 validators.</p>
+    <p>JSON Schema integrates with code generation tools (OpenAPI generators, form libraries like React JSON Schema Form), IDE plugins (VS Code schema validation for <code>package.json</code>, <code>tsconfig.json</code>), and API gateway validation middleware. Writing a schema once gives you validation at every layer of your stack without duplicating constraint logic in application code.</p>
+
+    <h2>Common Use Cases</h2>
+    <ul>
+      <li><strong>API contract validation</strong> — Define the expected shape of request and response bodies in an OpenAPI spec (which embeds JSON Schema). Validate incoming payloads at the API gateway before they reach your service, returning structured errors to clients automatically.</li>
+      <li><strong>Configuration file validation</strong> — Ship a schema alongside your application's config file so that CI pipelines and editor plugins can warn users immediately when a required field is missing or a value is out of range. VS Code reads <code>$schema</code> pointers in JSON files and provides inline validation and autocompletion.</li>
+      <li><strong>Dynamic form generation</strong> — Libraries like React JSON Schema Form and jsonforms.io render full UI forms directly from a JSON Schema, including field types, labels, and validation rules. Maintaining one schema eliminates the need to keep UI constraints in sync with backend validation logic.</li>
+      <li><strong>Data pipeline validation</strong> — Validate each record in a CSV-to-JSON or ETL pipeline before writing to a database or forwarding to a downstream service. Rejecting malformed records early prevents corrupt data from propagating through the pipeline.</li>
+      <li><strong>Contract testing</strong> — Use schemas as contracts between microservices. When a producer service changes its response shape, a schema compliance test in the consumer's test suite catches the breaking change before deployment.</li>
+    </ul>
+
+    <h2>Best Practices and Tips</h2>
+    <p>Start every schema with the <code>required</code> array. It is easy to forget that JSON Schema treats all properties as optional by default — a schema with a <code>properties</code> block but no <code>required</code> array will accept an empty object without complaint. List every field your application genuinely cannot function without.</p>
+    <p>Use <code>$ref</code> and <code>$defs</code> (or <code>definitions</code> in Draft-07) to define reusable sub-schemas. If three different objects in your API all have an <code>address</code> field with the same structure, define <code>Address</code> once under <code>$defs</code> and reference it with <code>&#123;"$ref": "#/$defs/Address"&#125;</code>. This keeps schemas DRY and makes maintenance far easier as your data model evolves.</p>
+    <p>Keep schemas versioned alongside your API. When you add a required field, that is a breaking change — it will fail validation for consumers sending the old payload shape. Use your schema version history as a changelog for your API contract.</p>
+    <p>Validate at API boundaries, not only in client code. Client-side validation is a UX feature; server-side schema validation is a correctness guarantee. Use Ajv or a similar library as middleware so that malformed requests are rejected with structured error responses before reaching business logic.</p>
+    <p>Use <code>additionalProperties: false</code> in strict schemas to reject objects with unexpected keys. This prevents clients from sending extra fields that might be misinterpreted by future versions of your API, and helps catch typos in field names during development.</p>
+
     <h2>Common Schema Keywords</h2>
     <ul>
-      <li><strong>type</strong> — Specifies the data type (string, number, object, array, boolean, null)</li>
-      <li><strong>properties</strong> — Defines the expected properties of an object</li>
-      <li><strong>required</strong> — Lists properties that must be present</li>
-      <li><strong>enum</strong> — Restricts a value to a fixed set of options</li>
-      <li><strong>pattern</strong> — Validates a string against a regular expression</li>
-      <li><strong>minimum / maximum</strong> — Sets numeric bounds</li>
-      <li><strong>items</strong> — Describes elements in an array</li>
+      <li><strong>type</strong> — Specifies the data type: <code>string</code>, <code>number</code>, <code>integer</code>, <code>object</code>, <code>array</code>, <code>boolean</code>, or <code>null</code></li>
+      <li><strong>properties</strong> — Defines the expected properties of an object and the sub-schema each must satisfy</li>
+      <li><strong>required</strong> — Lists property names that must be present in the object</li>
+      <li><strong>enum</strong> — Restricts a value to a fixed set of allowed options</li>
+      <li><strong>pattern</strong> — Validates a string against a regular expression (e.g., email format, UUID format)</li>
+      <li><strong>minimum / maximum</strong> — Sets inclusive numeric bounds; use <code>exclusiveMinimum</code> / <code>exclusiveMaximum</code> for exclusive bounds</li>
+      <li><strong>minLength / maxLength</strong> — Constrains the length of a string</li>
+      <li><strong>items</strong> — Describes the schema that every element in an array must satisfy</li>
+      <li><strong>additionalProperties</strong> — Controls whether properties not listed in <code>properties</code> are allowed</li>
+      <li><strong>if / then / else</strong> — Applies conditional validation depending on whether the <code>if</code> schema validates</li>
     </ul>
-    <h2>Related Guides</h2>
+
+    <h2>Related Tools and Guides</h2>
     <ul>
+      <li><a href="/tools/json-validator">JSON Validator</a> — Validate raw JSON syntax before applying a schema</li>
+      <li><a href="/tools/json-formatter">JSON Formatter</a> — Format and prettify JSON data for easier reading</li>
       <li><a href="/blog/json-schema-tutorial">JSON Schema Tutorial: Validate Your Data</a> — learn schema keywords, types, and real-world examples</li>
-      <li><a href="/blog/what-is-json">What is JSON?</a> — JSON fundamentals before diving into schemas</li>
-      <li><a href="/blog/jsonpath-tutorial">JSONPath Tutorial</a> — query and extract data from validated JSON</li>
     </ul>
+
     <h2>FAQ</h2>
     <h3>What JSON Schema drafts are supported?</h3>
-    <p>The validator uses Ajv which supports Draft-07 by default, the most widely used JSON Schema specification.</p>
+    <p>The validator uses Ajv which supports Draft-07 by default, the most widely used JSON Schema specification. Draft-07 introduced <code>if/then/else</code> conditional validation and is the version embedded in OpenAPI 3.0.</p>
     <h3>Is my data safe?</h3>
-    <p>Yes. All validation happens in your browser. No data is sent to any server.</p>
+    <p>Yes. All validation happens in your browser using the Ajv library compiled to JavaScript. No schema or data is sent to any server.</p>
     <h3>What happens if my JSON is invalid?</h3>
-    <p>You will see detailed error messages showing the exact path, the validation keyword that failed, and a human-readable description.</p>
+    <p>You will see detailed error messages showing the exact data path, the validation keyword that failed, and a human-readable description of the issue — for example, "must be string" or "must have required property 'id'".</p>
+    <h3>Can I use $ref in my schema?</h3>
+    <p>Local <code>$ref</code> references within the same schema document are fully supported — use <code>$defs</code> or <code>definitions</code> to define reusable sub-schemas. External <code>$ref</code> URLs pointing to remote schemas are not fetched for security reasons.</p>
+    <h3>Can I validate arrays of objects?</h3>
+    <p>Yes. Use the <code>items</code> keyword to specify the schema each array element must conform to. Combine it with <code>minItems</code> and <code>maxItems</code> to enforce length constraints, or with <code>uniqueItems: true</code> to disallow duplicate values.</p>
+    <h3>How do I mark a field as required?</h3>
+    <p>Add the field name to the <code>required</code> array at the same object level as your <code>properties</code> keyword. For example: <code>"required": ["id", "name"]</code>. Any property not listed in <code>required</code> is optional by default — JSON Schema does not make assumptions about which fields are mandatory.</p>
   </Fragment>
 </ToolLayout>

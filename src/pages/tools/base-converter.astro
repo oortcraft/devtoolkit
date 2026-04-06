@@ -9,9 +9,11 @@ import BaseConverter from '../../components/tools/BaseConverter';
   toolName="Base Converter"
   toolUrl="https://oortcraft.dev/tools/base-converter/"
   faq={[
-    { question: 'What number bases are supported?', answer: 'Binary (base 2), Octal (base 8), Decimal (base 10), and Hexadecimal (base 16).' },
-    { question: 'Is there a size limit?', answer: 'The tool uses BigInt for arbitrary precision, so it can handle very large numbers. Input is limited to 1MB.' },
+    { question: 'What number bases are supported?', answer: 'Binary (base 2), Octal (base 8), Decimal (base 10), and Hexadecimal (base 16). The tool converts your input to all four bases simultaneously so you can compare representations side by side.' },
+    { question: 'Is there a size limit?', answer: 'The tool uses BigInt for arbitrary precision, so it can handle very large numbers accurately without floating-point rounding errors. Input is limited to 1MB.' },
     { question: 'Is my data safe?', answer: 'Yes. All conversion happens in your browser. No data is sent to any server.' },
+    { question: 'Why do programmers use hexadecimal so often?', answer: 'One hex digit maps exactly to 4 binary bits (a nibble), so two hex digits represent one byte precisely. This makes hex a compact, readable shorthand for binary data. A 32-bit address that would take 32 characters in binary takes only 8 characters in hex — far easier to scan and compare.' },
+    { question: 'What do the 0x, 0b, and 0o prefixes mean?', answer: 'These are standard programming language prefixes that indicate number base. 0x signals hexadecimal (used in C, JavaScript, Python, etc.), 0b signals binary, and 0o signals octal. This tool automatically strips these prefixes so you can paste values directly from code without editing them first.' },
   ]}
 >
   <div slot="tool">
@@ -19,24 +21,27 @@ import BaseConverter from '../../components/tools/BaseConverter';
   </div>
   <Fragment slot="content">
     <h2>How to Use the Base Converter</h2>
-    <p>Select the input base (BIN, OCT, DEC, or HEX), then type or paste your number. The tool converts it to all four bases in real time. Common prefixes like <code>0x</code>, <code>0b</code>, and <code>0o</code> are automatically stripped.</p>
+    <p>Select the base of your input number using the <strong>BIN</strong>, <strong>OCT</strong>, <strong>DEC</strong>, or <strong>HEX</strong> buttons, then type or paste your number into the input field. The tool instantly shows the equivalent value in all four bases at the same time, so you can compare representations without running multiple conversions.</p>
+    <p>Common programming prefixes are handled automatically. If you paste <code>0xFF</code> from a JavaScript file, the tool strips the <code>0x</code> prefix and treats the value as hexadecimal. Similarly, <code>0b1010</code> is recognized as binary and <code>0o755</code> as octal. This means you can copy values directly out of your source code without manually removing the prefix first.</p>
+    <p>The tool uses JavaScript's <strong>BigInt</strong> under the hood, which means it handles arbitrarily large numbers without the rounding errors that affect standard floating-point arithmetic. This is important when working with 64-bit integers, large memory addresses, or cryptographic values that exceed the safe integer range of regular JavaScript numbers. Input is accepted up to 1MB in size, so even very long binary strings are supported. All computation happens in your browser — nothing is sent to a server.</p>
 
-    <h2>Supported Number Bases</h2>
-    <ul>
-      <li><strong>Binary (BIN)</strong> — Base 2, digits 0-1. Used by computers at the hardware level; every value in memory is ultimately stored as binary.</li>
-      <li><strong>Octal (OCT)</strong> — Base 8, digits 0-7. Common in Unix file permissions (e.g., <code>chmod 755</code>) and some legacy systems.</li>
-      <li><strong>Decimal (DEC)</strong> — Base 10, digits 0-9. The standard number system used in everyday arithmetic.</li>
-      <li><strong>Hexadecimal (HEX)</strong> — Base 16, digits 0-9, A-F. Widely used in programming for memory addresses, color codes, and byte values.</li>
-    </ul>
+    <h2>What is Number Base Conversion?</h2>
+    <p>A number base (also called a radix) defines how many unique digits a positional numeral system uses before it carries over to the next position. Decimal — the system humans use daily — has ten digits (0 through 9) and is base 10. Binary uses only two digits (0 and 1) and is base 2. Octal uses eight digits (0 through 7) and is base 8. Hexadecimal uses sixteen symbols (0 through 9 plus A through F) and is base 16.</p>
+    <p>Every number in any base can be expressed as a sum of powers of that base. The decimal number 255, for example, equals 2×10² + 5×10¹ + 5×10⁰. In binary it is 11111111, because that is the sum of eight powers of 2 (2⁷ + 2⁶ + … + 2⁰). In hexadecimal it is FF, because F represents 15, and 15×16¹ + 15×16⁰ = 240 + 15 = 255.</p>
+    <p>Developers need to convert between bases constantly because different layers of the computing stack use different representations. Hardware and networking protocols operate in binary, memory addresses are conventionally displayed in hexadecimal, Unix permissions are written in octal, and human-readable quantities use decimal. Fluency with base conversion is a foundational developer skill.</p>
 
-    <h2>Real-World Use Cases</h2>
-    <ul>
-      <li><strong>Color codes</strong> — HTML/CSS colors like <code>#FF5733</code> are hex. Each pair of hex digits (FF, 57, 33) represents the red, green, and blue channel values in decimal (255, 87, 51).</li>
-      <li><strong>File permissions</strong> — Unix permissions like <code>chmod 755</code> use octal. 7 = read+write+execute (binary 111), 5 = read+execute (binary 101).</li>
-      <li><strong>Memory addresses</strong> — Debuggers and disassemblers display addresses in hex (e.g., <code>0x7ffee4b2c8a0</code>) because it maps cleanly to byte boundaries.</li>
-      <li><strong>Bitwise operations</strong> — When working with flags or bitmasks, converting between binary and hex helps visualize which bits are set.</li>
-      <li><strong>Network addresses</strong> — IPv6 addresses are written in hexadecimal. Understanding base conversion helps read and manipulate them.</li>
-    </ul>
+    <h2>Common Use Cases</h2>
+    <p><strong>Reading memory addresses and debugger output</strong> is the most frequent hexadecimal use case. When you inspect a crash dump, set a breakpoint, or read a disassembly listing, addresses appear as hex values like <code>0x7ffee4b2c8a0</code>. Converting these to decimal or binary can help you understand alignment, offsets, and address ranges.</p>
+    <p><strong>Bit manipulation and bitmasks</strong> are easier to reason about in binary. If you are working with permission flags, network protocol fields, or hardware registers, converting your mask to binary lets you see exactly which bits are set. Cross-checking with hexadecimal gives you the compact representation you need for code.</p>
+    <p><strong>Unix file permissions</strong> use octal notation. The <code>chmod 755</code> command sets permissions where 7 is read+write+execute (binary 111), 5 is read+execute (binary 101), and so on. Converting between octal and binary makes it easy to understand what each permission digit actually enables.</p>
+    <p><strong>CSS and HTML color codes</strong> are hexadecimal. The color <code>#FF5733</code> encodes red as <code>FF</code> (255 decimal), green as <code>57</code> (87 decimal), and blue as <code>33</code> (51 decimal). Use this tool alongside the <a href="/tools/color-converter">Color Converter</a> when working with color arithmetic or palette generation.</p>
+    <p><strong>Debugging encoded data</strong> such as JWT tokens, byte arrays, or hash outputs often requires converting between hex and decimal to compare values or verify checksums. See also the <a href="/tools/hash-generator">Hash Generator</a> for generating and comparing hash values. For a deeper reference on number systems, see the <a href="/blog/number-base-systems-guide">Number Base Systems Guide</a>.</p>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p><strong>Use standard prefixes in your code</strong> to make the base unambiguous for anyone reading it. Write <code>0xFF</code> instead of <code>255</code> when you mean a hex byte value, <code>0b11110000</code> for a bitmask, and <code>0o755</code> for a Unix permission value. This self-documents the intent and prevents off-by-one errors caused by misreading base.</p>
+    <p><strong>Hexadecimal is the most practical base for day-to-day developer work</strong>. Its tight mapping to bytes (2 hex digits = 1 byte, 8 hex digits = 4 bytes / 32 bits) makes it the default representation in debuggers, memory viewers, network analyzers, and cryptographic libraries. When in doubt about which non-decimal base to use for display, hex is almost always the right choice.</p>
+    <p><strong>Binary is the clearest base for bitwise operations</strong>. When you are writing a bitmask or checking which flags are set in a status register, convert the value to binary first. The individual bits are visible at a glance, and you can verify your AND, OR, XOR, and shift operations directly against the bit pattern.</p>
+    <p><strong>Octal is primarily a Unix legacy</strong>. Outside of file permissions and some older C codebases, octal is rarely encountered in modern development. Be careful with JavaScript numeric literals — a leading zero in older JS engines signaled octal, which caused subtle bugs. Modern JavaScript uses the explicit <code>0o</code> prefix to avoid ambiguity.</p>
 
     <h2>Quick Reference: 0–15</h2>
     <table>
@@ -63,18 +68,18 @@ import BaseConverter from '../../components/tools/BaseConverter';
 
     <h2>FAQ</h2>
     <h3>What number bases are supported?</h3>
-    <p>Binary (base 2), Octal (base 8), Decimal (base 10), and Hexadecimal (base 16).</p>
+    <p>Binary (base 2), Octal (base 8), Decimal (base 10), and Hexadecimal (base 16). The tool converts to all four simultaneously.</p>
 
     <h3>Is there a size limit?</h3>
-    <p>The tool uses BigInt for arbitrary precision, so it can handle very large numbers. Input is limited to 1MB.</p>
+    <p>The tool uses BigInt for arbitrary precision, so it handles very large numbers without floating-point rounding errors. Input is limited to 1MB.</p>
 
     <h3>Is my data safe?</h3>
     <p>Yes. All conversion happens in your browser. No data is sent to any server.</p>
 
-    <h3>How do I convert a hex color to RGB?</h3>
-    <p>Split the hex code into three pairs and convert each from hex to decimal. For example, <code>#1A2B3C</code> → R: <code>1A</code> = 26, G: <code>2B</code> = 43, B: <code>3C</code> = 60. Paste each pair into this tool with HEX selected to get the decimal value instantly.</p>
+    <h3>Why do programmers use hexadecimal so often?</h3>
+    <p>One hex digit represents exactly 4 binary bits (a nibble), so two hex digits represent one byte. This makes hex a compact and readable shorthand for binary data — far easier to scan than a long string of 0s and 1s, and more meaningful than decimal for byte-level work.</p>
 
-    <h3>Why does programming use hexadecimal so often?</h3>
-    <p>One hex digit represents exactly 4 binary bits (a nibble), so two hex digits represent one byte (8 bits). This makes hex a compact and readable shorthand for binary data — far easier to scan than a long string of 0s and 1s.</p>
+    <h3>What do the 0x, 0b, and 0o prefixes mean?</h3>
+    <p>These are standard programming prefixes indicating number base: <code>0x</code> for hexadecimal, <code>0b</code> for binary, and <code>0o</code> for octal. This tool strips them automatically so you can paste values from code without editing them first.</p>
   </Fragment>
 </ToolLayout>

@@ -9,9 +9,11 @@ import HtmlEntityEncoder from '../../components/tools/HtmlEntityEncoder';
   toolName="HTML Entity Encoder & Decoder"
   toolUrl="https://oortcraft.dev/tools/html-entity-encoder"
   faq={[
-    { question: 'What are HTML entities?', answer: 'HTML entities are special codes that represent characters which have meaning in HTML, like < (less than) or & (ampersand). Encoding them prevents browsers from interpreting them as HTML tags.' },
+    { question: 'What are HTML entities?', answer: 'HTML entities are special codes that represent characters which have meaning in HTML, like &lt; (less than) or &amp; (ampersand). They come in two forms: named entities (like &amp;amp; or &amp;lt;) and numeric entities (like &amp;#38; or &amp;#x26;). Encoding reserved characters prevents browsers from misinterpreting text as HTML markup.' },
     { question: 'Is my data safe?', answer: 'Yes. All encoding and decoding happens in your browser. No data is sent to any server.' },
     { question: 'Which entities are supported?', answer: 'All standard named HTML entities (e.g., &amp;amp;, &amp;lt;, &amp;gt;) and numeric entities (e.g., &amp;#123;, &amp;#x7B;) are supported.' },
+    { question: 'Does HTML encoding prevent XSS attacks?', answer: 'HTML encoding is a critical layer of XSS defense. When you encode user-supplied input before inserting it into HTML, characters like &lt;, &gt;, and &amp; become harmless text instead of executable markup. However, encoding alone is not sufficient — always combine it with a Content Security Policy and context-aware output encoding.' },
+    { question: 'What is the difference between encoding and escaping?', answer: 'In practice the terms are used interchangeably for HTML. Both refer to converting special characters into their entity equivalents so they render as visible text rather than being parsed as HTML. Escaping is the more general term used across different languages and contexts (SQL, shell, regex), while encoding specifically describes the transformation into HTML entity syntax.' },
   ]}
 >
   <div slot="tool">
@@ -19,10 +21,16 @@ import HtmlEntityEncoder from '../../components/tools/HtmlEntityEncoder';
   </div>
   <Fragment slot="content">
     <h2>How to Use the HTML Entity Encoder</h2>
-    <p>Select "Encode" or "Decode" mode, then type or paste your text. The output updates in real-time. All processing happens in your browser — nothing is sent to a server.</p>
+    <p>Using this tool is straightforward. Select the mode you need — <strong>Encode</strong> to convert raw text into HTML-safe entities, or <strong>Decode</strong> to convert entities back into plain readable characters. Then type or paste your text into the input field. The output updates in real time as you type, so there is no button to press.</p>
+    <p>Once the result appears, click the <strong>Copy</strong> button to copy the encoded or decoded text to your clipboard. The tool handles both named entities (such as <code>&amp;amp;</code> for the ampersand character) and numeric entities in both decimal (<code>&amp;#38;</code>) and hexadecimal (<code>&amp;#x26;</code>) formats. It also handles multi-line input, so you can paste entire HTML snippets or blocks of user-generated content and encode everything at once.</p>
+    <p>All processing runs entirely in your browser. No text leaves your machine, which makes it safe to use with sensitive content such as API keys embedded in HTML templates, private email drafts, or internal documentation snippets. The tool is also useful as a quick reference — paste in a character you are unsure about and see exactly which entity code represents it.</p>
+
     <h2>What are HTML Entities?</h2>
-    <p>HTML entities are special character sequences that represent reserved or special characters in HTML. For example, the less-than sign (&lt;) is written as <code>&amp;lt;</code> to prevent browsers from interpreting it as an HTML tag.</p>
-    <h2>Common HTML Entities</h2>
+    <p>HTML entities are special character sequences that tell a browser to render a specific character instead of interpreting the surrounding text as HTML markup. Every entity starts with an ampersand and ends with a semicolon. Between those delimiters, the entity is either a <strong>named entity</strong> — a human-readable keyword like <code>amp</code>, <code>lt</code>, or <code>copy</code> — or a <strong>numeric entity</strong> in decimal (<code>&amp;#38;</code>) or hexadecimal (<code>&amp;#x26;</code>) notation.</p>
+    <p>Named entities are easier to read and write. Numeric entities have broader coverage because they can represent any Unicode code point, including characters that have no named equivalent. Both forms decode to exactly the same character in the browser.</p>
+    <p>The need for HTML entities arises from the fact that HTML itself is a text-based markup language. Characters like <code>&lt;</code>, <code>&gt;</code>, <code>&amp;</code>, and <code>"</code> are reserved syntax characters. If you write them literally in HTML content, the browser may misparse your document. Encoding them into entities removes that ambiguity and is also the primary technique for preventing cross-site scripting (XSS) vulnerabilities when rendering user-supplied text.</p>
+
+    <h2>Common HTML Entities Reference</h2>
     <ul>
       <li><code>&amp;amp;</code> → &amp; (ampersand)</li>
       <li><code>&amp;lt;</code> → &lt; (less than)</li>
@@ -30,17 +38,35 @@ import HtmlEntityEncoder from '../../components/tools/HtmlEntityEncoder';
       <li><code>&amp;quot;</code> → " (double quote)</li>
       <li><code>&amp;apos;</code> → ' (apostrophe)</li>
       <li><code>&amp;nbsp;</code> → non-breaking space</li>
+      <li><code>&amp;copy;</code> → © (copyright)</li>
+      <li><code>&amp;reg;</code> → ® (registered trademark)</li>
+      <li><code>&amp;mdash;</code> → — (em dash)</li>
+      <li><code>&amp;euro;</code> → € (euro sign)</li>
     </ul>
-    <h2>Related Guides</h2>
-    <ul>
-      <li><a href="/blog/html-entities-guide">HTML Entities: A Complete Guide</a> — named, numeric, and hex entities explained</li>
-      <li><a href="/blog/url-encoding-explained">URL Encoding Explained</a> — the companion encoding for URLs vs HTML</li>
-      <li><a href="/blog/what-is-base64">What is Base64 Encoding?</a> — another encoding scheme for binary data</li>
-    </ul>
+
+    <h2>Common Use Cases</h2>
+    <p>The most critical use case for HTML entity encoding is <strong>sanitizing user input before rendering it in a web page</strong>. If your application allows users to submit comments, reviews, or messages and you display that content back as HTML, any unencoded angle brackets or script tags become executable code — the definition of a stored XSS vulnerability. Encoding the input first converts every <code>&lt;</code> into <code>&amp;lt;</code>, turning potential attack vectors into harmless text.</p>
+    <p><strong>Displaying code snippets in documentation or blog posts</strong> is another everyday use. When writing a tutorial that includes HTML examples, you cannot simply paste raw HTML into the page — the browser will render it instead of displaying it. Encoding the snippet first ensures that readers see the literal markup characters.</p>
+    <p><strong>Email templates</strong> frequently require entity encoding for special characters. Many email clients have stricter HTML parsers than browsers, and unencoded special characters can cause rendering failures. Characters like the em dash (—), curly quotes (" "), and currency symbols (€ £ ¥) should be encoded for maximum compatibility.</p>
+    <p><strong>CMS content sanitization</strong> is the fourth major use case. Content management systems that accept rich text input from authors must encode or escape content before storing and rendering it, to prevent accidental or malicious injection of executable HTML or JavaScript into the published page.</p>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p><strong>Always encode user input before rendering it as HTML</strong>, never after. Encoding at output time — the moment before the string is placed into an HTML context — is the correct pattern. Encoding at input time can cause double-encoding problems if the data passes through multiple systems.</p>
+    <p><strong>Prefer named entities for readability</strong> when the character has a named form. <code>&amp;amp;</code> is immediately recognizable in code review; <code>&amp;#38;</code> requires mental decoding. Use numeric entities only for characters without a named equivalent.</p>
+    <p><strong>Encode only what is necessary</strong>. Encoding every ASCII character is unnecessary and bloats your HTML. Focus on the five characters that are actually reserved in HTML contexts: <code>&amp;</code>, <code>&lt;</code>, <code>&gt;</code>, <code>"</code>, and <code>'</code>.</p>
+    <p><strong>Decode before processing server-side</strong>. If you receive encoded HTML entities in form data or API input, decode them before doing string matching, database storage, or business logic. Storing encoded strings in the database means every subsequent use must also handle encoded data, which complicates queries and comparisons.</p>
+    <p>For a deeper dive, see the <a href="/blog/html-entities-guide">HTML Entities Complete Guide</a>. You may also find the <a href="/tools/url-encoder">URL Encoder</a> useful — URL encoding is the companion scheme used in query strings and hrefs rather than HTML content. For binary data encoding, see the <a href="/tools/base64">Base64 Encoder</a>.</p>
+
     <h2>FAQ</h2>
     <h3>What are HTML entities?</h3>
-    <p>HTML entities are special codes that represent characters which have meaning in HTML.</p>
+    <p>HTML entities are special codes that represent characters which have meaning in HTML. They come in named form (like <code>&amp;amp;</code>) and numeric form (like <code>&amp;#38;</code>). Encoding reserved characters prevents browsers from misinterpreting text as HTML markup and is a foundational XSS prevention technique.</p>
     <h3>Is my data safe?</h3>
     <p>Yes. All encoding and decoding happens in your browser. No data is sent to any server.</p>
+    <h3>Which entities are supported?</h3>
+    <p>All standard named HTML entities (e.g., <code>&amp;amp;</code>, <code>&amp;lt;</code>, <code>&amp;gt;</code>) and numeric entities in both decimal and hexadecimal notation are supported.</p>
+    <h3>Does HTML encoding prevent XSS attacks?</h3>
+    <p>HTML encoding is a critical layer of XSS defense. Encoding user-supplied input before inserting it into HTML turns characters like <code>&lt;</code> and <code>&amp;</code> into harmless text. Combine it with a Content Security Policy for comprehensive protection.</p>
+    <h3>What is the difference between encoding and escaping?</h3>
+    <p>Both terms refer to converting special characters so they are not interpreted as markup. Escaping is the general term used across many contexts (SQL, shell, regex), while HTML encoding specifically describes the transformation into HTML entity syntax. In practice they are used interchangeably when discussing HTML.</p>
   </Fragment>
 </ToolLayout>

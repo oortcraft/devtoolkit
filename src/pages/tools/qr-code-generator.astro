@@ -13,14 +13,23 @@ import QrCodeGenerator from '../../components/tools/QrCodeGenerator';
     { question: 'What are error correction levels?', answer: 'L (7%), M (15%), Q (25%), H (30%) — higher levels make QR codes more resilient to damage but larger.' },
     { question: 'What formats can I download?', answer: 'SVG (vector, scalable) and PNG (512×512 raster image).' },
     { question: 'Is my data safe?', answer: 'Yes. All QR code generation happens in your browser. No data is sent to any server.' },
+    { question: 'Can I add a logo to the QR code?', answer: 'This tool generates standard QR codes without logos. If you need a logo overlay, use high error correction (H) so the QR code remains scannable even with the center obscured.' },
   ]}
 >
   <div slot="tool">
     <QrCodeGenerator client:load />
   </div>
   <Fragment slot="content">
+    <h2>What is a QR Code?</h2>
+    <p>A QR code (Quick Response code) is a two-dimensional matrix barcode invented in 1994 by Denso Wave, a subsidiary of Toyota, for tracking automotive parts. Unlike traditional one-dimensional barcodes, a QR code stores data in both horizontal and vertical directions, which dramatically increases its data capacity. A single QR code can hold up to 4,296 alphanumeric characters, 7,089 numeric characters, or 2,953 bytes of binary data.</p>
+    <p>QR codes follow the ISO/IEC 18004 international standard, ensuring that any compliant scanner — including every modern smartphone camera — can read them reliably. Their built-in error correction mechanism means a damaged or partially obscured code can still be decoded, making them well suited for physical environments like product labels, posters, and packaging. Today QR codes are used everywhere from restaurant menus and payment terminals to event ticketing and WiFi credential sharing.</p>
+
     <h2>How to Use the QR Code Generator</h2>
-    <p>Type or paste any text, URL, or data in the input field. A QR code is generated in real time. Use the error correction selector to adjust resilience, then download as SVG or PNG.</p>
+    <p>Using this tool is straightforward, but understanding each control helps you produce the best result for your specific use case.</p>
+    <p>Start by typing or pasting your data into the input field — this can be a URL, plain text, an email address, a phone number, or any structured string such as a WiFi credential block. A QR code is generated in real time as you type, so you can see the result immediately without clicking anything.</p>
+    <p>The <strong>error correction selector</strong> offers four levels: L, M, Q, and H. Level M is selected by default and works well for most digital applications. If you plan to print the code and expect some wear, use Q or H. If you are adding a logo overlay in a graphic editor after export, always select H so the redundant data can compensate for the obscured center modules.</p>
+    <p>Once you are satisfied with the preview, use the <strong>Download SVG</strong> button for a vector file that scales to any size without quality loss — ideal for print. Use <strong>Download PNG</strong> for a 512×512 raster image that works well on screens and in documents. The quiet zone (the white border surrounding the code) is included in both exports and is essential for reliable scanning — do not crop it out.</p>
+
     <h2>Error Correction Levels</h2>
     <ul>
       <li><strong>L (Low, 7%)</strong> — Smallest QR code, minimal damage recovery</li>
@@ -28,6 +37,32 @@ import QrCodeGenerator from '../../components/tools/QrCodeGenerator';
       <li><strong>Q (Quartile, 25%)</strong> — Good for printed codes</li>
       <li><strong>H (High, 30%)</strong> — Maximum resilience, largest QR code</li>
     </ul>
+
+    <h2>Common Use Cases</h2>
+    <p>QR codes have become a universal bridge between physical and digital contexts. Here are the most practical applications developers and designers reach for:</p>
+    <p><strong>Sharing URLs and links</strong> is the most common use case. Rather than typing a long address, encode the full URL and let users scan it. Pair this with a URL shortener if the destination address is long — shorter input data produces a simpler, less dense QR code that scans faster.</p>
+    <p><strong>WiFi network credentials</strong> can be encoded using the format <code>WIFI:T:WPA;S:YourNetwork;P:YourPassword;;</code>. When scanned, most iOS and Android devices offer a one-tap join prompt, removing the friction of manually entering a password for guests or conference attendees.</p>
+    <p><strong>Restaurant menus and printed materials</strong> use QR codes to link physical collateral to live web content. Since the URL is encoded, updating the page content requires no reprint.</p>
+    <p><strong>Event tickets and access control</strong> embed a unique identifier per ticket. The scanner validates the code against a backend list, preventing duplicate entry.</p>
+    <p><strong>Payment links and donation pages</strong> work well because payment platforms (PayPal, Stripe, Ko-fi) provide shareable URLs that encode cleanly into QR codes for checkout pages or printed invoices.</p>
+    <p><strong>Contact cards (vCards)</strong> and <strong>app store links</strong> are other high-value uses. Encoding a vCard string lets someone scan and save your contact details in one tap. Linking directly to an App Store or Google Play listing removes the search step entirely.</p>
+    <p><strong>Inventory and asset tracking</strong> in small teams often relies on QR codes stuck to equipment, linking to an asset management record or Google Sheet row.</p>
+
+    <h2>Best Practices and Tips</h2>
+    <p>A few habits will save you from QR codes that fail to scan in the field:</p>
+    <p><strong>Keep the data short.</strong> The less data encoded, the simpler and less dense the QR code matrix, and the easier it is for any scanner to read. If your URL is long, run it through a URL shortener first. You can also <a href="/tools/url-encoder">encode URL parameters</a> cleanly before embedding them.</p>
+    <p><strong>Match error correction to the environment.</strong> Digital-only use (email, website, app) is fine at L or M. Printed on paper or fabric — where smudges and creases are realistic — use Q or H. If you are overlaying a logo in the center, always use H.</p>
+    <p><strong>Test before you ship.</strong> Scan the QR code with at least two different devices and scanner apps before printing or publishing. Camera angle, lighting, and screen resolution can all affect readability. Testing on an iPhone built-in camera and an Android device covers the most common reader implementations.</p>
+    <p><strong>Use SVG for print, PNG for digital.</strong> SVG is a vector format that scales without pixelation, making it the correct choice for business cards, signage, or any print material. PNG at 512×512 is sufficient for on-screen use but will look blurry if printed large.</p>
+    <p><strong>Never crop the quiet zone.</strong> The white border around a QR code is not decorative — it is a required part of the specification. Removing it prevents most scanners from locating the finder patterns, and the code will fail to scan.</p>
+
+    <h2>Related Guides</h2>
+    <ul>
+      <li><a href="/blog/qr-code-guide">QR Code Guide — formats, use cases, and scanning tips</a></li>
+      <li><a href="/tools/url-encoder">URL Encoder</a> — encode URL parameters before embedding them in a QR code</li>
+      <li><a href="/tools/base64">Base64 Encoder/Decoder</a> — encode binary data for text-based QR payloads</li>
+    </ul>
+
     <h2>FAQ</h2>
     <h3>What data can I encode?</h3>
     <p>Any text, URL, email address, phone number, or WiFi credentials up to 4,296 characters.</p>
@@ -37,5 +72,7 @@ import QrCodeGenerator from '../../components/tools/QrCodeGenerator';
     <p>SVG (vector, scalable) and PNG (512×512 raster image).</p>
     <h3>Is my data safe?</h3>
     <p>Yes. All QR code generation happens in your browser. No data is sent to any server.</p>
+    <h3>Can I add a logo to the QR code?</h3>
+    <p>This tool generates standard QR codes without logos. If you need a logo overlay, use high error correction (H) so the QR code remains scannable even with the center obscured.</p>
   </Fragment>
 </ToolLayout>

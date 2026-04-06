@@ -12,6 +12,8 @@ import CssMinifier from '../../components/tools/CssMinifier';
     { question: 'Is my CSS safe?', answer: 'Yes. All minification happens in your browser. No CSS is sent to any server.' },
     { question: 'Will minification break my CSS?', answer: 'No. The minifier only removes whitespace, comments, and redundant characters. It does not change selectors, properties, or values.' },
     { question: 'How much can I save?', answer: 'Typical savings range from 15-40% depending on how the original CSS is formatted.' },
+    { question: 'Can I minify SCSS or LESS?', answer: 'No, this tool works with plain CSS only. Compile SCSS or LESS to standard CSS first, then paste the output here to minify.' },
+    { question: 'Should I minify CSS for development?', answer: 'No. Keep CSS readable during development so you can debug and iterate quickly. Minify only for production deployments.' },
   ]}
 >
   <div slot="tool">
@@ -19,9 +21,13 @@ import CssMinifier from '../../components/tools/CssMinifier';
   </div>
   <Fragment slot="content">
     <h2>How to Use the CSS Minifier</h2>
-    <p>Paste your CSS code in the left panel. The minified output appears automatically in the right panel. Use the copy button to grab the result. All processing happens in your browser.</p>
+    <p>Paste your CSS code into the left input panel. The minified output appears automatically in the right panel as you type — there is no button to press. Once the result is ready, check the byte count comparison displayed below the panels to see exactly how much space you saved. Click the <strong>Copy</strong> button to copy the minified CSS to your clipboard in one click, then paste it directly into your project or CDN configuration.</p>
+    <p>If you need to start fresh, clear the input panel and paste a new stylesheet. The tool handles stylesheets of any size and works entirely in your browser — no file size limits imposed by server uploads, and no waiting for a round trip to a remote API. For the reverse workflow — turning compressed CSS back into readable code — use our <a href="/tools/css-formatter">CSS Formatter</a>. If you are working with colors in your stylesheet and need to convert between formats, the <a href="/tools/color-converter">Color Converter</a> is a useful companion tool.</p>
+
     <h2>What is CSS Minification?</h2>
-    <p>CSS minification is the process of removing unnecessary characters from CSS code without changing its functionality. This includes removing whitespace, comments, and redundant semicolons to reduce file size and improve page load performance.</p>
+    <p>CSS minification is the process of removing every character from a stylesheet that is not required for the browser to interpret it correctly. The characters that get stripped fall into several categories: leading and trailing whitespace, newlines between rules, spaces around colons and braces, CSS comments (both single-block <code>/* ... */</code> and multi-line variants), and redundant semicolons before closing braces.</p>
+    <p>Beyond simple whitespace removal, a good minifier also applies shorthand conversions where safe — for example collapsing <code>margin: 0px 0px 0px 0px</code> to <code>margin:0</code>. Crucially, what does <em>not</em> change is anything the browser actually reads: selectors, property names, property values, media query conditions, keyframe names, and pseudo-class syntax all remain byte-for-byte identical. Minification is therefore a completely lossless transformation — the rendered output of the page will be indistinguishable from the original.</p>
+
     <h2>Why Minify CSS?</h2>
     <ul>
       <li><strong>Faster page loads</strong> — Smaller files download faster, especially on mobile networks.</li>
@@ -29,16 +35,36 @@ import CssMinifier from '../../components/tools/CssMinifier';
       <li><strong>Better Core Web Vitals</strong> — Smaller CSS files improve FCP and LCP scores.</li>
       <li><strong>Production best practice</strong> — All major frameworks minify CSS for production builds.</li>
     </ul>
+
+    <h2>Common Use Cases</h2>
+    <p>The most frequent use case is <strong>preparing a stylesheet for production deployment</strong>. When you run a manual build or are working outside an automated pipeline, this tool gives you an instant minified file without installing any build tooling. Paste the output of your SCSS or PostCSS compiler and get a deployment-ready stylesheet in seconds.</p>
+    <p>Another common scenario is <strong>reducing CSS bundle size for a CDN</strong>. If you self-host a third-party library — an icon font stylesheet, a grid framework, or a component library — you can paste the vendor CSS here and serve a smaller file from your own CDN origin. This is also useful when <strong>optimizing HTML email templates</strong>, where inline CSS must be as compact as possible to avoid clipping by email clients like Gmail that truncate messages above a byte threshold.</p>
+    <p>Developers also use this tool to <strong>compare file size before and after</strong> a stylesheet refactor. Paste the old version, note the minified byte count, then paste the refactored version and compare — an objective measure of whether the refactor actually reduced weight or just moved code around.</p>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p><strong>Always keep the unminified source in version control.</strong> Commit your readable <code>.css</code> or <code>.scss</code> source files, never the minified output. Minified CSS is a build artifact, not source code — treat it the same way you treat compiled JavaScript bundles.</p>
+    <p><strong>Minify as part of your build pipeline, not manually.</strong> Tools like Vite, webpack, and Parcel minify CSS automatically during production builds. Use this tool for one-off tasks or when working outside a build system, but for anything you deploy regularly, integrate minification into your CI/CD process so it happens automatically every time.</p>
+    <p><strong>Always test after minification.</strong> Run a visual diff or load the page in the browser after switching to the minified version. Edge cases in complex selectors or keyframe animations can occasionally be affected by aggressive optimizations in some minifiers.</p>
+    <p><strong>Combine minification with gzip or Brotli compression.</strong> Minification and transport compression work at different levels and are complementary — minification reduces the uncompressed file size, while gzip/Brotli compress the bytes over the wire. Together they typically achieve 70–85% total size reduction compared to the original formatted file.</p>
+    <p><strong>Consider removing unused CSS first.</strong> Before minifying, running a tool like PurgeCSS to strip selectors that do not match any HTML in your project can yield far greater savings than minification alone, especially when you are including a large utility framework like Tailwind or Bootstrap.</p>
+
     <h2>Related Guides</h2>
     <ul>
       <li><a href="/blog/css-minification-explained">CSS Minification Explained</a> — why and how to minify CSS for production</li>
       <li><a href="/blog/css-formatter-guide">How to Format and Beautify CSS</a> — the reverse workflow for development</li>
       <li><a href="/blog/css-performance-guide">CSS Performance: Core Web Vitals</a> — measure the real impact on page speed</li>
     </ul>
+
     <h2>FAQ</h2>
     <h3>Is my CSS safe?</h3>
     <p>Yes. All minification happens in your browser. No CSS is sent to any server.</p>
     <h3>Will minification break my CSS?</h3>
-    <p>No. The minifier only removes whitespace, comments, and redundant characters.</p>
+    <p>No. The minifier only removes whitespace, comments, and redundant characters. It does not change selectors, properties, or values.</p>
+    <h3>How much can I save?</h3>
+    <p>Typical savings range from 15–40% depending on how the original CSS is formatted. Heavily commented or hand-formatted stylesheets will see the largest reductions. Combined with gzip compression, total transfer savings can reach 70–85%.</p>
+    <h3>Can I minify SCSS or LESS?</h3>
+    <p>No, this tool works with plain CSS only. Compile SCSS or LESS to standard CSS first, then paste the output here to minify.</p>
+    <h3>Should I minify CSS for development?</h3>
+    <p>No. Keep CSS readable during development so you can debug and iterate quickly. Minify only for production deployments.</p>
   </Fragment>
 </ToolLayout>

@@ -12,6 +12,10 @@ import RegexTester from '../../components/tools/RegexTester';
     { question: 'Is my data safe?', answer: 'Yes. All regex testing happens entirely in your browser using JavaScript. No data is sent to any server.' },
     { question: 'Which flags are supported?', answer: 'The tool supports g (global), i (case insensitive), m (multiline), and s (dot all) flags. You can combine multiple flags.' },
     { question: 'Why does my regex match unexpectedly?', answer: 'Common pitfalls include forgetting to escape special characters like . * + ? ( ) [ ] { } ^ $ | \\, or not using the global flag when you expect multiple matches.' },
+    { question: 'What is a capture group?', answer: 'A capture group is a part of the pattern wrapped in parentheses (). It lets you extract specific parts of a match. For example, (\\d+)-(\\d+) applied to 2024-01 captures 2024 and 01 as separate groups.' },
+    { question: 'How do I match a literal dot?', answer: 'Use \\. instead of .. In regex, an unescaped dot matches any character. To match a literal period — for example in a file extension or IP address — you must escape it: \\.txt or \\d+\\.\\d+\\.\\d+\\.\\d+.' },
+    { question: 'What is catastrophic backtracking?', answer: 'Catastrophic backtracking occurs when a regex engine explores an exponentially large number of paths through a pattern before concluding there is no match. It is triggered by nested quantifiers such as (a+)+ applied to a string of repeated characters followed by a non-matching character. The engine tries every combination of how the inner and outer quantifiers can split the input, leading to execution times that grow exponentially with input length. Avoid patterns that have multiple adjacent quantifiers covering overlapping character sets.' },
+    { question: 'Can I use this tool for languages other than JavaScript?', answer: 'The core regex syntax — character classes, quantifiers, anchors, and groups — works across most languages including Python, Java, Ruby, and PHP. However, some features are JavaScript-specific: named capture groups use (?<name>...) syntax which differs slightly in older engines, lookbehind assertions have limited support in some environments, and the s (dot all) flag is called re.DOTALL in Python. Use this tool to build and verify your pattern logic, then adapt the syntax to your target language if needed.' },
   ]}
 >
   <div slot="tool">
@@ -22,6 +26,15 @@ import RegexTester from '../../components/tools/RegexTester';
     <p>Enter a regular expression pattern in the pattern field, toggle the flags you need, then paste your test string in the text area. Matches are highlighted in real time — each match shows its index position and any capture groups.</p>
     <h2>What is a Regular Expression?</h2>
     <p>A regular expression (regex) is a sequence of characters that defines a search pattern. It is used for string searching, validation, and text manipulation in virtually every programming language. Regex patterns can match literal text, character classes, repetitions, anchors, and more.</p>
+    <h2>Common Use Cases</h2>
+    <p>Regular expressions appear throughout software development, often in situations where simple string methods fall short. Understanding where regex genuinely helps — and where it adds unnecessary complexity — is half the skill.</p>
+    <ul>
+      <li><strong>Form validation</strong> — Email addresses, phone numbers, postal codes, and credit card numbers all follow structured formats that regex can verify client-side before a form is submitted. A pattern like <code>^\+?[\d\s\-().]{7,15}$</code> gives immediate feedback on whether a phone field looks plausible, reducing invalid submissions that reach your backend.</li>
+      <li><strong>Log file parsing</strong> — Server logs, application traces, and access logs contain semi-structured text. Regex lets you extract timestamps, IP addresses, status codes, and error messages from lines that would be tedious to parse with fixed string splitting. A single pattern can handle slight format variations across log versions.</li>
+      <li><strong>Search and replace in an IDE</strong> — Most code editors support regex find-and-replace. This lets you rename variables across a file, reformat dates from <code>MM/DD/YYYY</code> to <code>YYYY-MM-DD</code>, or strip trailing whitespace from specific line patterns — operations that would require dozens of manual edits otherwise.</li>
+      <li><strong>Data extraction from HTML or plain text</strong> — When a full HTML parser is unavailable or overkill, regex can extract specific patterns such as all URLs in an anchor tag, all headings matching a prefix, or all numeric values in a structured report. Use this tool to test your extraction pattern against a real sample before deploying it. You can also compare output variations with our <a href="/tools/diff-checker">Diff Checker</a>.</li>
+      <li><strong>Input sanitization</strong> — Regex can strip or replace characters that are not expected in a given field — for example, removing non-digit characters from a phone number input before storing it, or normalizing whitespace in a name field. This is simpler than writing multiple conditional replacements.</li>
+    </ul>
     <h2>Common Regex Patterns</h2>
     <ul>
       <li><strong>Email</strong> — <code>[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{"{2,}"}</code></li>
@@ -79,6 +92,15 @@ import RegexTester from '../../components/tools/RegexTester';
       <li><strong>Escape special characters</strong> — Characters like <code>. * + ? ( ) [ ] {"{ }"} ^ $ | \</code> must be escaped with <code>\</code> to match literally.</li>
       <li><strong>Check your flags</strong> — Forgetting the <code>g</code> flag is the most common reason only the first match is returned.</li>
     </ul>
+    <h2>Best Practices</h2>
+    <p>Writing regex that works in a test case is straightforward. Writing regex that remains correct, readable, and performant six months later takes a bit more discipline.</p>
+    <ul>
+      <li><strong>Prefer named capture groups for readability</strong> — Instead of referencing <code>match[1]</code> and <code>match[2]</code>, use named groups: <code>(?&lt;year&gt;\d{4})-(?&lt;month&gt;\d{2})</code>. The result is self-documenting and does not break when you add or reorder groups later.</li>
+      <li><strong>Avoid catastrophic backtracking</strong> — Nested quantifiers like <code>(a+)+</code> or overlapping alternatives applied to long strings can cause the regex engine to explore an exponential number of paths. The symptom is a match that takes seconds or freezes the browser. Flatten nested quantifiers and make sure alternatives are mutually exclusive where possible.</li>
+      <li><strong>Use non-capturing groups when you do not need the capture</strong> — <code>(?:foo|bar)</code> groups alternatives without storing the match as a capture group. This keeps your group numbering clean and avoids allocating memory for results you will never read.</li>
+      <li><strong>Compile and reuse regex in loops</strong> — In languages like Python and Java, creating a regex object inside a tight loop re-parses the pattern on every iteration. Store the compiled pattern in a variable outside the loop. In JavaScript, avoid <code>new RegExp(...)</code> inside hot paths for the same reason.</li>
+      <li><strong>Add comments for complex patterns</strong> — The <code>x</code> (verbose or free-spacing) flag, available in Python, Ruby, and Perl, lets you add inline comments and whitespace to break a long pattern into readable segments. For JavaScript where the flag is not supported, document the pattern in a comment above it, explaining what each section matches.</li>
+    </ul>
     <h2>Related Guides</h2>
     <ul>
       <li><a href="/blog/regex-cheat-sheet">Regex Cheat Sheet for Developers</a> — syntax reference with code examples in JS and Python</li>
@@ -96,5 +118,9 @@ import RegexTester from '../../components/tools/RegexTester';
     <p>A capture group is a part of the pattern wrapped in parentheses <code>()</code>. It lets you extract specific parts of a match. For example, <code>(\d+)-(\d+)</code> applied to <code>2024-01</code> captures <code>2024</code> and <code>01</code> as separate groups.</p>
     <h3>How do I match a literal dot?</h3>
     <p>Use <code>\.</code> instead of <code>.</code>. In regex, an unescaped dot matches any character. To match a literal period — for example in a file extension or IP address — you must escape it: <code>\.txt</code> or <code>\d+\.\d+\.\d+\.\d+</code>.</p>
+    <h3>What is catastrophic backtracking?</h3>
+    <p>Catastrophic backtracking occurs when a regex engine explores an exponentially large number of paths through a pattern before concluding there is no match. It is triggered by nested quantifiers such as <code>(a+)+</code> applied to a string of repeated characters followed by a non-matching character. The engine tries every possible combination of how the inner and outer quantifiers can split the input, leading to execution times that grow exponentially with input length. The fix is to restructure the pattern so that alternatives are mutually exclusive and nested quantifiers cover non-overlapping character sets.</p>
+    <h3>Can I use this tool for languages other than JavaScript?</h3>
+    <p>The core regex syntax — character classes, quantifiers, anchors, and groups — works across most languages including Python, Java, Ruby, and PHP. However, some features are JavaScript-specific: named capture groups use <code>(?&lt;name&gt;...)</code> syntax which differs slightly in older engines, lookbehind assertions have limited support in some environments, and the <code>s</code> (dot all) flag is called <code>re.DOTALL</code> in Python. Use this tool to build and verify your pattern logic, then adapt the syntax to your target language if needed.</p>
   </Fragment>
 </ToolLayout>

@@ -11,6 +11,8 @@ import JsonValidator from '../../components/tools/JsonValidator';
     { question: 'Is my data safe?', answer: 'Yes. All validation runs entirely in your browser using JavaScript. Your data never leaves your device and is never sent to a server.' },
     { question: 'Does this validate JSON Schema?', answer: 'This tool validates JSON syntax only — it checks that the text is well-formed JSON. It does not validate against a JSON Schema definition. For schema validation you would need a dedicated JSON Schema validator.' },
     { question: 'What is the maximum input size?', answer: 'The validator handles inputs up to 1MB. Larger inputs may cause performance issues in the browser.' },
+    { question: "Why does my JSON fail with 'unexpected token'?", answer: "This usually means a syntax error close to the position reported in the error message. The most common causes are: a missing comma between object properties or array elements, an extra trailing comma after the last item, single quotes used instead of double quotes for strings, or an unescaped special character inside a string value. Fix the reported location first, then re-validate — sometimes one early error masks several downstream issues." },
+    { question: 'Can I validate YAML here?', answer: 'No, this tool validates JSON only. JSON and YAML are related formats but have different syntax rules. For YAML validation, use our YAML Validator tool.' },
   ]}
 >
   <div slot="tool">
@@ -18,7 +20,10 @@ import JsonValidator from '../../components/tools/JsonValidator';
   </div>
   <Fragment slot="content">
     <h2>How to Use the JSON Validator</h2>
-    <p>Paste your JSON data into the editor above and click "Validate". The validator will instantly tell you whether your JSON is syntactically correct. If there are errors, you will see a detailed message pointing to the exact location of the problem.</p>
+    <p>Paste your JSON data into the editor and click <strong>Validate</strong>. The validator uses the browser's native JSON parser to check your input against the full JSON specification (RFC 8259). Results appear immediately — no round-trip to a server, no waiting.</p>
+    <p>If your JSON is valid, you will see a green confirmation along with three structural statistics: the number of top-level keys, the maximum nesting depth, and the array item count if the root value is an array. These numbers give you a quick structural overview without needing to scroll through the entire document.</p>
+    <p>If your JSON contains errors, the validator displays a plain-English error message that includes the token where parsing failed. Common messages include <em>"Unexpected token ','  at position 42"</em> or <em>"Expected property name or '}' in JSON at position 17"</em>. Use the reported position to locate the problem in your input. After editing, click Validate again — there is no limit on how many times you can re-validate. Once your JSON passes, you can copy the corrected text and format it neatly with our <a href="/tools/json-formatter">JSON Formatter</a>.</p>
+    <p>For large or complex JSON documents, scroll through the editor to review the structure. The validator processes inputs up to 1 MB, which covers most real-world API responses and configuration files.</p>
 
     <h2>What is JSON Validation?</h2>
     <p>JSON validation checks whether a string conforms to the JSON specification (RFC 8259). Valid JSON must follow strict rules: strings must be double-quoted, trailing commas are not allowed, keys must be unique strings, and values must be one of the six permitted types: string, number, object, array, boolean, or null.</p>
@@ -41,6 +46,23 @@ import JsonValidator from '../../components/tools/JsonValidator';
       <li><strong>Array items</strong> — If the root value is an array, this shows how many items it contains.</li>
     </ul>
 
+    <h2>Common Use Cases</h2>
+    <p>JSON validation is a routine task across nearly every area of software development. Knowing the typical scenarios helps you integrate validation into your workflow before problems reach production.</p>
+    <p><strong>Validating API responses before parsing</strong> is the first line of defense when consuming third-party data. Even well-documented APIs occasionally return malformed JSON during outages or version changes. Pasting the raw response here confirms whether the issue is in your parsing code or in the upstream response itself.</p>
+    <p><strong>Checking configuration files</strong> such as <code>package.json</code>, <code>tsconfig.json</code>, <code>eslintrc.json</code>, and deployment manifests is another frequent use. A single misplaced comma in a config file can prevent a build from starting, and the error message from the build tool is often less descriptive than what a dedicated JSON validator provides.</p>
+    <p><strong>Verifying webhook payloads</strong> during integration work is easier when you can paste a captured payload and immediately confirm its structure. Malformed webhook bodies are a common source of silent failures in event-driven systems.</p>
+    <p><strong>Debugging malformed JSON from third-party services</strong> often requires isolating whether the problem is encoding, escaping, or structure. This tool surfaces the exact position of the first syntax error, which narrows the investigation considerably.</p>
+    <p><strong>Pre-flight checks before importing into databases</strong> or document stores such as MongoDB, Elasticsearch, or Firestore help you avoid partial imports caused by invalid documents. Validate the entire dataset first, then import with confidence.</p>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p>Effective JSON handling goes beyond knowing the syntax rules. These practices will save you debugging time across the entire development lifecycle.</p>
+    <p><strong>Validate before formatting.</strong> Run the validator first to catch syntax errors, then use a formatter on the confirmed-valid JSON. Formatting a broken document can shuffle content in ways that make the original error harder to locate. Use our <a href="/tools/json-formatter">JSON Formatter</a> after validation passes.</p>
+    <p><strong>Use JSON Schema for structural validation beyond syntax.</strong> This tool confirms that your JSON is well-formed, but it does not check whether the data matches your application's expected shape — required fields, correct types, value ranges. JSON Schema provides a declarative way to define and enforce those rules. Consider our <a href="/tools/json-schema-validator">JSON Schema Validator</a> for that layer of checking.</p>
+    <p><strong>Validate all external JSON input at system boundaries.</strong> Any JSON that enters your system from outside — API calls, file uploads, webhook events, user input — should be validated before it reaches business logic. Trusting the shape of external data is a common source of runtime errors.</p>
+    <p><strong>Wrap <code>JSON.parse</code> in <code>try/catch</code> in production code.</strong> <code>JSON.parse</code> throws a <code>SyntaxError</code> on invalid input. In Node.js, an uncaught synchronous throw in a route handler or service function can crash a process. Always handle the error explicitly and return an appropriate error response.</p>
+    <p><strong>Keep JSON flat when possible for readability.</strong> Deeply nested JSON is harder to read, harder to query, and more error-prone to construct manually. If you find yourself working with objects nested five or more levels deep, consider whether the data model could be flattened or split into separate documents.</p>
+    <p><strong>For YAML configuration files,</strong> use our <a href="/tools/yaml-validator">YAML Validator</a> — YAML is a superset of JSON in many implementations, but the two formats have distinct syntax rules and separate validators.</p>
+
     <h2>FAQ</h2>
     <h3>Is my data safe?</h3>
     <p>Yes. All validation runs entirely in your browser using JavaScript. Your data never leaves your device and is never sent to a server.</p>
@@ -48,5 +70,9 @@ import JsonValidator from '../../components/tools/JsonValidator';
     <p>This tool validates JSON syntax only — it checks that the text is well-formed JSON. It does not validate against a JSON Schema definition. For schema validation you would need a dedicated JSON Schema validator.</p>
     <h3>What is the maximum input size?</h3>
     <p>The validator handles inputs up to 1MB. Larger inputs may cause performance issues in the browser.</p>
+    <h3>Why does my JSON fail with "unexpected token"?</h3>
+    <p>This usually means a syntax error close to the position reported in the error message. The most common causes are: a missing comma between object properties or array elements, an extra trailing comma after the last item, single quotes used instead of double quotes for strings, or an unescaped special character inside a string value. Fix the reported location first, then re-validate — sometimes one early error masks several downstream issues.</p>
+    <h3>Can I validate YAML here?</h3>
+    <p>No, this tool validates JSON only. JSON and YAML are related formats but have different syntax rules and separate validators. For YAML files, use our <a href="/tools/yaml-validator">YAML Validator</a>.</p>
   </Fragment>
 </ToolLayout>

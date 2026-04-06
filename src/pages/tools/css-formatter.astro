@@ -13,6 +13,7 @@ import CssFormatter from '../../components/tools/CssFormatter';
     { question: 'What indentation options are available?', answer: 'You can choose 2 spaces (default), 4 spaces, or tabs. Select your preferred style from the Indent dropdown before formatting.' },
     { question: 'Will formatting change how my CSS works?', answer: 'No. CSS formatting is purely cosmetic. It only adds whitespace and newlines — it does not change selectors, properties, or values. The formatted CSS renders identically to the original in every browser.' },
     { question: 'Can I format minified CSS?', answer: 'Yes, that is the primary use case. Paste any minified CSS and the formatter will expand it into a readable, indented structure with each rule and declaration on its own line.' },
+    { question: 'Should I use formatted or minified CSS in production?', answer: 'Always use minified CSS in production. Minification removes whitespace and comments, reducing file size and improving page load performance. Use this formatter during development and code review, then run the CSS through a minifier before deploying. You can use the CSS Minifier tool on this site to compress it back.' },
   ]}
 >
   <div slot="tool">
@@ -20,19 +21,40 @@ import CssFormatter from '../../components/tools/CssFormatter';
   </div>
   <Fragment slot="content">
     <h2>How to Use the CSS Formatter</h2>
-    <p>Paste your CSS code in the left panel. The formatted output appears automatically in the right panel. Use the Indent dropdown to choose 2 spaces, 4 spaces, or tabs. Click the copy button to grab the result. All processing happens entirely in your browser.</p>
+    <p>Paste your CSS code into the left panel. The formatted output appears automatically in the right panel as you type — there is no button to press. If you prefer to trigger formatting manually, you can use the <strong>Format</strong> button after pasting a large block of code.</p>
+    <p>Before formatting, use the <strong>Indent</strong> dropdown to select your preferred indentation style: 2 spaces (the default and most common in modern CSS codebases), 4 spaces (popular in teams that follow older style guides), or tabs (preferred when tab width should be configurable per editor). The choice affects only whitespace and has no impact on how the browser renders the styles.</p>
+    <p>Once the output is ready, click the <strong>Copy</strong> button to copy the formatted CSS to your clipboard. The tool preserves all your comments, media queries, keyframe animations, CSS custom properties (variables), and nested at-rules such as <code>@supports</code> and <code>@layer</code>. Vendor-prefixed properties are handled correctly and placed on their own lines with consistent indentation, just like any other declaration.</p>
+    <p>All processing happens entirely in your browser. No CSS is sent to any server, which makes this tool safe for formatting proprietary stylesheets, internal design system code, or client project CSS that should not leave your machine.</p>
+
     <h2>What is CSS Formatting?</h2>
-    <p>CSS formatting (also called beautification or pretty-printing) transforms compressed or disorganized CSS into a consistently structured, readable format. Each rule gets its own block, properties are indented inside selectors, declarations are placed on separate lines, and consistent spacing is applied around colons and braces. Comments are preserved exactly as written.</p>
-    <h2>Format vs Minify</h2>
-    <p>Formatting and minification are inverse operations. Formatting expands CSS for readability during development and debugging. Minification compresses CSS for production to reduce file size and improve page load performance. Use this formatter to expand minified CSS you need to read or edit, then use the <a href="/tools/css-minifier">CSS Minifier</a> to compress it back for deployment.</p>
+    <p>CSS formatting — also called beautification or pretty-printing — is the process of transforming compressed, concatenated, or inconsistently indented CSS into a consistently structured, human-readable layout. The output has exactly the same meaning to the browser as the input; only the whitespace changes.</p>
+    <p>A well-formatted stylesheet places each selector on its own line, indents declarations inside their rule block, puts each property-value pair on a separate line, adds consistent spacing around colons and braces, and separates rule blocks with blank lines for visual breathing room. This structure makes it dramatically easier to scan for a specific selector, spot duplicate properties, understand the cascade, and track down the rule responsible for an unexpected style.</p>
+    <p>Formatted CSS is also significantly easier to review in version control. When a minified stylesheet changes, a diff shows one enormous line changed. When a formatted stylesheet changes, the diff shows exactly which selector and property were modified, making code review faster and more accurate. Comments are preserved exactly as written, which is important for stylesheets that include section markers, license headers, or explanatory notes.</p>
+    <p>The inverse operation — minification — strips all formatting to produce the smallest possible file for production delivery. Use this formatter during development, then the <a href="/tools/css-minifier">CSS Minifier</a> before deployment. You can also use the <a href="/tools/color-converter">Color Converter</a> when working with color values inside your stylesheets.</p>
+
+    <h2>Common Use Cases</h2>
+    <p><strong>Beautifying vendor or third-party CSS</strong> is the most frequent reason developers reach for a CSS formatter. When you download a library, theme, or UI kit, its CSS is often distributed in minified form to reduce download size. If you need to customize it, understand its structure, or audit it for conflicts with your own styles, you must expand it first. Pasting the minified file into this tool gives you a fully readable stylesheet in seconds.</p>
+    <p><strong>Debugging minified stylesheets</strong> from production is another common use. Browser devtools can pretty-print CSS on the fly, but having the formatted source in your editor lets you search, annotate, and compare changes more effectively. If a production bug involves a specific property or selector, formatting the CSS first makes it far easier to locate the relevant rule.</p>
+    <p><strong>Standardizing CSS across a team</strong> is a workflow use case. Teams that lack automated formatting in their build pipeline sometimes use a formatter as a manual normalization step before committing code. Running a stylesheet through the formatter ensures consistent indentation and spacing regardless of which editor or operating system each developer uses.</p>
+    <p><strong>Preparing CSS for documentation or tutorials</strong> requires clean, readable code. If you are writing a blog post, internal wiki entry, or design system documentation that includes CSS examples, the code needs to be properly formatted for readability. This tool handles that quickly without requiring a full local development environment.</p>
+    <p>For more guidance on CSS workflow, see the <a href="/blog/css-formatter-guide">CSS Formatter Guide</a>.</p>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p><strong>Format during development, minify for production.</strong> These are complementary operations, not alternatives. Your source files should always be formatted for maintainability, and your build pipeline should minify them before serving to users. Never manually maintain a minified stylesheet as your source of truth — you will lose the ability to read and edit it efficiently.</p>
+    <p><strong>Choose one indentation style and stick to it across your project.</strong> Mixed indentation (some files using 2 spaces, others using tabs) creates unnecessary noise in version control diffs and can cause visual misalignment in editors with different tab-width settings. 2 spaces is the most common convention in modern CSS, JavaScript, and web projects. Whatever you choose, enforce it consistently.</p>
+    <p><strong>Organize properties logically within each rule.</strong> Formatting normalizes whitespace, but property order is still up to you. Common conventions include grouping properties by category (positioning, box model, typography, visual) or alphabetical order. Either approach is fine as long as it is consistent. Logical grouping makes rules easier to scan; alphabetical order is easier to enforce automatically.</p>
+    <p><strong>Combine CSS formatting with a linter.</strong> A formatter fixes whitespace and structure; a linter like Stylelint catches actual errors — invalid property names, duplicate declarations, specificity problems, and violations of your style guide rules. The two tools complement each other and should both be part of your development workflow. Automate both in your editor and CI pipeline for the best results.</p>
+
     <h2>FAQ</h2>
     <h3>Is my CSS safe?</h3>
     <p>Yes. All formatting happens in your browser. No CSS is sent to any server.</p>
     <h3>What indentation options are available?</h3>
-    <p>You can choose 2 spaces (default), 4 spaces, or tabs from the Indent dropdown.</p>
+    <p>You can choose 2 spaces (default), 4 spaces, or tabs from the Indent dropdown before formatting.</p>
     <h3>Will formatting change how my CSS works?</h3>
-    <p>No. CSS formatting is purely cosmetic and does not affect how the browser renders the styles.</p>
+    <p>No. CSS formatting is purely cosmetic. It only adjusts whitespace and newlines — selectors, properties, and values are untouched. The formatted CSS renders identically to the original in every browser.</p>
     <h3>Can I format minified CSS?</h3>
-    <p>Yes, that is the primary use case. Paste any minified CSS to expand it into a readable, indented structure.</p>
+    <p>Yes, that is the primary use case. Paste any minified CSS and the formatter expands it into a readable, indented structure with each rule and declaration on its own line.</p>
+    <h3>Should I use formatted or minified CSS in production?</h3>
+    <p>Always minified in production. Use this formatter during development and code review, then run the result through the <a href="/tools/css-minifier">CSS Minifier</a> before deploying. Minification reduces file size and improves page load performance.</p>
   </Fragment>
 </ToolLayout>

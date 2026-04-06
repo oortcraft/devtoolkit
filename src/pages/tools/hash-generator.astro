@@ -10,7 +10,10 @@ import HashGenerator from '../../components/tools/HashGenerator';
   toolUrl="https://oortcraft.dev/tools/hash-generator"
   faq={[
     { question: 'Is my data safe?', answer: 'Yes. All hashing happens in your browser using the Web Crypto API. No data is sent to any server.' },
-    { question: 'Can I reverse a hash?', answer: 'No. Hash functions are one-way. You cannot recover the original text from a hash.' },
+    { question: 'Can I reverse a hash?', answer: 'No. Hash functions are one-way. You cannot recover the original text from a hash. This property is called preimage resistance and is a fundamental design goal of cryptographic hash functions.' },
+    { question: 'What is the difference between hashing and encryption?', answer: 'Hashing is a one-way transformation — you cannot recover the original input from the output. Encryption is two-way — given the correct key, you can decrypt ciphertext back to plaintext. Use hashing when you need to verify data integrity or store a fingerprint. Use encryption when you need to recover the original data later.' },
+    { question: 'Should I use MD5 for password hashing?', answer: 'No. MD5 is far too fast for password hashing — an attacker with a GPU can compute billions of MD5 hashes per second, making brute-force attacks practical. For passwords, always use a purpose-built slow hash function: bcrypt, scrypt, or Argon2. These are deliberately slow and memory-hard, making brute-force attacks orders of magnitude more expensive.' },
+    { question: 'What is a salt in hashing?', answer: 'A salt is a random value generated per-user and concatenated with the input before hashing. Salting ensures that two users with the same password produce different hashes, and it prevents attackers from using precomputed rainbow tables. A salt does not need to be secret — it is typically stored alongside the hash. Without a salt, identical inputs always produce identical outputs, which leaks information.' },
   ]}
 >
   <div slot="tool">
@@ -18,20 +21,210 @@ import HashGenerator from '../../components/tools/HashGenerator';
   </div>
   <Fragment slot="content">
     <h2>How to Use the Hash Generator</h2>
-    <p>Select a hash algorithm (MD5, SHA-1, SHA-256, or SHA-512), then type or paste your text. The hash is computed automatically as you type — entirely in your browser using the Web Crypto API.</p>
+    <p>
+      This tool computes cryptographic hashes from any text input, entirely inside your browser.
+      No data ever leaves your machine. Here is the step-by-step workflow:
+    </p>
+    <ol>
+      <li>
+        <strong>Select an algorithm.</strong> Choose from MD5, SHA-1, SHA-256, or SHA-512 using
+        the algorithm selector. Each algorithm produces a fixed-length output regardless of input
+        size. If you are unsure which to pick, SHA-256 is the safe default for most purposes.
+      </li>
+      <li>
+        <strong>Type or paste your input.</strong> The hash is computed automatically as you type
+        — there is no need to click a button. This live computation makes it easy to experiment
+        with small changes and observe the avalanche effect firsthand: changing a single character
+        produces a completely different hash.
+      </li>
+      <li>
+        <strong>Choose an output format.</strong> The result can be displayed as <strong>hex</strong>
+        (lowercase hexadecimal, the most common format) or <strong>Base64</strong> (a more compact
+        representation useful when embedding hashes in JSON, HTTP headers, or URLs). Hex is the
+        standard choice for checksums and human-readable comparisons. Base64 is common in JWTs,
+        TLS certificates, and API payloads where space efficiency matters.
+      </li>
+      <li>
+        <strong>Copy the hash.</strong> Click the <strong>Copy</strong> button to copy the result
+        to your clipboard. The hash is copied without any trailing whitespace or newlines, so it
+        is safe to paste directly into a configuration file, terminal command, or comparison tool.
+      </li>
+    </ol>
+    <p>
+      Because all computation happens locally via the
+      <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API">Web Crypto API</a>,
+      this tool works offline and imposes no rate limits. Sensitive data such as passwords or
+      private keys never leave the browser tab.
+    </p>
+
     <h2>What is Hashing?</h2>
-    <p>A hash function takes an input of any size and produces a fixed-size string of characters. The same input always produces the same hash, but even a tiny change in the input produces a completely different hash. Hash functions are one-way — you cannot reverse a hash back to the original input.</p>
+    <p>
+      A hash function is a deterministic algorithm that takes an input of arbitrary length and
+      produces a fixed-size output called a digest or hash. "Deterministic" means that the same
+      input always produces the same output, every time, on every machine. This property makes
+      hashes useful for verifying data integrity: if you hash a file before and after transferring
+      it and both hashes match, you know the file was not corrupted or tampered with.
+    </p>
+    <p>
+      One of the most important properties of a cryptographic hash function is the
+      <em>avalanche effect</em>: a tiny change in the input — even flipping a single bit —
+      produces a completely different output with no discernible relationship to the original hash.
+      This makes it impossible to infer anything about the input from the output, and it means
+      similar inputs cannot be detected by comparing hashes.
+    </p>
+    <p>
+      Cryptographic hash functions are also designed to be <em>preimage resistant</em> (you cannot
+      recover the original input from the hash) and <em>collision resistant</em> (it is
+      computationally infeasible to find two different inputs that produce the same hash). These
+      guarantees underpin their use in password storage, digital signatures, and data integrity
+      verification.
+    </p>
+    <p>
+      To learn more about how hashing works under the hood, see the blog post
+      <a href="/blog/what-is-hashing">What is hashing? A developer's guide</a>.
+    </p>
+
     <h2>Which Algorithm Should I Use?</h2>
     <ul>
-      <li><strong>MD5</strong> — Fast but cryptographically broken. Use only for checksums, not security.</li>
-      <li><strong>SHA-1</strong> — Deprecated for security. Still used in some legacy systems.</li>
-      <li><strong>SHA-256</strong> — Recommended. Used in TLS, Bitcoin, and most modern applications.</li>
-      <li><strong>SHA-512</strong> — Longer hash, slightly more secure than SHA-256. Used in some password hashing schemes.</li>
+      <li>
+        <strong>MD5</strong> — Produces a 128-bit (32 hex character) digest. MD5 is fast and
+        universally supported, but it is cryptographically broken: collision attacks are practical
+        on modern hardware, meaning two different inputs can be crafted to produce the same hash.
+        Use MD5 only for non-security checksums — verifying a downloaded file's integrity when the
+        checksum was provided by a trusted source, for example. Never use MD5 for passwords,
+        digital signatures, or any context where an attacker controls the input.
+      </li>
+      <li>
+        <strong>SHA-1</strong> — Produces a 160-bit (40 hex character) digest. SHA-1 has been
+        deprecated by NIST since 2011 and collision attacks have been publicly demonstrated
+        (the SHAttered attack in 2017). It still appears in legacy systems, Git object IDs, and
+        some older TLS configurations, but you should not use it in new code. SHA-256 is the
+        drop-in replacement in virtually every context. For a deeper comparison, see
+        <a href="/blog/sha256-vs-sha512">SHA-256 vs SHA-512: which should you use?</a>
+      </li>
+      <li>
+        <strong>SHA-256</strong> — Produces a 256-bit (64 hex character) digest. SHA-256 is part
+        of the SHA-2 family and is the current standard for most cryptographic applications. It is
+        used in TLS certificates, Bitcoin's proof-of-work algorithm, AWS signature verification,
+        and the majority of modern software supply chain tools. Unless you have a specific reason
+        to choose otherwise, SHA-256 is the right default for new projects.
+      </li>
+      <li>
+        <strong>SHA-512</strong> — Produces a 512-bit (128 hex character) digest. SHA-512 offers
+        a larger output size and can be faster than SHA-256 on 64-bit processors due to its
+        internal block structure. It is used in some password hashing schemes (PBKDF2-SHA512) and
+        high-security contexts where extra output length provides a larger safety margin. For most
+        applications, SHA-256 is sufficient.
+      </li>
     </ul>
+
+    <h2>Common Use Cases</h2>
+    <ul>
+      <li>
+        <strong>File integrity verification.</strong> Compute a SHA-256 hash of a file before
+        distribution and publish it alongside the download. Users can hash the downloaded file
+        themselves and compare — if the hashes match, the file is intact and unmodified. This is
+        standard practice for software releases, OS images, and package managers.
+      </li>
+      <li>
+        <strong>Password storage.</strong> Never store plaintext passwords. Instead, hash the
+        password (ideally with bcrypt, scrypt, or Argon2 — not raw SHA) combined with a unique
+        salt per user, then store only the hash. When the user logs in, hash their input with the
+        stored salt and compare. The original password is never recoverable from the stored value.
+      </li>
+      <li>
+        <strong>Content-addressable storage.</strong> Systems like Git and IPFS use hashes as
+        object identifiers. The hash of a file's content becomes its address — if the content
+        changes, the address changes. This makes deduplication trivial and enables distributed
+        verification without a central authority.
+      </li>
+      <li>
+        <strong>Digital signatures.</strong> Rather than signing a large document directly,
+        cryptographic signing algorithms (RSA, ECDSA) sign the hash of the document. This is
+        faster and produces a fixed-size signature regardless of document length. The recipient
+        hashes the received document and verifies the signature against that hash.
+      </li>
+      <li>
+        <strong>HTTP caching (ETags).</strong> Web servers often generate ETags by hashing the
+        response body. When a client sends a conditional request with the ETag, the server can
+        quickly determine if the content has changed without comparing full responses.
+        JWTs also rely on HMAC-SHA256 for their signature — see the
+        <a href="/tools/jwt-decoder">JWT decoder</a> to inspect JWT payloads and headers.
+      </li>
+    </ul>
+
+    <h2>Best Practices and Tips</h2>
+    <p>
+      <strong>Never store plaintext passwords.</strong> This is the most important rule. Even if
+      your database is encrypted at rest, a breach exposes plaintext passwords directly. Always
+      hash passwords before storing them. And use a purpose-built password hashing algorithm —
+      bcrypt, scrypt, or Argon2 — not a general-purpose hash like SHA-256. General-purpose hashes
+      are designed to be fast; password hashes are designed to be slow and memory-intensive to
+      resist brute-force attacks.
+      See <a href="/blog/bcrypt-vs-scrypt-vs-argon2">bcrypt vs scrypt vs Argon2</a> for a comparison.
+      For generating strong passwords to hash in the first place, use the
+      <a href="/tools/password-generator">password generator</a>.
+    </p>
+    <p>
+      <strong>Always salt password hashes.</strong> A salt is a random value generated per-user
+      and mixed into the input before hashing. Without salts, identical passwords produce identical
+      hashes, which leaks information and enables precomputed rainbow table attacks. With salts,
+      every hash is unique even for duplicate passwords. Modern password hashing libraries handle
+      salting automatically — you do not need to manage salts manually.
+    </p>
+    <p>
+      <strong>Use SHA-256 as the default for new projects.</strong> SHA-256 has no known practical
+      weaknesses, is widely supported across all languages and platforms, and produces an output
+      size large enough for virtually any application. MD5 and SHA-1 are only appropriate for
+      backward compatibility with legacy systems.
+    </p>
+    <p>
+      <strong>Compare hashes in constant time.</strong> When comparing a computed hash against a
+      stored hash in security-sensitive code, use a constant-time comparison function (such as
+      <code>crypto.timingSafeEqual</code> in Node.js). Standard string equality operators short-circuit
+      on the first differing byte, which leaks timing information that an attacker can exploit to
+      infer the correct hash one byte at a time. This is called a timing attack and is a real
+      vulnerability in authentication code.
+    </p>
+
     <h2>FAQ</h2>
     <h3>Is my data safe?</h3>
     <p>Yes. All hashing happens in your browser using the Web Crypto API. No data is sent to any server.</p>
+
     <h3>Can I reverse a hash?</h3>
-    <p>No. Hash functions are one-way. You cannot recover the original text from a hash.</p>
+    <p>
+      No. Hash functions are one-way by design. This property is called preimage resistance. You
+      cannot recover the original input from its hash. What attackers can do is try many possible
+      inputs and compare their hashes against a target — this is brute-force or dictionary attack.
+      That is why password hashes must be slow and salted.
+    </p>
+
+    <h3>What is the difference between hashing and encryption?</h3>
+    <p>
+      Hashing is a one-way transformation — you cannot recover the original input from the output.
+      Encryption is two-way — given the correct key, you can decrypt ciphertext back to plaintext.
+      Use hashing when you need to verify data integrity or store a fingerprint of sensitive data
+      (like a password). Use encryption when you need to recover the original data later (like
+      storing a user's API key that your application needs to use on their behalf).
+    </p>
+
+    <h3>Should I use MD5 for password hashing?</h3>
+    <p>
+      No. MD5 is far too fast for password hashing — an attacker with a consumer GPU can compute
+      billions of MD5 hashes per second, making brute-force attacks practical even against large
+      password databases. For passwords, always use a purpose-built slow hash function: bcrypt,
+      scrypt, or Argon2. These are deliberately slow and memory-hard, making brute-force attacks
+      orders of magnitude more expensive.
+    </p>
+
+    <h3>What is a salt in hashing?</h3>
+    <p>
+      A salt is a random value generated per-user and concatenated with the input before hashing.
+      Salting ensures that two users with the same password produce different stored hashes, and it
+      prevents attackers from using precomputed rainbow tables. A salt does not need to be secret
+      — it is typically stored in the same database row as the hash. Without a salt, identical
+      inputs always produce identical outputs, which leaks information about shared passwords across
+      your user base.
+    </p>
   </Fragment>
 </ToolLayout>

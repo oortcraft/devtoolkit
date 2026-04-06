@@ -12,6 +12,8 @@ import JsonToYaml from '../../components/tools/JsonToYaml';
     { question: 'Does YAML support everything JSON supports?', answer: 'Yes. YAML is a superset of JSON, meaning every valid JSON document is also valid YAML. Converting from JSON to YAML is always lossless — no data is changed or lost.' },
     { question: 'Can I convert YAML back to JSON?', answer: 'This tool converts JSON to YAML only. For the reverse direction, look for a YAML to JSON converter.' },
     { question: 'What is the maximum input size?', answer: 'The converter supports inputs up to 1MB in size.' },
+    { question: 'Will nested objects and arrays convert correctly?', answer: 'Yes. Nested objects become indented YAML mappings, and JSON arrays become YAML sequences using the dash-item syntax. All levels of nesting are preserved exactly.' },
+    { question: 'Are there any YAML gotchas I should watch out for?', answer: 'Yes. Unquoted strings like NO, OFF, YES, and ON are interpreted as booleans in YAML 1.1 (the Norway problem). The converter uses js-yaml which targets YAML 1.2 and avoids most of these traps, but always review keys and string values that look like boolean keywords.' },
   ]}
 >
   <div slot="tool">
@@ -19,37 +21,53 @@ import JsonToYaml from '../../components/tools/JsonToYaml';
   </div>
   <Fragment slot="content">
     <h2>How to Use the JSON to YAML Converter</h2>
-    <p>Paste your JSON data into the left editor. The converter automatically converts it to YAML as you type — no button click required. Use the "Copy" button to copy the YAML output to your clipboard.</p>
+    <p>Using the converter is straightforward. Paste your JSON data into the left editor panel — the tool begins converting as soon as valid JSON is detected, so there is no button to click. The resulting YAML appears immediately in the right output panel.</p>
+    <p>If your JSON contains a syntax error, the editor highlights the problem and displays a message indicating where the parse failed. Fix the JSON and the output updates automatically. Once you are happy with the result, click the <strong>Copy</strong> button above the output panel to copy the YAML to your clipboard in one click.</p>
+    <p>The converter preserves the full structure of your document. Nested objects become indented YAML mappings, JSON arrays become YAML sequences with dash prefixes, strings are quoted only when necessary (for example, when they contain special characters or look like a reserved YAML value), and numeric types remain unquoted. Boolean values <code>true</code> and <code>false</code> map directly to their YAML equivalents. The tool handles arbitrarily deep nesting and mixed-type arrays without any manual configuration on your part.</p>
+    <p>For large documents, consider <a href="/tools/json-formatter">formatting and validating your JSON</a> first using the JSON Formatter to ensure clean input before conversion. You can also use the <a href="/tools/json-validator">JSON Validator</a> to catch structural errors before they cause confusion in the converter.</p>
 
-    <h2>JSON vs YAML: What is the Difference?</h2>
-    <p>Both JSON (JavaScript Object Notation) and YAML (YAML Ain't Markup Language) are human-readable data serialization formats, but they serve slightly different purposes and have different strengths.</p>
-    <p><strong>JSON</strong> is strict, compact, and universally supported. It is the dominant format for REST APIs, web storage, and data interchange between services. Every JSON document is valid (a subset of) JavaScript, making it easy to parse in virtually any programming language.</p>
-    <p><strong>YAML</strong> is designed to be maximally human-readable. It uses indentation instead of brackets and braces, omits quotes around most strings, and supports comments — something JSON does not. These features make YAML popular for configuration files in tools like Docker Compose, Kubernetes, GitHub Actions, Ansible, and many CI/CD systems.</p>
+    <h2>What is JSON to YAML Conversion?</h2>
+    <p>JSON (JavaScript Object Notation) and YAML (YAML Ain't Markup Language) are both text-based data serialization formats, but they are used in different contexts. JSON dominates API communication and browser storage because it maps directly to JavaScript objects and is supported natively by virtually every programming language. YAML, by contrast, was designed to be read and written by humans, which is why it became the standard format for configuration files across the DevOps ecosystem.</p>
+    <p>Converting JSON to YAML is a common task when you need to take structured data — perhaps an API response, a package configuration, or a database export — and use it as the basis for a configuration file. Kubernetes manifests, Docker Compose files, GitHub Actions workflows, Ansible playbooks, Helm chart values, and many CI/CD pipeline definitions all use YAML. YAML allows comments (JSON does not), uses indentation instead of braces and brackets, and omits quotes around most strings, making hand-editing far less error-prone.</p>
+    <p>The conversion is always lossless because YAML is a strict superset of JSON — every valid JSON document is also valid YAML.</p>
 
-    <h2>When Should You Use YAML Instead of JSON?</h2>
+    <h2>Common Use Cases</h2>
     <ul>
-      <li><strong>Configuration files</strong> — YAML is far easier to read and edit by hand. Most modern DevOps tooling (Kubernetes, Helm, GitHub Actions) uses YAML for this reason.</li>
-      <li><strong>Files with comments</strong> — YAML supports <code>#</code> comments; JSON does not. This makes YAML much better for annotated configuration.</li>
-      <li><strong>Multi-line strings</strong> — YAML has native block scalar syntax (<code>|</code> and <code>&gt;</code>) for clean multi-line strings without escape sequences.</li>
-      <li><strong>Human-authored documents</strong> — When a person (not a machine) will write or maintain the file, YAML is often preferred because it requires less punctuation.</li>
+      <li><strong>Kubernetes and Helm charts</strong> — Kubernetes resources (Deployments, Services, ConfigMaps, Ingresses) are all defined in YAML. If you prototype a configuration as a JSON object and need to submit it as a manifest, this converter gets you there instantly.</li>
+      <li><strong>Docker Compose files</strong> — <code>docker-compose.yml</code> is YAML. Converting a JSON service definition to YAML lets you drop it directly into a Compose file without manual reformatting.</li>
+      <li><strong>Ansible playbooks and variables</strong> — Ansible reads host variables, group variables, and playbook definitions as YAML. Engineers often receive environment data as JSON and need to convert it to YAML variable files.</li>
+      <li><strong>GitHub Actions workflows</strong> — CI/CD pipeline definitions in <code>.github/workflows/</code> are YAML. Converting JSON-formatted job definitions to YAML speeds up workflow authoring.</li>
+      <li><strong>Application configuration files</strong> — Many modern frameworks (Spring Boot, NestJS, Ruby on Rails) support YAML config files that are easier to annotate and maintain than their JSON equivalents.</li>
     </ul>
 
-    <h2>When Should You Stick with JSON?</h2>
+    <h2>Best Practices and Tips</h2>
+    <p>Before converting, validate your JSON using a dedicated validator. Even a single misplaced comma or missing closing brace will cause the converter to show an error rather than partial output, which is the correct behavior — partial YAML output from malformed JSON would be silently wrong.</p>
+    <p>Watch for the <strong>Norway problem</strong>: in YAML 1.1, bare strings like <code>NO</code>, <code>OFF</code>, <code>YES</code>, and <code>ON</code> are parsed as boolean values. This converter targets YAML 1.2 where only <code>true</code> and <code>false</code> are booleans, but downstream YAML parsers (especially older ones bundled with Python or Ruby) may still follow 1.1 rules. If your keys or string values could be interpreted as booleans, quote them explicitly after conversion.</p>
+    <p>For multiline strings, YAML offers two clean notations: the literal block scalar (<code>|</code>), which preserves newlines, and the folded block scalar (<code>&gt;</code>), which collapses newlines into spaces. The auto-converter outputs escaped <code>\n</code> sequences for multiline strings, which is valid YAML — but if you plan to hand-edit the file afterward, replacing those with block scalars improves readability.</p>
+    <p>If you need to reuse a subtree in multiple places within the same YAML file, YAML anchors (<code>&amp;anchor</code>) and aliases (<code>*anchor</code>) can eliminate duplication — this is a YAML-only feature with no JSON equivalent, so it requires manual addition after the initial conversion.</p>
+    <p>After converting, consider validating the output with a <a href="/tools/yaml-validator">YAML Validator</a> to confirm the generated document parses cleanly in your target environment.</p>
+
+    <h2>Related Tools and Guides</h2>
     <ul>
-      <li>API payloads and HTTP responses</li>
-      <li>Browser storage (localStorage, IndexedDB)</li>
-      <li>Any context where you need maximum tooling compatibility</li>
-      <li>When strict typing and no-ambiguity is critical</li>
+      <li><a href="/tools/json-formatter">JSON Formatter</a> — Format and prettify raw JSON before converting</li>
+      <li><a href="/tools/json-validator">JSON Validator</a> — Validate JSON syntax to ensure clean input</li>
+      <li><a href="/tools/yaml-validator">YAML Validator</a> — Validate the converted YAML output</li>
+      <li><a href="/blog/yaml-tutorial">YAML Tutorial: Syntax, Types, and Real-World Examples</a> — learn YAML indentation rules, anchors, and multiline strings</li>
+      <li><a href="/blog/json-to-yaml-devops">JSON to YAML in DevOps: Kubernetes, Helm, and Beyond</a> — practical guide for infrastructure engineers</li>
     </ul>
 
     <h2>FAQ</h2>
     <h3>Is my data safe?</h3>
-    <p>Yes. The conversion happens entirely in your browser using JavaScript. No data is sent to any server at any time.</p>
+    <p>Yes. The conversion happens entirely in your browser using JavaScript. No data is sent to any server at any time. You can disconnect from the internet and the tool will still work.</p>
     <h3>Does YAML support everything JSON supports?</h3>
-    <p>Yes. YAML is a superset of JSON, meaning every valid JSON document is also valid YAML. Converting from JSON to YAML is always lossless — no data is changed or lost.</p>
+    <p>Yes. YAML is a superset of JSON, meaning every valid JSON document is also valid YAML. Converting from JSON to YAML is always lossless — no data is changed or lost in the process.</p>
     <h3>Can I convert YAML back to JSON?</h3>
-    <p>This tool converts JSON to YAML only. For the reverse direction, look for a YAML to JSON converter.</p>
+    <p>This tool converts JSON to YAML only. For the reverse direction, look for a dedicated YAML to JSON converter tool.</p>
     <h3>What is the maximum input size?</h3>
-    <p>The converter supports inputs up to 1MB in size.</p>
+    <p>The converter supports inputs up to 1MB in size. For most configuration files and API payloads this limit is more than sufficient.</p>
+    <h3>Will nested objects and arrays convert correctly?</h3>
+    <p>Yes. Nested JSON objects become indented YAML mappings, and JSON arrays become YAML sequences using the dash-item syntax. All levels of nesting are preserved exactly as in the original JSON.</p>
+    <h3>Are there YAML gotchas I should watch out for after converting?</h3>
+    <p>The main one is the Norway problem: unquoted strings like <code>NO</code>, <code>OFF</code>, <code>YES</code>, and <code>ON</code> are interpreted as booleans in YAML 1.1 parsers. This converter targets YAML 1.2 to avoid those traps, but always review your output if you have keys or string values that resemble boolean keywords, and quote them when in doubt.</p>
   </Fragment>
 </ToolLayout>

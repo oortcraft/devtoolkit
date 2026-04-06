@@ -12,6 +12,9 @@ import CsvToJson from '../../components/tools/CsvToJson';
     { question: 'What delimiters are supported?', answer: 'The converter automatically detects commas, tabs, semicolons, and pipes. You do not need to specify the delimiter manually.' },
     { question: 'What does the Header Row option do?', answer: 'When Header Row is enabled, the first row of your CSV is treated as field names and each subsequent row becomes a JSON object with those keys. When disabled, each row is output as an array of values.' },
     { question: 'Is my data safe?', answer: 'Yes. All conversion happens entirely in your browser using the PapaParse library. No data is sent to any server.' },
+    { question: 'What happens if a field value contains a comma?', answer: 'PapaParse correctly handles quoted fields. As long as the value is wrapped in double quotes in the CSV — which is standard RFC 4180 behavior from Excel and Google Sheets — commas inside values are treated as part of the string, not as delimiters.' },
+    { question: 'What does Type Inference do?', answer: 'When enabled, the converter automatically converts numeric strings to JSON numbers, "true"/"false" strings to JSON booleans, and empty fields to null. Disable it to keep every value as a string.' },
+    { question: 'How do I handle a UTF-8 BOM at the start of my CSV?', answer: 'Files exported from Excel often begin with a hidden UTF-8 BOM character (EF BB BF). PapaParse strips the BOM automatically, so the first column header will not have a stray character prepended to it.' },
   ]}
 >
   <div slot="tool">
@@ -19,32 +22,51 @@ import CsvToJson from '../../components/tools/CsvToJson';
   </div>
   <Fragment slot="content">
     <h2>How to Use the CSV to JSON Converter</h2>
-    <p>Paste or type your CSV data into the <strong>CSV Input</strong> field. The converter processes your data in real time and displays the result in the <strong>JSON Output</strong> panel. Click <strong>Copy</strong> to copy the JSON to your clipboard.</p>
+    <p>Paste or type your CSV data into the <strong>CSV Input</strong> panel on the left. The converter processes your input in real time — there is no button to click for basic conversion. The resulting JSON appears immediately in the <strong>JSON Output</strong> panel on the right. Once you are satisfied with the output, click <strong>Copy</strong> to copy the JSON to your clipboard.</p>
+    <p>The converter automatically detects the delimiter used in your CSV — commas, tabs, semicolons, and pipes are all recognized without any manual configuration. If your data comes from Excel or Google Sheets, the default comma delimiter is handled correctly, including quoted fields that contain commas within values.</p>
+    <p>Two options control the output format. The <strong>Header Row</strong> toggle, when enabled, treats the first row of the CSV as property names and converts each subsequent row into a JSON object with those keys. Disabling it outputs each row as a plain array of values, which is useful when the CSV has no meaningful headers. The <strong>Type Inference</strong> toggle, when enabled, automatically converts numeric strings to JSON numbers, the strings <code>true</code> and <code>false</code> to JSON booleans, and empty fields to <code>null</code>. Disable type inference when you need all values to remain strings — for instance, when working with ZIP codes or phone numbers that would otherwise lose leading zeros.</p>
+    <p>After converting, use the <a href="/tools/json-formatter">JSON Formatter</a> to pretty-print and inspect the output, or the <a href="/tools/json-validator">JSON Validator</a> to verify the structure before passing it to your application. For large datasets, the converter handles up to 1MB of CSV input without any performance issues.</p>
 
-    <h2>Options</h2>
+    <h2>What is CSV to JSON Conversion?</h2>
+    <p>CSV (Comma-Separated Values) is the lingua franca of tabular data. Spreadsheet applications like Microsoft Excel, Google Sheets, and Apple Numbers all export CSV by default, and virtually every database management system can produce CSV output. The format is simple: each row is a line of text, fields are separated by a delimiter (usually a comma), and the first row optionally names the columns.</p>
+    <p>JSON (JavaScript Object Notation) is the dominant format for structured data in modern web APIs, NoSQL databases, and application configuration. Unlike CSV, JSON can represent nested objects and arrays, making it far more expressive for complex data models. However, most real-world data starts its life in spreadsheets or relational databases — which export CSV — and needs to be transformed into JSON before it can be consumed by an API endpoint, a JavaScript application, or a document database like MongoDB.</p>
+    <p>Converting CSV to JSON bridges the gap between the tabular world of spreadsheets and the structured world of APIs and application code. The conversion maps each CSV column header to a JSON object key and each row to a JSON object, producing an array of records that can be iterated, queried, and passed to HTTP clients without further transformation.</p>
+
+    <h2>Common Use Cases</h2>
     <ul>
-      <li><strong>Header Row</strong> — When enabled, the first row is used as JSON object keys. Disable this to get arrays instead of objects.</li>
-      <li><strong>Type Inference</strong> — When enabled, numbers, booleans, and null values are automatically converted to their native JSON types. Disable to keep all values as strings.</li>
+      <li><strong>Importing spreadsheet data into APIs</strong> — Product catalogs, user lists, and inventory data are commonly managed in Google Sheets or Excel. Exporting as CSV and converting to JSON gives you an array of objects ready to POST to a REST API or insert into a database via a bulk-write endpoint.</li>
+      <li><strong>Database seeding</strong> — Development and staging databases need realistic seed data. CSV exports from production (with sensitive fields removed) convert cleanly to JSON fixture files that seeding scripts can consume directly without custom parsing logic.</li>
+      <li><strong>Data pipeline transformation</strong> — ETL pipelines often receive raw CSV from upstream data sources (payment processors, analytics exports, partner feeds) and need to normalize it to JSON before sending it downstream to a data warehouse, event bus, or analytics platform.</li>
+      <li><strong>Frontend mock data</strong> — When building a UI before the backend API is ready, a CSV of representative records converts to a JSON array that can be served by a mock API server (like json-server or MSW) with zero backend code.</li>
+      <li><strong>Configuration from spreadsheets</strong> — Feature flags, A/B test configurations, and localization strings are sometimes maintained in a shared spreadsheet for non-technical stakeholders. Exporting and converting to JSON makes them consumable by the application without a database.</li>
     </ul>
 
-    <h2>Features</h2>
+    <h2>Best Practices and Tips</h2>
+    <p>Always check that your CSV has a consistent header row before converting. If column headers contain spaces or special characters, the resulting JSON keys will include those characters verbatim — which can cause issues when accessing them in JavaScript with dot notation. Consider cleaning up header names (using camelCase or snake_case) in the spreadsheet before exporting.</p>
+    <p>Handle commas inside values correctly by ensuring your CSV source properly quotes those fields. The standard RFC 4180 convention wraps any field containing a comma, double quote, or newline in double quotes. Excel and Google Sheets do this automatically on export. If your CSV was generated by a custom script, verify that it follows quoting rules — otherwise the converter will split the field at the embedded comma and produce misaligned columns.</p>
+    <p>Watch out for encoding issues, particularly the <strong>UTF-8 BOM</strong>. Files exported from Excel on Windows often begin with a hidden byte-order mark (<code>0xEF 0xBB 0xBF</code>) that appears as a stray character prepended to the first column header. PapaParse strips this automatically, but if you are processing CSVs programmatically in another tool, ensure your reader opens the file with BOM-aware UTF-8 decoding.</p>
+    <p>Disable <strong>Type Inference</strong> when your data contains values that look numeric but must stay as strings — ZIP codes (<code>07030</code>), phone numbers, product SKUs, and IBAN codes are classic examples. With type inference enabled, leading zeros are dropped and the values become integers, silently corrupting your data.</p>
+    <p>After converting, validate the output JSON using the <a href="/tools/json-validator">JSON Validator</a> to confirm the structure is well-formed. If you plan to send the data to a typed API, consider defining a <a href="/tools/json-schema-validator">JSON Schema</a> for it so you can validate that every converted record has the expected fields and types before making any network requests.</p>
+
+    <h2>Related Tools and Guides</h2>
     <ul>
-      <li>Automatic delimiter detection (comma, tab, semicolon, pipe)</li>
-      <li>Header row support — outputs objects or arrays</li>
-      <li>Type inference for numbers, booleans, and nulls</li>
-      <li>Row count badge shows how many records were parsed</li>
-      <li>Handles up to 1MB of CSV data</li>
-      <li>100% client-side — your data never leaves the browser</li>
+      <li><a href="/tools/json-formatter">JSON Formatter</a> — Pretty-print and inspect the converted JSON output</li>
+      <li><a href="/tools/json-validator">JSON Validator</a> — Validate the JSON structure before using it in your application</li>
+      <li><a href="/blog/csv-to-json-conversion">CSV to JSON Conversion: A Developer's Complete Guide</a> — deep dive into delimiter handling, encoding, and pipeline patterns</li>
     </ul>
 
     <h2>FAQ</h2>
     <h3>What delimiters are supported?</h3>
-    <p>The converter automatically detects commas, tabs, semicolons, and pipes. You do not need to specify the delimiter manually — PapaParse handles detection for you.</p>
-
+    <p>The converter automatically detects commas, tabs, semicolons, and pipes. You do not need to specify the delimiter manually — PapaParse analyzes the first few rows of your input and selects the most likely delimiter without any configuration required.</p>
     <h3>What does the Header Row option do?</h3>
-    <p>When Header Row is enabled, the first row of your CSV is treated as field names and each subsequent row becomes a JSON object with those keys. When disabled, each row is output as an array of values.</p>
-
+    <p>When Header Row is enabled, the first row of your CSV is treated as field names and each subsequent row becomes a JSON object with those keys. When disabled, each row is output as an array of values — useful when your CSV has no meaningful header row or when you want to process the raw positional data.</p>
     <h3>Is my data safe?</h3>
-    <p>Yes. All conversion happens entirely in your browser using the PapaParse library. No data is sent to any server.</p>
+    <p>Yes. All conversion happens entirely in your browser using the PapaParse library. No data is sent to any server at any time. You can disconnect from the internet and the converter will continue to work normally.</p>
+    <h3>What happens if a field value contains a comma?</h3>
+    <p>PapaParse correctly handles RFC 4180 quoted fields. As long as the field is wrapped in double quotes — which Excel and Google Sheets do automatically on export — commas inside the value are treated as part of the string, not as column delimiters. The resulting JSON will contain the full string value without the surrounding quotes.</p>
+    <h3>What does Type Inference do?</h3>
+    <p>When enabled, the converter automatically converts numeric strings to JSON numbers, the literal strings <code>true</code> and <code>false</code> to JSON booleans, and empty fields to <code>null</code>. Disable it when you need all values to remain strings — for example, to preserve leading zeros in ZIP codes, phone numbers, or product codes that would otherwise be parsed as integers.</p>
+    <h3>How do I handle a UTF-8 BOM at the start of my CSV?</h3>
+    <p>Files exported from Excel on Windows often begin with a hidden UTF-8 byte-order mark. PapaParse strips the BOM automatically, so the first column header will not have a stray character prepended to it. If you see unexpected characters in your first key, check whether your CSV source is adding a non-standard BOM or uses a different text encoding such as Windows-1252.</p>
   </Fragment>
 </ToolLayout>

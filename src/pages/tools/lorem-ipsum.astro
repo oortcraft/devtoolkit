@@ -11,27 +11,58 @@ import LoremIpsumGenerator from '../../components/tools/LoremIpsumGenerator';
   faq={[
     { question: 'Why not use real text?', answer: 'Real text can distract reviewers from evaluating the design itself. Lorem ipsum lets stakeholders focus on layout, typography, and visual hierarchy without reading the content.' },
     { question: 'Is the generated text random?', answer: 'Each paragraph is composed of randomized sentences from a curated set of Latin-style text, so you get different output each time you click Generate.' },
+    { question: 'Is Lorem Ipsum real Latin?', answer: "It's based on a 1st-century BC text by Cicero, but sections have been altered, scrambled, and randomized over centuries. The result is not grammatically correct Latin — it is intentionally meaningless placeholder text." },
+    { question: 'How many words are in a paragraph?', answer: 'Each generated paragraph contains roughly 50–80 words, similar to a typical paragraph in web content. This makes it a realistic stand-in for estimating line count and vertical rhythm.' },
+    { question: 'Are there alternatives to Lorem Ipsum?', answer: 'Yes. Hipster Ipsum, Bacon Ipsum, and others offer themed alternatives. Some teams prefer using real draft content for more accurate layout testing, especially when presenting to non-technical stakeholders.' },
   ]}
 >
   <div slot="tool">
     <LoremIpsumGenerator client:load />
   </div>
   <Fragment slot="content">
-    <h2>How to Use the Lorem Ipsum Generator</h2>
-    <p>Select the number of paragraphs you need (1 to 10), then click <strong>Generate</strong>. The text starts with the classic "Lorem ipsum dolor sit amet..." and continues with realistic Latin-style placeholder text. Click <strong>Copy</strong> to copy the generated text to your clipboard.</p>
     <h2>What is Lorem Ipsum?</h2>
-    <p>Lorem ipsum is dummy text used in the printing and typesetting industry since the 1500s. It's used as placeholder text to demonstrate the visual layout of a document or design without the distraction of meaningful content. The text is derived from sections of "De Finibus Bonorum et Malorum" by Cicero, written in 45 BC.</p>
+    <p>Lorem ipsum is the default placeholder text of the printing and typesetting industry, and it has held that role for over five centuries. Its origin is "De Finibus Bonorum et Malorum" (On the Ends of Good and Evil), a philosophical treatise written by the Roman statesman Cicero in 45 BC. In the 16th century, an unknown typesetter scrambled a passage from that work to create a specimen sheet for demonstrating typefaces — producing text that looked like readable Latin but carried no actual meaning.</p>
+    <p>The modern form of lorem ipsum was rediscovered in the 1960s when Letraset, a manufacturer of dry-transfer lettering sheets, used it to fill their specimen sheets. Desktop publishing software adopted it in the 1980s, and web design tools have carried it forward ever since. Today it remains the standard because its mix of short and long words, varied sentence lengths, and Latin letter frequencies closely approximates the visual texture of real English prose — without distracting readers with actual content. The text is deliberately not valid Latin; key words have been altered or removed to prevent any meaning from emerging.</p>
+
+    <h2>How to Use the Lorem Ipsum Generator</h2>
+    <p>The generator is designed for speed. Select the number of paragraphs you need using the counter — anywhere from 1 to 10 — then click <strong>Generate</strong>. The output always opens with the classic "Lorem ipsum dolor sit amet, consectetur adipiscing elit..." opener that designers and developers recognize on sight, signaling immediately that the text is a placeholder.</p>
+    <p>Subsequent paragraphs are built from randomized sentences drawn from an extended pool of Latin-style phrases, so each generation produces a unique block of text. This matters for layout testing: if every paragraph started with the same sentence, repeated visual patterns would create a false impression of the final layout. The randomized output better simulates real content variation.</p>
+    <p>Once the text is generated, click <strong>Copy</strong> to send it to your clipboard in a single action. You can paste it directly into Figma, Sketch, a code editor, a CMS draft, or any text field. Each time you click Generate you receive a fresh result, making it easy to test how your layout handles different text lengths within the same paragraph count.</p>
+
     <h2>Common Use Cases</h2>
+    <p><strong>Mockups and wireframes</strong> are the primary use case. During early design reviews, real content is rarely available, and hand-typed placeholder text introduces inconsistency. Lorem ipsum fills the space predictably so designers can focus on alignment, spacing, and visual weight.</p>
+    <p><strong>Typography and layout testing in web development</strong> is where lorem ipsum does its heaviest lifting. Before actual copy is written, developers need to verify that line-height, letter-spacing, overflow behavior, and text truncation all behave correctly. A few paragraphs of lorem ipsum expose most edge cases.</p>
+    <p><strong>Populating templates before real content is available</strong> keeps projects moving. CMS templates, email layouts, and document generators all benefit from realistic placeholder text that approximates final content density.</p>
+    <p><strong>Font style and spacing demonstrations</strong> use lorem ipsum because it shows how a typeface handles a full character set in a neutral, familiar block — no distracting word choices, no brand associations.</p>
+    <p><strong>Email template testing</strong> requires multi-paragraph blocks to verify how an email client renders long-form content, handles line breaks, and reflows text at different screen widths. Lorem ipsum fills subject lines, body copy, and footer text uniformly.</p>
+    <p><strong>Presentation slide layouts</strong> often need body text of a consistent length to test alignment against graphics and headers. Pasting one or two paragraphs is faster than writing real copy at the slide-design stage.</p>
+    <p><strong>E-commerce product description placeholders</strong> help developers build and test product page templates before the catalog copy is written, ensuring the layout works for both short and long descriptions.</p>
+
+    <h2>Best Practices and Tips</h2>
+    <p>Lorem ipsum is a tool, not a crutch. Used correctly it accelerates the design-to-production workflow; misused it creates risk.</p>
+    <p><strong>Use it only for visual layout testing, never in production.</strong> Placeholder text shipped to a live site signals an incomplete product to users and search engines. Always replace it before launch. Add a lint step or a pre-launch checklist item specifically for finding lorem ipsum in the codebase if your team uses it heavily.</p>
+    <p><strong>Match paragraph count to your expected content length.</strong> If the final copy will be two paragraphs, test with two paragraphs of lorem ipsum. Testing with five paragraphs on a two-paragraph layout obscures overflow and spacing problems that will appear in production.</p>
+    <p><strong>Test with different text lengths to verify responsive behavior.</strong> Generate one paragraph and then ten paragraphs and check that your layout handles both extremes gracefully. This is especially important for card components, sidebars, and any container with a fixed or maximum height.</p>
+    <p><strong>For stakeholder reviews, consider real draft content instead.</strong> Non-technical stakeholders often struggle to evaluate a design when the text is clearly not real. A rough first draft of the actual copy — even an imperfect one — gives stakeholders something to react to and prevents lorem ipsum from becoming invisible background noise that hides missing content strategy.</p>
+    <p><strong>Pair with a <a href="/tools/markdown-preview">Markdown Preview</a></strong> to see how your placeholder text renders with real formatting applied. And use <a href="/tools/diff-checker">Diff Checker</a> to compare two versions of text when reviewing final copy replacements against the placeholder.</p>
+
+    <h2>Related Guides</h2>
     <ul>
-      <li>Filling mockups and wireframes during design</li>
-      <li>Testing typography and layout in web development</li>
-      <li>Populating templates before real content is available</li>
-      <li>Demonstrating font styles and spacing</li>
+      <li><a href="/blog/what-is-lorem-ipsum">What is Lorem Ipsum? — history, use cases, and alternatives</a></li>
+      <li><a href="/tools/markdown-preview">Markdown Preview</a> — preview your content with real formatting</li>
+      <li><a href="/tools/diff-checker">Diff Checker</a> — compare placeholder text against final copy before launch</li>
     </ul>
+
     <h2>FAQ</h2>
     <h3>Why not use real text?</h3>
     <p>Real text can distract reviewers from evaluating the design itself. Lorem ipsum lets stakeholders focus on layout, typography, and visual hierarchy without reading the content.</p>
     <h3>Is the generated text random?</h3>
     <p>Each paragraph is composed of randomized sentences from a curated set of Latin-style text, so you get different output each time you click Generate.</p>
+    <h3>Is Lorem Ipsum real Latin?</h3>
+    <p>It's based on a 1st-century BC text by Cicero, but sections have been altered, scrambled, and randomized over centuries. The result is not grammatically correct Latin — it is intentionally meaningless placeholder text.</p>
+    <h3>How many words are in a paragraph?</h3>
+    <p>Each generated paragraph contains roughly 50–80 words, similar to a typical paragraph in web content. This makes it a realistic stand-in for estimating line count and vertical rhythm.</p>
+    <h3>Are there alternatives to Lorem Ipsum?</h3>
+    <p>Yes. Hipster Ipsum, Bacon Ipsum, and others offer themed alternatives. Some teams prefer using real draft content for more accurate layout testing, especially when presenting to non-technical stakeholders.</p>
   </Fragment>
 </ToolLayout>

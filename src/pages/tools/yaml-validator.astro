@@ -12,6 +12,8 @@ import YamlValidator from '../../components/tools/YamlValidator';
     { question: 'What can this tool do?', answer: 'Validate YAML syntax with detailed error messages, and convert YAML to JSON format.' },
     { question: 'Does it support multi-document YAML?', answer: 'Yes. The validator can parse multi-document YAML files separated by ---.' },
     { question: 'Is my data safe?', answer: 'Yes. All validation happens in your browser. No data is sent to any server.' },
+    { question: 'Why does YAML reject my tab characters?', answer: 'YAML forbids tab characters for indentation by specification. Only space characters are allowed. Replace all tabs with two or four spaces and the error will resolve.' },
+    { question: 'What is the difference between YAML and JSON?', answer: 'YAML is a superset of JSON designed for human readability. It uses indentation instead of braces and brackets, supports comments, and allows more data types like multi-line strings. JSON is stricter and better suited for machine-to-machine communication.' },
   ]}
 >
   <div slot="tool">
@@ -19,7 +21,111 @@ import YamlValidator from '../../components/tools/YamlValidator';
   </div>
   <Fragment slot="content">
     <h2>How to Use the YAML Validator</h2>
-    <p>Paste your YAML in the input field. Choose <strong>Validate</strong> mode to check syntax, or <strong>YAML → JSON</strong> mode to convert. Results update in real time as you type.</p>
+    <p>
+      Paste your YAML document into the input field on the left. The tool validates syntax in real
+      time as you type, so you get immediate feedback without pressing any button. If the document
+      contains an error, a clear message appears below the editor showing the exact line and column
+      number where parsing failed, along with a human-readable description of the problem.
+    </p>
+    <p>
+      Switch between <strong>Validate</strong> mode and <strong>YAML → JSON</strong> mode using the
+      toggle at the top of the tool. In Validate mode, a green checkmark confirms the document is
+      syntactically correct. In YAML → JSON mode, the right panel displays the equivalent JSON
+      output, formatted and indented for easy reading. Click <strong>Copy</strong> to copy the JSON
+      result to your clipboard.
+    </p>
+    <p>
+      The statistics panel below the editor shows the total key count, maximum nesting depth, and
+      document count, which is useful when auditing large configuration files. Multi-document YAML
+      files (multiple documents separated by <code>---</code>) are fully supported — each document is
+      parsed independently and results are aggregated. This is particularly helpful when validating
+      Kubernetes manifests that bundle several resource definitions in a single file. No account or
+      installation required; everything runs locally in your browser.
+    </p>
+
+    <h2>What is YAML Validation?</h2>
+    <p>
+      YAML (YAML Ain't Markup Language) is a human-readable data serialisation format that has become
+      the dominant choice for configuration files in modern infrastructure tooling. Unlike JSON, YAML
+      uses indentation to express structure — there are no curly braces or brackets, making files
+      easier to read and write by hand. However, this reliance on whitespace makes YAML highly
+      sensitive to formatting mistakes that are invisible at a glance.
+    </p>
+    <p>
+      YAML validation is the process of checking whether a document conforms to the YAML
+      specification before it is consumed by a tool or deployed to an environment. Common syntax
+      errors include:
+    </p>
+    <ul>
+      <li>Tab characters used instead of spaces for indentation (explicitly forbidden by the YAML spec)</li>
+      <li>Inconsistent indentation levels within the same block</li>
+      <li>Unquoted strings that parse as unexpected types — for example, <code>yes</code>, <code>no</code>, <code>on</code>, and <code>off</code> are interpreted as booleans in YAML 1.1</li>
+      <li>Missing colons after mapping keys</li>
+      <li>Invalid Unicode escape sequences</li>
+    </ul>
+    <p>
+      Catching these errors before deploying a Kubernetes manifest or a CI/CD pipeline config can
+      save significant debugging time. Kubernetes and most CI systems provide cryptic errors when they
+      receive malformed YAML; validating locally first narrows the problem immediately.
+    </p>
+
+    <h2>Common Use Cases</h2>
+    <p>
+      <strong>Kubernetes manifests</strong> are the highest-stakes YAML files most developers encounter.
+      A single indentation error in a Deployment or Service manifest can cause <code>kubectl apply</code>
+      to fail silently or produce a confusing API error. Pasting your manifest here before applying it
+      to a cluster takes seconds and catches structural problems immediately. After validating, use our
+      <a href="/tools/json-to-yaml">JSON to YAML converter</a> if you need to generate manifests
+      programmatically from JSON templates.
+    </p>
+    <p>
+      <strong>Docker Compose files</strong> are another common scenario. Compose uses YAML for service
+      definitions, volumes, and networks. Errors in a Compose file can prevent containers from starting
+      or cause ports and mounts to be configured incorrectly. Validating the file before running
+      <code>docker compose up</code> prevents frustrating runtime surprises.
+    </p>
+    <p>
+      <strong>CI/CD pipeline configs</strong> — GitHub Actions workflows, GitLab CI, CircleCI, and
+      Bitbucket Pipelines all use YAML. Pipeline syntax errors cause failed runs that waste build
+      minutes and delay deployments. Validating the YAML structure here before pushing to the
+      repository saves time and CI credits.
+    </p>
+    <p>
+      <strong>Ansible playbooks</strong>, <strong>Hugo</strong> and <strong>Jekyll</strong> site
+      configs, and <strong>Helm chart values</strong> are additional file types where YAML validation
+      catches problems early. For JSON-based configs, see our
+      <a href="/tools/json-validator">JSON Validator</a> for the equivalent workflow. For more depth
+      on YAML structure, read our
+      <a href="/blog/yaml-tutorial">YAML Tutorial</a>.
+    </p>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p>
+      <strong>Always use 2-space indentation.</strong> While YAML allows any consistent number of
+      spaces, 2 spaces is the de facto standard across Kubernetes, Ansible, and most CI platforms.
+      Mixing indentation levels (e.g., 2 spaces in one block and 4 in another) is a common source of
+      subtle bugs.
+    </p>
+    <p>
+      <strong>Never use tabs.</strong> The YAML specification explicitly prohibits tab characters for
+      indentation. Most editors can be configured to insert spaces when you press Tab — enable this
+      for any file type associated with YAML (<code>.yml</code>, <code>.yaml</code>).
+    </p>
+    <p>
+      <strong>Quote strings that look like booleans or numbers.</strong> In YAML 1.1 (used by many
+      tools), unquoted values like <code>yes</code>, <code>no</code>, <code>true</code>,
+      <code>false</code>, <code>on</code>, and <code>off</code> are parsed as booleans, not strings.
+      If you intend a string, wrap the value in quotes: <code>"yes"</code> or <code>'no'</code>.
+      Port numbers and version strings (e.g., <code>1.10</code>) should also be quoted when a string
+      is expected, to prevent them from being parsed as floats.
+    </p>
+    <p>
+      <strong>Validate before every deploy.</strong> Make YAML validation a mandatory step in your
+      local workflow, not an afterthought. Many teams add a YAML lint step to their CI pipeline to
+      enforce this automatically. For YAML validation best practices in production pipelines, see
+      <a href="/blog/yaml-validation-best-practices">YAML Validation Best Practices</a>.
+    </p>
+
     <h2>Features</h2>
     <ul>
       <li><strong>Syntax Validation</strong> — Instant feedback with line numbers for errors</li>
@@ -27,12 +133,21 @@ import YamlValidator from '../../components/tools/YamlValidator';
       <li><strong>Multi-document Support</strong> — Handles YAML files with multiple documents</li>
       <li><strong>Statistics</strong> — Shows key count, nesting depth, and document count</li>
     </ul>
+
     <h2>FAQ</h2>
     <h3>What can this tool do?</h3>
     <p>Validate YAML syntax with detailed error messages, and convert YAML to JSON format.</p>
+
     <h3>Does it support multi-document YAML?</h3>
     <p>Yes. The validator can parse multi-document YAML files separated by ---.</p>
+
     <h3>Is my data safe?</h3>
     <p>Yes. All validation happens in your browser. No data is sent to any server.</p>
+
+    <h3>Why does YAML reject my tab characters?</h3>
+    <p>YAML forbids tab characters for indentation by specification. Only space characters are allowed. Replace all tabs with two or four spaces and the error will resolve.</p>
+
+    <h3>What is the difference between YAML and JSON?</h3>
+    <p>YAML is a superset of JSON designed for human readability. It uses indentation instead of braces and brackets, supports comments, and allows more data types like multi-line strings. JSON is stricter and better suited for machine-to-machine communication.</p>
   </Fragment>
 </ToolLayout>

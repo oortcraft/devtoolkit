@@ -21,6 +21,14 @@ import CronBuilder from '../../components/tools/CronBuilder';
       question: 'What do the special strings like @daily mean?',
       answer: '@daily is shorthand for "0 0 * * *" (midnight every day). Other shortcuts include @hourly, @weekly, @monthly, and @yearly. This tool supports all of them.',
     },
+    {
+      question: 'Does cron support seconds?',
+      answer: 'Standard 5-field cron does not support seconds. Some schedulers (like node-cron or Quartz) add a 6th field for seconds, but the traditional Unix crontab format only goes down to per-minute precision.',
+    },
+    {
+      question: 'How do I debug a cron job that isn\'t running?',
+      answer: 'Check: 1) the crontab is saved correctly (run crontab -l to confirm), 2) the full PATH is set inside the crontab since cron runs in a minimal environment, 3) output is redirected so errors are visible (>> /var/log/myjob.log 2>&1), and 4) the script has execute permissions (chmod +x).',
+    },
   ]}
 >
   <div slot="tool">
@@ -29,7 +37,13 @@ import CronBuilder from '../../components/tools/CronBuilder';
   <Fragment slot="content">
     <h2>How to Use the Cron Expression Builder</h2>
     <p>
-      Type a cron expression in the input field or click one of the preset pills to load a common schedule. The tool instantly shows you a human-readable description of when the job will run and lists the next five scheduled run times. Use the copy button to grab the expression and paste it directly into your crontab or scheduler.
+      Type a cron expression directly into the input field, or click one of the preset pills to instantly load a common schedule such as "every hour", "every weekday at 9 AM", or "first of the month". The tool parses your input on every keystroke and immediately renders a plain-English description of when the job will fire — no submit button required.
+    </p>
+    <p>
+      Below the description you will see the next five scheduled run times displayed in your local system timezone, which makes it easy to sanity-check schedules that cross midnight or span multiple days. If you need to verify the Unix timestamp of an upcoming run, you can copy the expression and paste it into a <a href="/tools/timestamp-converter">timestamp converter</a> to check when your next cron run is in Unix time.
+    </p>
+    <p>
+      Once the expression looks correct, hit the copy button to copy it to your clipboard and paste it straight into your crontab file, a CI/CD pipeline trigger, a cloud scheduler (AWS EventBridge, GCP Cloud Scheduler, etc.), or any other system that accepts standard 5-field cron syntax. All processing happens client-side — nothing leaves your browser.
     </p>
 
     <h2>Cron Syntax Reference</h2>
@@ -81,11 +95,39 @@ import CronBuilder from '../../components/tools/CronBuilder';
       <li><code>0 0 1 1 *</code> — once a year on January 1st</li>
     </ul>
 
+    <h2>Common Use Cases</h2>
+    <p>
+      Cron jobs are the backbone of server automation. Here are the scenarios developers reach for cron most often:
+    </p>
+    <ul>
+      <li><strong>Database backups</strong> — Schedule nightly <code>pg_dump</code> or <code>mysqldump</code> exports to S3 or a remote volume so you always have a recent restore point.</li>
+      <li><strong>Log rotation</strong> — Compress and archive application logs weekly to keep disk usage under control without losing historical data.</li>
+      <li><strong>Cache clearing</strong> — Invalidate stale caches at off-peak hours (e.g., 3 AM) to avoid serving outdated content without impacting peak traffic.</li>
+      <li><strong>Report generation</strong> — Produce daily or weekly CSV/PDF reports and email them to stakeholders automatically.</li>
+      <li><strong>Health check pings</strong> — Hit an internal health endpoint every five minutes and alert on failure, acting as a lightweight uptime monitor.</li>
+      <li><strong>Deployment scripts</strong> — Trigger off-hours deployments or database migrations during maintenance windows to minimize user impact.</li>
+      <li><strong>Email digests</strong> — Aggregate activity or notifications and send a single digest email each morning instead of real-time alerts.</li>
+    </ul>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p>
+      Writing a cron expression that runs correctly in development is only half the job. These practices help you avoid the classic pitfalls in production:
+    </p>
+    <ul>
+      <li><strong>Avoid <code>* * * * *</code> in production</strong> — Running a job every single minute is rarely intentional. Double-check the schedule before deploying; a stray wildcard can hammer a database or API in minutes.</li>
+      <li><strong>Use <code>@daily</code> shortcuts for readability</strong> — <code>@daily</code> is far easier to audit at a glance than <code>0 0 * * *</code>, reducing the chance of misreading a schedule during on-call incidents.</li>
+      <li><strong>Log output to a file</strong> — Append stdout and stderr to a log file (<code>&gt;&gt; /var/log/myjob.log 2&gt;&amp;1</code>) so you have a record when a job fails silently.</li>
+      <li><strong>Use <code>flock</code> to prevent overlapping runs</strong> — If a job can run longer than its interval, wrap it with <code>flock -n /tmp/myjob.lock</code> to skip the new invocation rather than stacking concurrent processes.</li>
+      <li><strong>Test expressions before deploying</strong> — Use this builder to preview the next five run times and confirm the schedule matches your intent before touching a production crontab.</li>
+      <li><strong>Account for server timezone</strong> — Cron uses the server's local timezone. If your servers are in UTC but your stakeholders are in EST, a <code>0 9 * * *</code> job runs at 9 AM UTC (4 AM EST) — which is rarely what anyone means by "morning report".</li>
+    </ul>
+
     <h2>Related Guides</h2>
     <ul>
       <li><a href="/blog/cron-expression-guide">Cron Syntax: Fields, Examples & Tips</a> — master the 5-field format with 15+ examples</li>
       <li><a href="/blog/crontab-cheat-sheet">Crontab Cheat Sheet: 30+ Examples</a> — ready-to-use cron expressions for common tasks</li>
     </ul>
+
     <h2>FAQ</h2>
     <h3>What is a cron expression?</h3>
     <p>A cron expression is a string of five fields that defines a recurring schedule for automated tasks. The fields represent minute, hour, day of month, month, and day of week.</p>
@@ -95,5 +137,11 @@ import CronBuilder from '../../components/tools/CronBuilder';
 
     <h3>What do the special strings like @daily mean?</h3>
     <p><code>@daily</code> is shorthand for <code>0 0 * * *</code> (midnight every day). Other shortcuts include <code>@hourly</code>, <code>@weekly</code>, <code>@monthly</code>, and <code>@yearly</code>.</p>
+
+    <h3>Does cron support seconds?</h3>
+    <p>Standard 5-field cron does not support seconds. Some schedulers (like node-cron or Quartz) add a 6th field for seconds, but the traditional Unix crontab format only goes down to per-minute precision.</p>
+
+    <h3>How do I debug a cron job that isn't running?</h3>
+    <p>Check: 1) the crontab is saved correctly (run <code>crontab -l</code> to confirm), 2) the full PATH is set inside the crontab since cron runs in a minimal environment, 3) output is redirected so errors are visible (<code>&gt;&gt; /var/log/myjob.log 2&gt;&amp;1</code>), and 4) the script has execute permissions (<code>chmod +x</code>).</p>
   </Fragment>
 </ToolLayout>

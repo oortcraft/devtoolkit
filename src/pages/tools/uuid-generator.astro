@@ -9,8 +9,11 @@ import UuidGenerator from '../../components/tools/UuidGenerator';
   toolName="UUID Generator"
   toolUrl="https://oortcraft.dev/tools/uuid-generator"
   faq={[
-    { question: 'Are UUIDs truly unique?', answer: 'UUID v4 has 122 bits of randomness, making collisions astronomically unlikely. For practical purposes, you can treat them as globally unique.' },
+    { question: 'Are UUIDs truly unique?', answer: 'UUID v4 has 122 bits of randomness, giving 2^122 possible values — roughly 5.3 × 10^36. The probability of a collision when generating one billion UUIDs per second for a trillion years is still negligible. For all practical purposes, treat them as globally unique.' },
     { question: 'Is my data safe?', answer: 'Yes. All UUID generation happens in your browser using the Web Crypto API. No data is sent to any server.' },
+    { question: 'What is the difference between UUID versions?', answer: 'v1 is time-based and includes a timestamp and MAC address, making it sortable but potentially leaking machine identity. v4 is fully random and the most widely used. v7 (a newer standard) combines a millisecond timestamp prefix with random bits, giving you sortable IDs that are also privacy-safe.' },
+    { question: 'Can I use UUID as a database primary key?', answer: 'Yes, but be aware of performance implications. UUIDs are 128 bits wide, which is larger than a typical integer primary key. Random UUIDs (v4) fragment B-tree indexes because inserts are scattered across the index. If you are using a relational database that relies heavily on clustered indexes (such as MySQL InnoDB), prefer UUIDv7 or ULID, both of which sort chronologically and cause far fewer page splits.' },
+    { question: 'Should I use UUID as a security token or secret?', answer: 'No. While UUIDv4 is random, it is not designed to be a secret. Some UUID versions (v1, v6) embed timestamps or node identifiers, which makes them partially predictable. For session tokens, API keys, or any secret value, use a cryptographically secure random token generator instead — for example, 32 bytes from crypto.getRandomValues encoded as hex.' },
   ]}
 >
   <div slot="tool">
@@ -18,31 +21,174 @@ import UuidGenerator from '../../components/tools/UuidGenerator';
   </div>
   <Fragment slot="content">
     <h2>How to Use the UUID Generator</h2>
-    <p>Select a UUID version (v4 for random, v1 for time-based), then click <strong>Generate</strong> to create a new UUID. Use the <strong>Copy</strong> button to copy the result to your clipboard. Your last 5 generated UUIDs are kept in the history section below.</p>
+    <p>
+      This tool lets you generate one or more UUIDs in a single click, entirely inside your browser.
+      Here is the step-by-step workflow:
+    </p>
+    <ol>
+      <li><strong>Select a UUID version.</strong> Use the version selector to choose between v4 (random) and v1 (time-based). For most use cases, v4 is the right choice — it is the default for a reason.</li>
+      <li><strong>Set the quantity.</strong> The quantity field lets you generate up to 100 UUIDs at once. Bulk generation is useful when seeding a database, creating test fixtures, or pre-generating a batch of identifiers for an import script. Each UUID is generated independently with its own random bits.</li>
+      <li><strong>Click Generate.</strong> The results appear immediately. Each UUID is displayed on its own line so you can scan or copy individual entries.</li>
+      <li><strong>Copy the result.</strong> Click the <strong>Copy</strong> button next to any UUID to copy it to your clipboard. If you generated a batch, a <strong>Copy All</strong> button lets you grab the entire list at once, ready to paste into your editor, spreadsheet, or SQL file.</li>
+      <li><strong>Review history.</strong> Your last five generated UUIDs are saved in the history section below the tool. This is handy when you close a tab and need to retrieve a recently generated identifier without regenerating.</li>
+    </ol>
+    <p>
+      Because everything runs locally via the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API">Web Crypto API</a>,
+      generation is instantaneous and works offline. There is no server round-trip, no logging, and no rate limiting.
+    </p>
 
     <h2>What is a UUID?</h2>
-    <p>A UUID (Universally Unique Identifier) is a 128-bit label used to uniquely identify information in computer systems. They are formatted as 32 hexadecimal digits displayed in five groups separated by hyphens: <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code>.</p>
+    <p>
+      A UUID (Universally Unique Identifier) is a standardized 128-bit label defined in
+      <a href="https://datatracker.ietf.org/doc/html/rfc4122">RFC 4122</a>. It is represented
+      as 32 hexadecimal digits divided into five groups by hyphens, following the
+      pattern <code>8-4-4-4-12</code>: for example,
+      <code>550e8400-e29b-41d4-a716-446655440000</code>.
+    </p>
+    <p>
+      The key word is <em>universally</em>. Unlike auto-increment integers that require a central
+      database to hand out the next number, UUIDs can be generated independently on any machine
+      at any time with no coordination. Two servers in different data centers, a mobile device
+      offline, and a browser tab can all generate UUIDs simultaneously and the values will not
+      collide. This property makes UUIDs invaluable in distributed systems, where a central
+      authority for ID allocation would be a bottleneck or a single point of failure.
+    </p>
+    <p>
+      The 128-bit size is a deliberate trade-off: larger than a 64-bit integer, but large enough
+      that the probability of collision is negligible even at massive scale. UUIDs are also
+      self-describing — you do not need to know the source system to recognize the format.
+    </p>
+    <p>
+      To learn more about the full UUID specification, see the blog post
+      <a href="/blog/what-is-uuid">What is a UUID? A developer's guide</a>.
+    </p>
 
     <h2>UUID Versions</h2>
     <ul>
-      <li><strong>v4 (Random)</strong>: Generated using random or pseudo-random numbers. Most commonly used when you just need a unique identifier with no special structure.</li>
-      <li><strong>v1 (Time-based)</strong>: Generated using the current timestamp and the machine's MAC address (or a random node ID in browser environments). Useful when you need sortable or traceable IDs.</li>
+      <li>
+        <strong>v1 (Time-based)</strong>: Constructed from the current timestamp (in 100-nanosecond
+        intervals since October 1582) combined with a clock sequence and a node identifier
+        (typically the MAC address, or a random value in browser environments). v1 UUIDs are
+        monotonically increasing within a node, which makes them useful when you need sortable IDs.
+        The downside is that the node field may leak machine identity.
+      </li>
+      <li>
+        <strong>v4 (Random)</strong>: Generated entirely from cryptographically secure random bits,
+        except for four bits reserved for the version and two bits for the variant. This is the
+        most widely used UUID version because it has no structure that reveals anything about when
+        or where it was generated. Use v4 whenever you just need a globally unique opaque identifier.
+      </li>
+      <li>
+        <strong>v7 (Time-ordered random)</strong>: A newer version (RFC 9562) that combines a
+        48-bit Unix millisecond timestamp prefix with 74 random bits. This gives you UUIDs that
+        sort chronologically — like v1 — but without leaking MAC addresses. v7 is the recommended
+        choice for new projects that need database-friendly sortable IDs. See
+        <a href="/blog/uuid-versions-compared">UUID versions compared</a> for a deeper look.
+      </li>
     </ul>
 
     <h2>Common Use Cases</h2>
     <ul>
-      <li>Primary keys for database records</li>
-      <li>Session tokens and API keys</li>
-      <li>Idempotency keys for API requests</li>
-      <li>Unique file names to avoid collisions</li>
-      <li>Distributed systems where coordination is difficult</li>
+      <li>
+        <strong>Database primary keys.</strong> UUIDs let you assign IDs on the client or
+        application layer before a row is written to the database. This simplifies insert logic
+        and avoids a round-trip to fetch the generated key. It also makes it safe to merge data
+        from multiple shards or replicas without key conflicts.
+      </li>
+      <li>
+        <strong>Distributed systems.</strong> When microservices or edge nodes need to create
+        records without talking to a central coordinator, UUIDs provide uniqueness guarantees
+        out of the box. Each service generates its own IDs and you can safely aggregate them later.
+      </li>
+      <li>
+        <strong>Session identifiers.</strong> Web frameworks often use UUIDs to identify user
+        sessions stored server-side. The random, unguessable nature of v4 UUIDs provides a
+        baseline of security (though dedicated token libraries are preferable for high-security
+        contexts — see the FAQ below).
+      </li>
+      <li>
+        <strong>Unique file names.</strong> When users upload files, saving them under their
+        original names causes collisions and path traversal risks. Renaming uploads to a UUID
+        guarantees uniqueness and removes any sensitive information from the file path.
+      </li>
+      <li>
+        <strong>API request tracing.</strong> Attaching a UUID to every outbound API request as a
+        correlation or idempotency key lets you deduplicate retries on the server side and trace a
+        request across multiple services in your logs.
+      </li>
     </ul>
+
+    <h2>Best Practices and Tips</h2>
+    <p>
+      <strong>Choose the right version for your use case.</strong> UUIDv4 is the safest default
+      for most new identifiers. If you need database index performance or chronological ordering,
+      prefer UUIDv7. Never use v1 in contexts where exposing a MAC address is a privacy concern.
+    </p>
+    <p>
+      <strong>Do not use UUIDs as security tokens.</strong> A UUID is an identifier, not a secret.
+      Even UUIDv4 — while random — is not designed for use as an API key, password-reset token, or
+      any other value where unguessability is a security requirement. Use a dedicated CSPRNG to
+      generate tokens of at least 128 bits and encode them as hex or base64.
+    </p>
+    <p>
+      <strong>Store UUIDs efficiently.</strong> If your database supports a native UUID or binary(16)
+      type, use it. Storing a UUID as a <code>VARCHAR(36)</code> wastes roughly 2× the space compared
+      to a binary representation and slows down index lookups. PostgreSQL's <code>uuid</code> type
+      and MySQL's <code>BINARY(16)</code> are common choices.
+    </p>
+    <p>
+      <strong>Consider ULID as an alternative.</strong> ULID (Universally Unique Lexicographically
+      Sortable Identifier) is a UUID alternative that is sortable, URL-safe, and more human-readable
+      than a standard UUID. It trades some randomness for better ergonomics. If you find UUIDs
+      awkward to work with in URLs or logs, ULID is worth evaluating.
+      If you need a deterministic identifier derived from an input value,
+      consider using a <a href="/tools/hash-generator">hash generator</a> instead.
+    </p>
+    <p>
+      For a full comparison of UUID versions and alternatives, see
+      <a href="/blog/uuid-versions-compared">UUID versions compared</a>.
+      If you need random values for security purposes rather than identity purposes, the
+      <a href="/tools/password-generator">password generator</a> is a better starting point.
+    </p>
 
     <h2>FAQ</h2>
     <h3>Are UUIDs truly unique?</h3>
-    <p>UUID v4 has 122 bits of randomness, making collisions astronomically unlikely. For practical purposes, you can treat them as globally unique.</p>
+    <p>
+      UUID v4 has 122 bits of randomness, giving 2<sup>122</sup> possible values — roughly
+      5.3 × 10<sup>36</sup>. The probability of a collision when generating one billion UUIDs
+      per second for a trillion years is still negligible. For all practical purposes, treat
+      them as globally unique.
+    </p>
 
     <h3>Is my data safe?</h3>
     <p>Yes. All UUID generation happens in your browser using the Web Crypto API. No data is sent to any server.</p>
+
+    <h3>What is the difference between UUID versions?</h3>
+    <p>
+      v1 is time-based and includes a timestamp and MAC address, making it sortable but potentially
+      leaking machine identity. v4 is fully random and the most widely used version today.
+      v7 (a newer standard from RFC 9562) combines a millisecond timestamp prefix with random bits,
+      giving you sortable IDs that are also privacy-safe — the best of both worlds for most new projects.
+    </p>
+
+    <h3>Can I use UUID as a database primary key?</h3>
+    <p>
+      Yes, but be aware of performance implications. UUIDs are 128 bits wide, larger than a typical
+      integer primary key. Random UUIDs (v4) fragment B-tree indexes because inserts are scattered
+      across the index rather than appended to the end. If you are using MySQL InnoDB or a similar
+      clustered-index engine, prefer UUIDv7 or ULID, both of which are chronologically sortable
+      and cause far fewer page splits. PostgreSQL handles random UUIDs more gracefully due to its
+      index structure, but even there, sortable IDs improve bulk insert performance.
+    </p>
+
+    <h3>Should I use UUID as a security token or secret?</h3>
+    <p>
+      No. While UUIDv4 is random, it is not designed to be a secret. Some UUID versions (v1, v6)
+      embed timestamps or node identifiers, which makes them partially predictable. For session
+      tokens, API keys, or any secret value, use a dedicated cryptographically secure random token
+      generator — for example, 32 bytes from <code>crypto.getRandomValues</code> encoded as hex.
+      The <a href="/tools/password-generator">password generator</a> on this site can serve as a
+      starting point for generating random secret values.
+    </p>
   </Fragment>
 </ToolLayout>

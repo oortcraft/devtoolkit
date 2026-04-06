@@ -9,9 +9,11 @@ import MarkdownPreview from '../../components/tools/MarkdownPreview';
   toolName="Markdown Preview"
   toolUrl="https://oortcraft.dev/tools/markdown-preview"
   faq={[
-    { question: 'What Markdown features are supported?', answer: 'GitHub Flavored Markdown including tables, task lists, strikethrough, and fenced code blocks.' },
+    { question: 'What Markdown features are supported?', answer: 'GitHub Flavored Markdown including tables, task lists, strikethrough, and fenced code blocks with syntax highlighting.' },
     { question: 'Is my content saved?', answer: 'No. Everything runs in your browser. Nothing is saved or sent to any server.' },
-    { question: 'Can I export the rendered HTML?', answer: 'Yes. You can copy the rendered HTML output using the copy button.' },
+    { question: 'Can I export the rendered HTML?', answer: 'Yes. You can copy the rendered HTML output using the copy button next to the preview panel.' },
+    { question: 'Can I use HTML inside Markdown?', answer: 'Yes. Most Markdown parsers allow inline HTML tags within Markdown documents. You can use <strong>, <em>, <div>, <span>, and other HTML elements directly in your Markdown source. Just be aware that raw HTML is sanitized in some hosted environments like GitHub comments.' },
+    { question: 'What is GFM?', answer: 'GitHub Flavored Markdown (GFM) extends the CommonMark specification with tables, task lists, strikethrough text, and autolinked URLs. It was introduced by GitHub to standardize Markdown across their platform and has since been widely adopted by tools like GitLab, Jira, Notion, and Obsidian.' },
   ]}
 >
   <div slot="tool">
@@ -19,27 +21,54 @@ import MarkdownPreview from '../../components/tools/MarkdownPreview';
   </div>
   <Fragment slot="content">
     <h2>How to Use the Markdown Preview</h2>
-    <p>Type or paste Markdown in the left editor. The right panel shows the rendered HTML preview in real-time. All processing happens in your browser — nothing is sent to a server.</p>
+    <p>The Markdown Preview tool gives you a split-pane interface: type or paste your Markdown source in the left editor and watch the rendered output appear in the right panel in real-time. There is no submit button — every keystroke triggers an instant re-render so you always see exactly what your final document will look like.</p>
+    <p>The editor supports GitHub Flavored Markdown (GFM) in full. Fenced code blocks automatically receive syntax highlighting — just add the language tag after the opening triple backtick (e.g., <code>```javascript</code>) and the preview will colorize the code accordingly. Tables render with proper borders, task list checkboxes are interactive, and strikethrough text renders immediately.</p>
+    <p>When you're ready to use the output, click the copy button above the preview panel to grab the rendered HTML. This is useful when you need to paste formatted content into a CMS, email client, or documentation system that accepts HTML but not raw Markdown. You can also paste Markdown from your clipboard directly into the editor — just use your OS paste shortcut. All processing happens entirely in your browser with no server round-trips, so your content stays private.</p>
+
     <h2>What is Markdown?</h2>
-    <p>Markdown is a lightweight markup language that lets you write formatted text using plain text syntax. Created by John Gruber in 2004, it's widely used in README files, documentation, blogs, and messaging platforms like GitHub and Slack.</p>
+    <p>Markdown is a lightweight markup language designed to be readable as plain text while also converting cleanly to HTML. John Gruber created it in 2004 with the goal of letting writers focus on content rather than HTML tags. The original spec has since been formalized into <strong>CommonMark</strong>, a strictly specified and highly compatible standard, and extended into <strong>GitHub Flavored Markdown (GFM)</strong>, which adds tables, task lists, strikethrough, and autolinked URLs on top of CommonMark.</p>
+    <p>Today Markdown is the de facto standard for developer content. GitHub renders it in READMEs, issues, pull requests, and wikis. Stack Overflow uses it for answers and comments. Reddit supports a Markdown-like dialect in posts. Notion, Obsidian, and Bear all use Markdown as their core storage format. It has largely replaced raw HTML for content authoring because it is faster to write, easier to diff in version control, and portable across tools without vendor lock-in.</p>
+
     <h2>Supported Syntax</h2>
     <ul>
-      <li><strong>Headings</strong> — # H1, ## H2, ### H3</li>
-      <li><strong>Emphasis</strong> — *italic*, **bold**, ~~strikethrough~~</li>
-      <li><strong>Lists</strong> — Ordered (1. 2. 3.) and unordered (- item)</li>
-      <li><strong>Links & Images</strong> — [text](url) and ![alt](url)</li>
-      <li><strong>Code</strong> — Inline `code` and fenced code blocks</li>
-      <li><strong>Tables</strong> — GFM table syntax with | pipes |</li>
+      <li><strong>Headings</strong> — <code>#&nbsp;H1</code>, <code>##&nbsp;H2</code>, <code>###&nbsp;H3</code> through H6. Use headings to create document hierarchy; search engines and screen readers rely on heading levels to understand structure, so don't skip levels.</li>
+      <li><strong>Emphasis</strong> — <code>*italic*</code>, <code>**bold**</code>, <code>~~strikethrough~~</code>. Strikethrough is a GFM extension and is ideal for showing completed or deprecated items without removing them.</li>
+      <li><strong>Lists</strong> — Ordered (<code>1. 2. 3.</code>) and unordered (<code>- item</code>). Nest lists with four spaces of indentation. Use ordered lists when sequence matters (installation steps) and unordered lists for collections of equal-weight items.</li>
+      <li><strong>Links &amp; Images</strong> — <code>[text](url)</code> and <code>![alt](url)</code>. For long documents, consider reference-style links (<code>[text][ref]</code> with <code>[ref]: url</code> at the bottom) to keep the source readable.</li>
+      <li><strong>Code</strong> — Inline <code>`code`</code> for short snippets and fenced blocks with triple backticks for multi-line code. Always specify a language identifier after the opening fence for syntax highlighting.</li>
+      <li><strong>Tables</strong> — GFM pipe-separated table syntax with a header separator row. Useful for comparison matrices, option references, and structured data that would otherwise require a list of lists.</li>
+      <li><strong>Task Lists</strong> — <code>- [ ] item</code> and <code>- [x] done</code>. GFM-only feature that renders as interactive checkboxes. Perfect for checklists, feature tracking, and pull request description checklists.</li>
+      <li><strong>Blockquotes</strong> — <code>&gt; quoted text</code>. Use for callout notes, citations, or highlighting important warnings in documentation.</li>
     </ul>
+
+    <h2>Common Use Cases</h2>
+    <p>The most frequent use of this tool is <strong>previewing README files before pushing to GitHub</strong>. Even experienced Markdown authors occasionally misalign a table column or forget a blank line before a code block; catching those issues before the commit saves time.</p>
+    <p>Writers drafting <strong>blog posts</strong> in Markdown use the preview to verify heading hierarchy and ensure images and links resolve correctly before pasting into a CMS. Technical writers preparing <strong>API or library documentation</strong> use it to validate that code blocks render with the right language highlighting and that complex nested lists display as intended.</p>
+    <p>Developers also use the preview when <strong>writing pull request descriptions</strong> on GitHub. A well-formatted PR description with a checklist, code snippets, and a summary table is far easier to review than a wall of plain text, and this tool lets you iterate on the formatting before submitting. Similarly, composing <strong>Slack or Discord messages</strong> with embedded code blocks and bullet points is easier when you can see the output first. For note-taking workflows in Obsidian or Notion, pasting draft Markdown here helps verify compatibility before committing to a format. If you need to compare two drafts side by side, use the <a href="/tools/diff-checker">Diff Checker</a> to spot what changed between revisions.</p>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p><strong>Use headings hierarchically.</strong> Start with a single <code>#&nbsp;H1</code> per document and nest subheadings in order (<code>##</code>, then <code>###</code>). Skipping from H1 to H3 breaks accessibility for screen reader users and can confuse document outline parsers.</p>
+    <p><strong>Always specify a language on fenced code blocks.</strong> <code>```javascript</code>, <code>```sql</code>, <code>```bash</code> — even if your renderer doesn't support highlighting, it acts as documentation for the reader. When it does highlight, it dramatically improves readability.</p>
+    <p><strong>Use reference-style links for long documents.</strong> Inline links like <code>[click here](https://very-long-url.com/path)</code> break up the prose flow when the URL is long. Reference-style links move the URL to the bottom of the document, keeping the source clean and scannable.</p>
+    <p><strong>Leave blank lines around block elements.</strong> A missing blank line before a code block or list is the most common cause of Markdown rendering incorrectly. When in doubt, add whitespace — it has no effect on the output but prevents many parser edge cases.</p>
+    <p><strong>Use task lists for actionable checklists.</strong> In GitHub PRs and issues, <code>- [ ]</code> renders as a real checkbox that collaborators can tick off. This is far more effective than a numbered list for tracking review steps or release checklists. You can also encode the content into a URL-safe format using the <a href="/tools/html-entity-encoder">HTML Entity Encoder</a> if you need to embed rendered Markdown in HTML attributes.</p>
+
     <h2>Related Guides</h2>
     <ul>
-      <li><a href="/blog/markdown-syntax-guide">Markdown Cheat Sheet: Syntax & GFM Guide</a> — complete reference with copy-paste examples</li>
+      <li><a href="/blog/markdown-syntax-guide">Markdown Cheat Sheet: Syntax &amp; GFM Guide</a> — complete reference with copy-paste examples</li>
       <li><a href="/blog/text-diff-explained">Text Diff Algorithms Explained</a> — how Git compares your Markdown files</li>
     </ul>
+
     <h2>FAQ</h2>
     <h3>What Markdown features are supported?</h3>
-    <p>GitHub Flavored Markdown including tables, task lists, strikethrough, and fenced code blocks.</p>
+    <p>GitHub Flavored Markdown including tables, task lists, strikethrough, and fenced code blocks with syntax highlighting.</p>
     <h3>Is my content saved?</h3>
     <p>No. Everything runs in your browser. Nothing is saved or sent to any server.</p>
+    <h3>Can I export the rendered HTML?</h3>
+    <p>Yes. You can copy the rendered HTML output using the copy button next to the preview panel.</p>
+    <h3>Can I use HTML inside Markdown?</h3>
+    <p>Yes. Most Markdown parsers allow inline HTML tags within Markdown documents. You can use <code>&lt;strong&gt;</code>, <code>&lt;em&gt;</code>, <code>&lt;div&gt;</code>, <code>&lt;span&gt;</code>, and other HTML elements directly in your Markdown source. Just be aware that raw HTML is sanitized in some hosted environments like GitHub comments.</p>
+    <h3>What is GFM?</h3>
+    <p>GitHub Flavored Markdown (GFM) extends the CommonMark specification with tables, task lists, strikethrough text, and autolinked URLs. It was introduced by GitHub to standardize Markdown across their platform and has since been widely adopted by tools like GitLab, Jira, Notion, and Obsidian.</p>
   </Fragment>
 </ToolLayout>

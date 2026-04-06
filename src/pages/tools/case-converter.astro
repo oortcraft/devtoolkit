@@ -11,6 +11,9 @@ import CaseConverter from '../../components/tools/CaseConverter';
   faq={[
     { question: 'What case formats are supported?', answer: 'camelCase, PascalCase, snake_case, SCREAMING_SNAKE_CASE, kebab-case, Title Case, UPPERCASE, and lowercase.' },
     { question: 'Is my data safe?', answer: 'Yes. All conversion happens in your browser. No data is sent to any server.' },
+    { question: 'Can I convert multi-word phrases with spaces?', answer: 'Yes. The tool intelligently splits on spaces, underscores, hyphens, and camelCase boundaries, so you can paste any text and get accurate conversions.' },
+    { question: 'Does it handle acronyms like "ID" or "URL" correctly?', answer: 'The converter treats consecutive uppercase letters as a single word unit, so "userID" converts to "user_id" in snake_case and "user-id" in kebab-case.' },
+    { question: 'What is SCREAMING_SNAKE_CASE used for?', answer: 'SCREAMING_SNAKE_CASE (also called CONSTANT_CASE or UPPER_SNAKE_CASE) is the standard convention for constants and environment variables in most languages, including JavaScript, Python, and C.' },
   ]}
 >
   <div slot="tool">
@@ -18,7 +21,99 @@ import CaseConverter from '../../components/tools/CaseConverter';
   </div>
   <Fragment slot="content">
     <h2>How to Use the String Case Converter</h2>
-    <p>Paste or type your text in the Input field, then select the target case format from the selector above. The conversion happens automatically as you type — no button click needed. Click <strong>Copy</strong> to copy the result.</p>
+    <p>
+      Paste or type your text in the Input field at the top of the tool. The converter accepts any
+      format — plain English phrases, existing camelCase identifiers, snake_case database columns, or
+      kebab-case CSS class names. As you type, the result updates instantly in the output area without
+      needing to press any button.
+    </p>
+    <p>
+      Use the format selector to choose your target case. The eight available formats cover every
+      common naming convention found in modern software development. Once you see the converted output,
+      click the <strong>Copy</strong> button to copy the result straight to your clipboard. From there
+      you can paste it directly into your editor, terminal, or documentation.
+    </p>
+    <p>
+      The tool handles edge cases that trip up simpler converters: consecutive uppercase letters
+      (acronyms like <code>API</code>, <code>URL</code>, <code>ID</code>), mixed delimiters, and
+      leading or trailing whitespace are all normalised before conversion. You can also paste a
+      comma-separated list of identifiers and convert the entire batch at once, saving significant
+      time during large refactors or when you need to rename a set of API fields across a codebase.
+      No account, no sign-in, and no data ever leaves your device.
+    </p>
+
+    <h2>What is Case Conversion?</h2>
+    <p>
+      Case conversion is the process of transforming a string from one naming convention to another.
+      In programming, identifiers — variable names, function names, class names, constants — must
+      follow the naming rules of both the language and the project's style guide. The most widely used
+      conventions are:
+    </p>
+    <ul>
+      <li><strong>camelCase</strong> — First word lowercase, subsequent words capitalised, no separators. Used for variables and functions in JavaScript, Java, and Swift (<code>getUserProfile</code>).</li>
+      <li><strong>PascalCase</strong> — Every word capitalised, no separators. Used for class and component names in most object-oriented languages (<code>UserProfile</code>).</li>
+      <li><strong>snake_case</strong> — All lowercase, words separated by underscores. The default in Python, Ruby, and SQL (<code>get_user_profile</code>).</li>
+      <li><strong>kebab-case</strong> — All lowercase, words separated by hyphens. Standard for HTML attributes and CSS class names (<code>get-user-profile</code>).</li>
+      <li><strong>CONSTANT_CASE</strong> — All uppercase, words separated by underscores. Used for constants and environment variables across virtually every language (<code>MAX_RETRY_COUNT</code>).</li>
+    </ul>
+    <p>
+      Consistent naming conventions improve code readability, reduce cognitive load during code review,
+      and help tools like linters, formatters, and code generators work correctly. A case converter
+      removes the manual busywork of reformatting names when crossing language or layer boundaries.
+    </p>
+
+    <h2>Common Use Cases</h2>
+    <p>
+      One of the most frequent scenarios is adapting data between a backend API and frontend code. REST
+      APIs built in Python or Go typically return JSON with <code>snake_case</code> keys
+      (<code>user_first_name</code>), while JavaScript codebases expect <code>camelCase</code>
+      (<code>userFirstName</code>). Rather than manually retyping each field name, you can paste a
+      list of keys and convert the whole batch in seconds.
+    </p>
+    <p>
+      CSS class naming is another high-frequency use case. BEM and Tailwind projects use
+      <code>kebab-case</code> for class names, but design tokens exported from Figma or Sketch often
+      come through in <code>camelCase</code> or <code>PascalCase</code>. Converting them in bulk saves
+      time and eliminates typos.
+    </p>
+    <p>
+      Database engineers frequently need to map column names. SQL conventions favour
+      <code>snake_case</code> (<code>created_at</code>, <code>user_id</code>), but ORM models and
+      GraphQL schemas sometimes use <code>camelCase</code>. During migrations or schema reviews,
+      converting a full column list in one pass is far faster than editing each name by hand.
+    </p>
+    <p>
+      Code refactoring is a fourth scenario — renaming a variable or function consistently across
+      multiple files is easier when you start by generating the correctly-cased target name here, then
+      use your editor's find-and-replace to apply it everywhere. See also our
+      <a href="/tools/regex-tester">Regex Tester</a> for pattern-based renaming, and our
+      <a href="/tools/json-formatter">JSON Formatter</a> for cleaning up JSON payloads before key
+      conversion.
+    </p>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p>
+      The single most important rule is: <strong>pick one convention per layer and stick to it</strong>.
+      Mixing <code>camelCase</code> and <code>snake_case</code> in the same file causes confusion and
+      makes automated tooling harder to configure.
+    </p>
+    <p>
+      Here is a quick reference for the conventions used by popular ecosystems:
+    </p>
+    <ul>
+      <li><strong>JavaScript / TypeScript</strong> — <code>camelCase</code> for variables and functions, <code>PascalCase</code> for classes and React components, <code>UPPER_SNAKE_CASE</code> for module-level constants.</li>
+      <li><strong>Python</strong> — <code>snake_case</code> for variables and functions, <code>PascalCase</code> for classes, <code>UPPER_SNAKE_CASE</code> for constants (PEP 8).</li>
+      <li><strong>CSS / HTML</strong> — <code>kebab-case</code> for class names, IDs, and custom property names (<code>--primary-color</code>).</li>
+      <li><strong>Database columns</strong> — <code>snake_case</code> is conventional across PostgreSQL, MySQL, and SQLite.</li>
+      <li><strong>Environment variables</strong> — Always <code>UPPER_SNAKE_CASE</code>, regardless of the host language.</li>
+    </ul>
+    <p>
+      When working across language boundaries, establish a canonical form (usually the backend
+      convention) and convert at the serialisation layer — for example, using an ORM serialiser or a
+      JSON middleware that auto-converts keys. This keeps your business logic clean. For more on
+      naming conventions across languages, see our guide at
+      <a href="/blog/naming-conventions-guide">Naming Conventions Guide</a>.
+    </p>
 
     <h2>Supported Case Formats</h2>
     <ul>
@@ -38,5 +133,14 @@ import CaseConverter from '../../components/tools/CaseConverter';
 
     <h3>Is my data safe?</h3>
     <p>Yes. All conversion happens in your browser. No data is sent to any server.</p>
+
+    <h3>Can I convert multi-word phrases with spaces?</h3>
+    <p>Yes. The tool intelligently splits on spaces, underscores, hyphens, and camelCase boundaries, so you can paste any text and get accurate conversions.</p>
+
+    <h3>Does it handle acronyms like "ID" or "URL" correctly?</h3>
+    <p>The converter treats consecutive uppercase letters as a single word unit, so "userID" converts to "user_id" in snake_case and "user-id" in kebab-case.</p>
+
+    <h3>What is SCREAMING_SNAKE_CASE used for?</h3>
+    <p>SCREAMING_SNAKE_CASE (also called CONSTANT_CASE or UPPER_SNAKE_CASE) is the standard convention for constants and environment variables in most languages, including JavaScript, Python, and C.</p>
   </Fragment>
 </ToolLayout>

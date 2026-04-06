@@ -21,6 +21,14 @@ import SqlFormatter from '../../components/tools/SqlFormatter';
       question: 'Is my SQL data safe?',
       answer: 'Yes. All formatting and minification happens entirely in your browser using JavaScript. No SQL is ever sent to a server, logged, or stored. Your queries remain completely private.',
     },
+    {
+      question: 'Does this tool execute SQL?',
+      answer: 'No. This is purely a formatter. It parses and reformats SQL text but never connects to a database or executes any queries. You can safely paste queries containing sensitive table names or column values without any data leaving your browser.',
+    },
+    {
+      question: 'Can I format multiple statements at once?',
+      answer: 'Yes. Separate statements with semicolons and the formatter will handle each one, preserving statement boundaries and applying consistent indentation and keyword casing throughout the entire input.',
+    },
   ]}
 >
   <div slot="tool">
@@ -28,16 +36,38 @@ import SqlFormatter from '../../components/tools/SqlFormatter';
   </div>
   <Fragment slot="content">
     <h2>How to Use the SQL Formatter</h2>
-    <p>Paste your SQL query in the left panel, select your target dialect, then click <strong>Format</strong> to beautify or <strong>Minify</strong> to compact. Use the copy button to grab the result. All processing happens in your browser with no server round-trips.</p>
+    <p>Paste your SQL query into the input panel on the left, then select your target dialect from the dropdown — Standard SQL, PostgreSQL, MySQL, SQLite, T-SQL, or PL/SQL. Click <strong>Format</strong> to produce clean, indented SQL with uppercase keywords and consistent spacing. Click <strong>Minify</strong> to collapse the query into the smallest possible single-line form, removing all unnecessary whitespace and newlines.</p>
+    <p>The formatter handles multi-statement input: separate your statements with semicolons and all of them are processed in a single pass. Complex queries with deeply nested subqueries, CTEs, and multi-table JOINs are indented with aligned clause keywords so the logical structure is immediately visible. Once formatting is complete, use the copy button above the output panel to grab the result and paste it wherever you need it.</p>
+    <p>Selecting the correct dialect matters. Each dialect has unique reserved keywords, function names, and syntax conventions. For example, T-SQL uses <code>TOP</code> instead of <code>LIMIT</code>, and PL/SQL uses <code>ROWNUM</code>. The formatter applies dialect-aware keyword casing and spacing rules so the output matches the conventions of your target database. All processing happens in your browser — no server round-trips, no query logging.</p>
+
+    <h2>What is SQL Formatting?</h2>
+    <p>SQL formatting is the practice of rewriting SQL queries to follow consistent indentation, keyword casing, and line-break conventions without changing query semantics. A query that returns the same results whether written on one line or across twenty lines — but the twenty-line version is far easier to read, review, and debug.</p>
+    <p>Formatted SQL matters most in three situations. First, during <strong>code review</strong>: reviewers can scan a well-indented query and immediately understand which tables are joined, what the filter conditions are, and where subqueries begin and end. A minified or inconsistently indented query forces reviewers to mentally parse whitespace before they can evaluate logic. Second, when <strong>debugging complex queries</strong>: breaking a 200-character single-line query into structured clauses exposes WHERE conditions or JOIN types that are easy to miss inline. Third, for <strong>maintaining large stored procedures</strong>: codebases with hundreds of stored procedures become unmanageable when each developer uses different indentation conventions. Automated formatting enforces team consistency without style debates. Compare formatted vs. original output side by side using the <a href="/tools/diff-checker">Diff Checker</a> to verify that only whitespace changed.</p>
+
+    <h2>Common Use Cases</h2>
+    <p><strong>Formatting ORM debug output</strong> is one of the most common reasons developers reach for a SQL formatter. ORMs like Hibernate, SQLAlchemy, and ActiveRecord emit SQL that is technically correct but written as a single dense string for efficiency. Pasting that output here instantly makes it readable so you can identify N+1 queries, missing indexes, or unexpected cross joins.</p>
+    <p><strong>Cleaning up auto-generated SQL</strong> from database GUI tools, query builders, or migration generators often produces syntactically valid but visually inconsistent SQL. Running it through the formatter normalizes keyword casing and indentation before it goes into version control. Before submitting a <strong>code review</strong>, formatting your SQL changes ensures that reviewers focus on logic rather than style. For <strong>documentation and runbooks</strong>, well-formatted SQL copy-pasted from this tool reads clearly in Confluence, Notion, or Markdown files. When <strong>refactoring legacy stored procedures</strong>, formatting the existing code first is the safest first step — it makes the logic visible without changing behavior, giving you a clean baseline to work from. You can also compare the before and after versions of a query using the <a href="/tools/json-formatter">JSON Formatter</a> if your query results are returned as JSON.</p>
+
+    <h2>Best Practices &amp; Tips</h2>
+    <p><strong>Always select the correct dialect before formatting.</strong> Using the wrong dialect can misclassify dialect-specific keywords and produce output that looks correct but uses wrong casing or spacing conventions for your database. When in doubt, Standard SQL is a safe baseline for simple queries.</p>
+    <p><strong>Use uppercase for SQL keywords.</strong> The SQL community broadly prefers <code>SELECT</code>, <code>FROM</code>, <code>WHERE</code>, <code>JOIN</code> in uppercase and table/column names in lowercase or snake_case. This visual distinction makes it immediately clear what is SQL structure versus your schema names. The formatter enforces this convention automatically.</p>
+    <p><strong>Always format before a code review.</strong> Submitting a PR with a hand-formatted query where each developer on the team indents differently creates noise in the diff. Format first, then commit. Your reviewers will thank you.</p>
+    <p><strong>Minify SQL in production configuration files.</strong> Embedding long multi-line SQL strings in JSON config files, environment variables, or YAML can cause parsing issues and increases file size. Use Minify to produce a single-line version for config storage, and keep the formatted version as a comment or in a separate <code>.sql</code> file for reference.</p>
+    <p><strong>Add comments before complex JOINs.</strong> The formatter preserves inline <code>--</code> and block <code>/* */</code> comments. Use comments to explain non-obvious JOIN conditions, business logic encoded in WHERE clauses, or performance hints like index hints. These comments survive formatting and make the query self-documenting.</p>
 
     <h2>Supported SQL Dialects</h2>
     <ul>
-      <li><strong>Standard SQL</strong> — ANSI-compliant SQL for general use</li>
-      <li><strong>PostgreSQL</strong> — Optimized for PostgreSQL-specific syntax and functions</li>
-      <li><strong>MySQL</strong> — Handles MySQL and MariaDB dialect quirks</li>
-      <li><strong>SQLite</strong> — Lightweight dialect used in embedded applications</li>
-      <li><strong>T-SQL</strong> — Microsoft SQL Server and Azure SQL Database syntax</li>
-      <li><strong>PL/SQL</strong> — Oracle Database procedural SQL extensions</li>
+      <li><strong>Standard SQL</strong> — ANSI-compliant SQL for general use and portability across databases</li>
+      <li><strong>PostgreSQL</strong> — Optimized for PostgreSQL-specific syntax, functions, and dollar-quoting</li>
+      <li><strong>MySQL</strong> — Handles MySQL and MariaDB dialect quirks including backtick identifiers</li>
+      <li><strong>SQLite</strong> — Lightweight dialect used in embedded applications and mobile development</li>
+      <li><strong>T-SQL</strong> — Microsoft SQL Server and Azure SQL Database syntax including TOP and NOLOCK hints</li>
+      <li><strong>PL/SQL</strong> — Oracle Database procedural SQL extensions including DECLARE blocks and ROWNUM</li>
+    </ul>
+
+    <h2>Related Guides</h2>
+    <ul>
+      <li><a href="/blog/sql-formatting-guide">SQL Formatting Best Practices</a> — conventions, team style guides, and when to minify vs format</li>
     </ul>
 
     <h2>FAQ</h2>
@@ -47,5 +77,9 @@ import SqlFormatter from '../../components/tools/SqlFormatter';
     <p>Format produces readable, indented SQL with uppercase keywords. Minify collapses all whitespace into a single compact line — useful for configs or reducing payload size.</p>
     <h3>Is my SQL data safe?</h3>
     <p>Yes. All formatting happens entirely in your browser. No SQL is ever sent to a server, logged, or stored.</p>
+    <h3>Does this tool execute SQL?</h3>
+    <p>No. This is purely a formatter. It parses and reformats SQL text but never connects to a database or executes any queries. You can safely paste queries containing sensitive table names or column values without any data leaving your browser.</p>
+    <h3>Can I format multiple statements at once?</h3>
+    <p>Yes. Separate statements with semicolons and the formatter will handle each one, preserving statement boundaries and applying consistent indentation and keyword casing throughout the entire input.</p>
   </Fragment>
 </ToolLayout>
