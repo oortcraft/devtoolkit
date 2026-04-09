@@ -10,7 +10,11 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   site: 'https://oortcraft.dev',
   trailingSlash: 'always',
-  integrations: [react(), mdx(), sitemap()],
+  integrations: [react(), mdx(), sitemap({
+    filter: (page) =>
+      !page.match(/\/blog\/\d+\/$/) &&
+      !page.includes('/tools/category/'),
+  })],
 
   vite: {
     plugins: [tailwindcss()]

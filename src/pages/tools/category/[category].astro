@@ -39,6 +39,7 @@ const jsonLd = {
 <BaseLayout
   title={`${cat.name} — Free Online ${cat.name} | DevToolkit`}
   description={cat.description}
+  noindex={true}
 >
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 

@@ -16,6 +16,7 @@ const { page } = Astro.props;
 <BaseLayout
   title={page.currentPage === 1 ? "Blog | DevToolkit" : `Blog — Page ${page.currentPage} | DevToolkit`}
   description="Tutorials, guides, and comparisons about JSON, YAML, and developer tools."
+  noindex={page.currentPage > 1}
 >
   <div class="mx-auto max-w-4xl px-4 py-12 sm:px-6">
     <h1 class="mb-2 text-4xl font-bold text-slate-900">Blog</h1>

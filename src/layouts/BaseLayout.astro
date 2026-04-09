@@ -7,9 +7,10 @@ interface Props {
   title: string;
   description: string;
   image?: string;
+  noindex?: boolean;
 }
 
-const { title, description, image } = Astro.props;
+const { title, description, image, noindex } = Astro.props;
 const gaId = import.meta.env.PUBLIC_GA_ID;
 const adsenseId = import.meta.env.PUBLIC_ADSENSE_ID;
 ---
@@ -17,7 +18,7 @@ const adsenseId = import.meta.env.PUBLIC_ADSENSE_ID;
 <!doctype html>
 <html lang="en" class="font-sans">
   <head>
-    <BaseHead title={title} description={description} image={image} />
+    <BaseHead title={title} description={description} image={image} noindex={noindex} />
     {gaId && (
       <script is:inline src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} async></script>
     )}
