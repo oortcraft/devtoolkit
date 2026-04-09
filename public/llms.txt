@@ -6,33 +6,33 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 
 ## Tools
 
-- [JSON Formatter & Beautifier](https://oortcraft.dev/tools/json-formatter): Format, beautify, and minify JSON data with customizable indentation.
-- [JSON Validator](https://oortcraft.dev/tools/json-validator): Validate JSON syntax and get detailed error messages with line numbers.
-- [JSON to YAML Converter](https://oortcraft.dev/tools/json-to-yaml): Convert JSON data to YAML format instantly.
-- [Base64 Encoder / Decoder](https://oortcraft.dev/tools/base64): Encode text to Base64 or decode Base64 back to plain text.
-- [URL Encoder / Decoder](https://oortcraft.dev/tools/url-encoder): Encode or decode URL components for safe transmission.
-- [UUID Generator](https://oortcraft.dev/tools/uuid-generator): Generate random UUIDs (v4) or time-based UUIDs (v1).
-- [Hash Generator](https://oortcraft.dev/tools/hash-generator): Generate MD5, SHA-1, SHA-256, SHA-512 hashes from text.
-- [Lorem Ipsum Generator](https://oortcraft.dev/tools/lorem-ipsum): Generate placeholder text for designs and mockups.
-- [JWT Decoder & Validator](https://oortcraft.dev/tools/jwt-decoder): Decode, inspect, and validate JSON Web Tokens instantly.
-- [Regex Tester](https://oortcraft.dev/tools/regex-tester): Test regular expressions with real-time matching and highlighting.
-- [Diff Checker](https://oortcraft.dev/tools/diff-checker): Compare two texts and see differences highlighted line by line.
-- [Color Converter](https://oortcraft.dev/tools/color-converter): Convert colors between HEX, RGB, and HSL formats instantly.
-- [Timestamp Converter](https://oortcraft.dev/tools/timestamp-converter): Convert Unix timestamps to human-readable dates and vice versa.
-- [Cron Expression Builder](https://oortcraft.dev/tools/cron-builder): Build, test, and understand cron expressions with a visual editor.
-- [Markdown Preview](https://oortcraft.dev/tools/markdown-preview): Write Markdown and see real-time rendered preview side by side.
-- [CSS Minifier](https://oortcraft.dev/tools/css-minifier): Minify CSS code to reduce file size and improve load times.
-- [CSS Formatter & Beautifier](https://oortcraft.dev/tools/css-formatter): Format and beautify minified CSS with customizable indentation.
-- [JSON Schema Validator](https://oortcraft.dev/tools/json-schema-validator): Validate JSON data against JSON Schema with detailed error reporting.
-- [HTML Entity Encoder & Decoder](https://oortcraft.dev/tools/html-entity-encoder): Encode and decode HTML entities for safe web content.
-- [Password Generator](https://oortcraft.dev/tools/password-generator): Generate strong, random passwords with customizable length and character options.
-- [String Case Converter](https://oortcraft.dev/tools/case-converter): Convert text between camelCase, PascalCase, snake_case, kebab-case, and more.
-- [Base Converter](https://oortcraft.dev/tools/base-converter): Convert numbers between binary, octal, decimal, and hexadecimal bases.
-- [YAML Validator](https://oortcraft.dev/tools/yaml-validator): Validate YAML syntax and convert between YAML and JSON formats.
-- [SQL Formatter](https://oortcraft.dev/tools/sql-formatter): Format and beautify SQL queries with dialect-specific formatting.
-- [CSV to JSON Converter](https://oortcraft.dev/tools/csv-to-json): Convert CSV data to JSON format with automatic delimiter detection.
-- [QR Code Generator](https://oortcraft.dev/tools/qr-code-generator): Generate QR codes from text, URLs, or any data. Download as SVG or PNG.
-- [JSON Path Finder](https://oortcraft.dev/tools/jsonpath-finder): Query JSON data using JSONPath expressions with real-time results.
+- [JSON Formatter & Beautifier](https://oortcraft.dev/tools/json-formatter/): Format, beautify, and minify JSON data with customizable indentation.
+- [JSON Validator](https://oortcraft.dev/tools/json-validator/): Validate JSON syntax and get detailed error messages with line numbers.
+- [JSON to YAML Converter](https://oortcraft.dev/tools/json-to-yaml/): Convert JSON data to YAML format instantly.
+- [Base64 Encoder / Decoder](https://oortcraft.dev/tools/base64/): Encode text to Base64 or decode Base64 back to plain text.
+- [URL Encoder / Decoder](https://oortcraft.dev/tools/url-encoder/): Encode or decode URL components for safe transmission.
+- [UUID Generator](https://oortcraft.dev/tools/uuid-generator/): Generate random UUIDs (v4) or time-based UUIDs (v1).
+- [Hash Generator](https://oortcraft.dev/tools/hash-generator/): Generate MD5, SHA-1, SHA-256, SHA-512 hashes from text.
+- [Lorem Ipsum Generator](https://oortcraft.dev/tools/lorem-ipsum/): Generate placeholder text for designs and mockups.
+- [JWT Decoder & Validator](https://oortcraft.dev/tools/jwt-decoder/): Decode, inspect, and validate JSON Web Tokens instantly.
+- [Regex Tester](https://oortcraft.dev/tools/regex-tester/): Test regular expressions with real-time matching and highlighting.
+- [Diff Checker](https://oortcraft.dev/tools/diff-checker/): Compare two texts and see differences highlighted line by line.
+- [Color Converter](https://oortcraft.dev/tools/color-converter/): Convert colors between HEX, RGB, and HSL formats instantly.
+- [Timestamp Converter](https://oortcraft.dev/tools/timestamp-converter/): Convert Unix timestamps to human-readable dates and vice versa.
+- [Cron Expression Builder](https://oortcraft.dev/tools/cron-builder/): Build, test, and understand cron expressions with a visual editor.
+- [Markdown Preview](https://oortcraft.dev/tools/markdown-preview/): Write Markdown and see real-time rendered preview side by side.
+- [CSS Minifier](https://oortcraft.dev/tools/css-minifier/): Minify CSS code to reduce file size and improve load times.
+- [CSS Formatter & Beautifier](https://oortcraft.dev/tools/css-formatter/): Format and beautify minified CSS with customizable indentation.
+- [JSON Schema Validator](https://oortcraft.dev/tools/json-schema-validator/): Validate JSON data against JSON Schema with detailed error reporting.
+- [HTML Entity Encoder & Decoder](https://oortcraft.dev/tools/html-entity-encoder/): Encode and decode HTML entities for safe web content.
+- [Password Generator](https://oortcraft.dev/tools/password-generator/): Generate strong, random passwords with customizable length and character options.
+- [String Case Converter](https://oortcraft.dev/tools/case-converter/): Convert text between camelCase, PascalCase, snake_case, kebab-case, and more.
+- [Base Converter](https://oortcraft.dev/tools/base-converter/): Convert numbers between binary, octal, decimal, and hexadecimal bases.
+- [YAML Validator](https://oortcraft.dev/tools/yaml-validator/): Validate YAML syntax and convert between YAML and JSON formats.
+- [SQL Formatter](https://oortcraft.dev/tools/sql-formatter/): Format and beautify SQL queries with dialect-specific formatting.
+- [CSV to JSON Converter](https://oortcraft.dev/tools/csv-to-json/): Convert CSV data to JSON format with automatic delimiter detection.
+- [QR Code Generator](https://oortcraft.dev/tools/qr-code-generator/): Generate QR codes from text, URLs, or any data. Download as SVG or PNG.
+- [JSON Path Finder](https://oortcraft.dev/tools/jsonpath-finder/): Query JSON data using JSONPath expressions with real-time results.
 
 ## Tool Categories
 
@@ -58,17 +58,17 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 - [Blog](https://oortcraft.dev/blog): Developer tutorials and guides on JSON, Base64, URL encoding, UUIDs, Markdown, CSS, security, and more.
 
 ### Recent Posts
-- [How to Format and Beautify CSS: A Complete Guide](https://oortcraft.dev/blog/css-formatter-guide)
-- [Epoch to Date: Convert Unix Timestamps in JS, Python, Go, Java, PHP & Rust](https://oortcraft.dev/blog/epoch-to-date-conversion)
-- [Regex for Email Validation: Patterns That Actually Work](https://oortcraft.dev/blog/regex-email-validation)
-- [Measuring CSS Performance: LCP, FCP, and Core Web Vitals Workflow for Developers](https://oortcraft.dev/blog/css-performance-guide)
-- [The Algorithm Behind git diff: How Myers Diff Works](https://oortcraft.dev/blog/myers-diff-algorithm)
-- [JSON to YAML Conversion: A Practical Guide for Kubernetes, Docker, and Helm](https://oortcraft.dev/blog/json-to-yaml-devops)
-- [How to Debug JWT Authentication Issues: A Practical Decoder Guide](https://oortcraft.dev/blog/jwt-debugging-guide)
-- [Common Regex Patterns: 20+ Examples for Everyday Development](https://oortcraft.dev/blog/common-regex-patterns)
-- [Password Entropy Explained: How Strong Is Your Password](https://oortcraft.dev/blog/password-entropy-explained)
-- [Crontab Cheat Sheet: 30+ Cron Job Examples](https://oortcraft.dev/blog/crontab-cheat-sheet)
-- [bcrypt vs scrypt vs Argon2: Password Hashing Compared](https://oortcraft.dev/blog/bcrypt-vs-scrypt-vs-argon2)
+- [How to Format and Beautify CSS: A Complete Guide](https://oortcraft.dev/blog/css-formatter-guide/)
+- [Epoch to Date: Convert Unix Timestamps in JS, Python, Go, Java, PHP & Rust](https://oortcraft.dev/blog/epoch-to-date-conversion/)
+- [Regex for Email Validation: Patterns That Actually Work](https://oortcraft.dev/blog/regex-email-validation/)
+- [Measuring CSS Performance: LCP, FCP, and Core Web Vitals Workflow for Developers](https://oortcraft.dev/blog/css-performance-guide/)
+- [The Algorithm Behind git diff: How Myers Diff Works](https://oortcraft.dev/blog/myers-diff-algorithm/)
+- [JSON to YAML Conversion: A Practical Guide for Kubernetes, Docker, and Helm](https://oortcraft.dev/blog/json-to-yaml-devops/)
+- [How to Debug JWT Authentication Issues: A Practical Decoder Guide](https://oortcraft.dev/blog/jwt-debugging-guide/)
+- [Common Regex Patterns: 20+ Examples for Everyday Development](https://oortcraft.dev/blog/common-regex-patterns/)
+- [Password Entropy Explained: How Strong Is Your Password](https://oortcraft.dev/blog/password-entropy-explained/)
+- [Crontab Cheat Sheet: 30+ Cron Job Examples](https://oortcraft.dev/blog/crontab-cheat-sheet/)
+- [bcrypt vs scrypt vs Argon2: Password Hashing Compared](https://oortcraft.dev/blog/bcrypt-vs-scrypt-vs-argon2/)
 
 ## AI Policy
 

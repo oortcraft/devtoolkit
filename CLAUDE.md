@@ -83,6 +83,14 @@ Every proposal must include quantitative justification. "I think this would be u
    - 승인 시: `npx vercel --prod` 로 수동 프로덕션 배포
    - 배포 후 다시 페이지 접속 확인
 
+## URL Convention
+
+- `trailingSlash: 'always'` — 모든 URL에 trailing slash 필수
+- JSON-LD structured data, meta tags, llms.txt, sitemap, internal links 등 모든 곳에 적용
+- 루트 URL: `https://oortcraft.dev/` (슬래시 포함)
+- 도구 URL: `https://oortcraft.dev/tools/json-formatter/` (슬래시 포함)
+- trailing slash 누락 시 Google이 canonical 중복으로 판정 → 색인 제외됨
+
 ## SEO/AEO
 
 - All blog posts need SEO-optimized titles, descriptions, and tags
