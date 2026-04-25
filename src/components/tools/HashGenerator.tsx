@@ -7,11 +7,16 @@ import ToolErrorBoundary from './ToolErrorBoundary';
 type Algorithm = 'MD5' | 'SHA-1' | 'SHA-256' | 'SHA-512';
 const algorithms: Algorithm[] = ['MD5', 'SHA-1', 'SHA-256', 'SHA-512'];
 
-function HashGeneratorInner() {
-  const [input, setInput] = useState('');
+interface HashGeneratorProps {
+  initialValue?: string;
+  initialAlgorithm?: Algorithm;
+}
+
+function HashGeneratorInner({ initialValue, initialAlgorithm }: HashGeneratorProps) {
+  const [input, setInput] = useState(initialValue ?? '');
   const [output, setOutput] = useState('');
   const [error, setError] = useState<string | undefined>();
-  const [algorithm, setAlgorithm] = useState<Algorithm>('SHA-256');
+  const [algorithm, setAlgorithm] = useState<Algorithm>(initialAlgorithm ?? 'SHA-256');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -88,10 +93,10 @@ function HashGeneratorInner() {
   );
 }
 
-export default function HashGenerator() {
+export default function HashGenerator({ initialValue, initialAlgorithm }: HashGeneratorProps = {}) {
   return (
     <ToolErrorBoundary>
-      <HashGeneratorInner />
+      <HashGeneratorInner initialValue={initialValue} initialAlgorithm={initialAlgorithm} />
     </ToolErrorBoundary>
   );
 }

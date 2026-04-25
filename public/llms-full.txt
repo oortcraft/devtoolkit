@@ -403,6 +403,56 @@ In-depth comparisons between related tools and technologies:
 
 ---
 
+## Tool Use Cases (Platform-Specific Pages)
+
+These pages reuse the core tools but pre-fill platform-specific samples and walk through real debugging scenarios.
+
+### JWT Decoder Use Cases
+1. **Auth0 JWT Decoder**
+   URL: https://oortcraft.dev/tools/jwt-decoder/auth0-token/
+   Topics: Auth0 access token claims (azp, scope, permissions, sub format), RBAC permissions, common 401/403 debugging.
+
+2. **Google OAuth ID Token Decoder**
+   URL: https://oortcraft.dev/tools/jwt-decoder/google-oauth-token/
+   Topics: Google's OIDC claims, email_verified validation, at_hash binding, hd claim for Workspace, JWKS rotation.
+
+3. **Supabase JWT Decoder**
+   URL: https://oortcraft.dev/tools/jwt-decoder/supabase-jwt/
+   Topics: Supabase HS256 tokens, role/aud/sub for RLS, app_metadata vs user_metadata trust boundary, aal MFA enforcement.
+
+4. **AWS Cognito JWT Decoder**
+   URL: https://oortcraft.dev/tools/jwt-decoder/aws-cognito-jwt/
+   Topics: token_use distinction (id vs access), cognito:groups, client_id verification, custom attributes, JWKS endpoint.
+
+### JSON Formatter Use Cases
+5. **Stripe Webhook Formatter**
+   URL: https://oortcraft.dev/tools/json-formatter/stripe-webhook/
+   Topics: Event envelope (id, type, data.object, livemode), previous_attributes diff, signature verification, idempotency.
+
+6. **GitHub Webhook Formatter**
+   URL: https://oortcraft.dev/tools/json-formatter/github-webhook/
+   Topics: Event-specific fields, repository/sender pattern, fork PR detection, force push detection, X-Hub-Signature-256.
+
+7. **Discord Webhook Formatter**
+   URL: https://oortcraft.dev/tools/json-formatter/discord-webhook/
+   Topics: Embed schema (10 max, 6000 chars), color decimal trap, allowed_mentions defaults, ISO 8601 timestamps.
+
+8. **Slack Webhook Formatter**
+   URL: https://oortcraft.dev/tools/json-formatter/slack-webhook/
+   Topics: Three webhook formats (Incoming, Events API, Interactive), event_callback envelope, Block Kit, X-Slack-Signature.
+
+### Base64 Use Cases
+9. **HTTP Basic Auth Encoder**
+   URL: https://oortcraft.dev/tools/base64/basic-auth/
+   Topics: RFC 7617 username:password encoding, single-colon separator, UTF-8, no escaping, HTTPS-only security.
+
+### Hash Generator Use Cases
+10. **SHA-256 File Integrity Generator**
+    URL: https://oortcraft.dev/tools/hash-generator/sha256-file-integrity/
+    Topics: Checksum verification workflow, MD5/SHA-1 deprecation, integrity vs authenticity (signature), tamper detection.
+
+---
+
 ## Key Features
 
 - **Lightning Fast**: All tools run in the browser with no server round-trips.

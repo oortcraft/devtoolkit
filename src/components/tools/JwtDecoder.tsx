@@ -50,8 +50,9 @@ function Section({
   );
 }
 
-function JwtDecoderInner() {
-  const [input, setInput] = useState(SAMPLE_TOKEN);
+function JwtDecoderInner({ initialValue }: { initialValue?: string }) {
+  const sampleToken = initialValue ?? SAMPLE_TOKEN;
+  const [input, setInput] = useState(sampleToken);
 
   const result = useMemo(() => decodeJwt(input), [input]);
 
@@ -94,7 +95,7 @@ function JwtDecoderInner() {
           </button>
           <button
             type="button"
-            onClick={() => setInput(SAMPLE_TOKEN)}
+            onClick={() => setInput(sampleToken)}
             className="text-[13px] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
           >
             Load Sample
@@ -149,10 +150,10 @@ function JwtDecoderInner() {
   );
 }
 
-export default function JwtDecoder() {
+export default function JwtDecoder({ initialValue }: { initialValue?: string } = {}) {
   return (
     <ToolErrorBoundary>
-      <JwtDecoderInner />
+      <JwtDecoderInner initialValue={initialValue} />
     </ToolErrorBoundary>
   );
 }

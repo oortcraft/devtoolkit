@@ -1,0 +1,47 @@
+---
+import ToolLayout from '../../../layouts/ToolLayout.astro';
+import { tools } from '../../../lib/tools';
+import { useCases } from '../../../lib/use-cases';
+import JwtDecoder from '../../../components/tools/JwtDecoder';
+import JsonFormatter from '../../../components/tools/JsonFormatter';
+import Base64Tool from '../../../components/tools/Base64Tool';
+import HashGenerator from '../../../components/tools/HashGenerator';
+
+export function getStaticPaths() {
+  return useCases.map((uc) => ({
+    params: { tool: uc.toolSlug, usecase: uc.slug },
+    props: { useCase: uc },
+  }));
+}
+
+const { useCase } = Astro.props;
+const tool = tools.find((t) => t.slug === useCase.toolSlug);
+if (!tool) {
+  throw new Error(`Tool not found for use-case: ${useCase.toolSlug}/${useCase.slug}`);
+}
+const canonicalUrl = `https://oortcraft.dev/tools/${useCase.toolSlug}/${useCase.slug}/`;
+---
+
+<ToolLayout
+  title={useCase.metaTitle}
+  description={useCase.metaDescription}
+  toolName={useCase.toolName}
+  toolUrl={canonicalUrl}
+  faq={useCase.faq}
+>
+  <div slot="tool">
+    {useCase.toolSlug === 'jwt-decoder' && (
+      <JwtDecoder client:load initialValue={useCase.initialValue} />
+    )}
+    {useCase.toolSlug === 'json-formatter' && (
+      <JsonFormatter client:load initialValue={useCase.initialValue} />
+    )}
+    {useCase.toolSlug === 'base64' && (
+      <Base64Tool client:load initialValue={useCase.initialValue} initialMode={useCase.initialMode} />
+    )}
+    {useCase.toolSlug === 'hash-generator' && (
+      <HashGenerator client:load initialValue={useCase.initialValue} initialAlgorithm={useCase.initialAlgorithm} />
+    )}
+  </div>
+  <Fragment slot="content" set:html={useCase.contentHtml} />
+</ToolLayout>

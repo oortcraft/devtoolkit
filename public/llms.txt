@@ -34,6 +34,19 @@ DevToolkit (oortcraft.dev) provides fast, private, open-source developer utiliti
 - [QR Code Generator](https://oortcraft.dev/tools/qr-code-generator/): Generate QR codes from text, URLs, or any data. Download as SVG or PNG.
 - [JSON Path Finder](https://oortcraft.dev/tools/jsonpath-finder/): Query JSON data using JSONPath expressions with real-time results.
 
+## Tool Use Cases (Platform-Specific)
+
+- [Auth0 JWT Decoder](https://oortcraft.dev/tools/jwt-decoder/auth0-token/): Inspect Auth0 access tokens — scopes, audience, expiration, and custom permissions.
+- [Google OAuth Token Decoder](https://oortcraft.dev/tools/jwt-decoder/google-oauth-token/): Decode Google Sign-In ID tokens — verify email, picture, audience, and at_hash claims.
+- [Supabase JWT Decoder](https://oortcraft.dev/tools/jwt-decoder/supabase-jwt/): Inspect Supabase auth tokens — role, session_id, app_metadata, aal claims for RLS debugging.
+- [AWS Cognito JWT Decoder](https://oortcraft.dev/tools/jwt-decoder/aws-cognito-jwt/): Inspect AWS Cognito access and ID tokens — cognito:groups, token_use, scope, client_id.
+- [Stripe Webhook Formatter](https://oortcraft.dev/tools/json-formatter/stripe-webhook/): Format and inspect Stripe webhook payloads — charge.succeeded, invoice.paid, subscription events.
+- [GitHub Webhook Formatter](https://oortcraft.dev/tools/json-formatter/github-webhook/): Format GitHub webhook payloads — push, pull_request, issues, workflow_run events.
+- [Discord Webhook Formatter](https://oortcraft.dev/tools/json-formatter/discord-webhook/): Format Discord webhook payloads — embeds, fields, allowed_mentions, components.
+- [Slack Webhook Formatter](https://oortcraft.dev/tools/json-formatter/slack-webhook/): Format Slack Events API and Block Kit payloads.
+- [HTTP Basic Auth Encoder](https://oortcraft.dev/tools/base64/basic-auth/): Encode username:password for the Authorization: Basic header.
+- [SHA-256 File Integrity](https://oortcraft.dev/tools/hash-generator/sha256-file-integrity/): Generate SHA-256 checksums to verify downloads against publisher-supplied hashes.
+
 ## Tool Categories
 
 - [JSON Tools](https://oortcraft.dev/tools/category/json): Format, validate, convert, query, and inspect JSON and YAML data.

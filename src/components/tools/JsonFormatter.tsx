@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatJson, minifyJson } from '../../lib/json-utils';
 import CodeEditor from './CodeEditor';
 import CopyButton from './CopyButton';
@@ -6,8 +6,8 @@ import ToolErrorBoundary from './ToolErrorBoundary';
 
 type IndentOption = '2' | '4' | 'tab';
 
-function JsonFormatterInner() {
-  const [input, setInput] = useState('');
+function JsonFormatterInner({ initialValue }: { initialValue?: string }) {
+  const [input, setInput] = useState(initialValue ?? '');
   const [output, setOutput] = useState('');
   const [error, setError] = useState<string | undefined>();
   const [indent, setIndent] = useState<IndentOption>('2');
@@ -16,6 +16,14 @@ function JsonFormatterInner() {
     if (indent === 'tab') return '\t';
     return parseInt(indent, 10);
   };
+
+  useEffect(() => {
+    if (initialValue) {
+      const indentVal = indent === 'tab' ? '\t' : parseInt(indent, 10);
+      const { result, error: err } = formatJson(initialValue, indentVal);
+      if (!err && result) setOutput(result);
+    }
+  }, []);
 
   const handleFormat = () => {
     const { result, error: err } = formatJson(input, getIndentValue());
@@ -122,10 +130,10 @@ function JsonFormatterInner() {
   );
 }
 
-export default function JsonFormatter() {
+export default function JsonFormatter({ initialValue }: { initialValue?: string } = {}) {
   return (
     <ToolErrorBoundary>
-      <JsonFormatterInner />
+      <JsonFormatterInner initialValue={initialValue} />
     </ToolErrorBoundary>
   );
 }

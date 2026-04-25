@@ -6,11 +6,16 @@ import ToolErrorBoundary from './ToolErrorBoundary';
 
 type Mode = 'encode' | 'decode';
 
-function Base64ToolInner() {
-  const [input, setInput] = useState('');
+interface Base64ToolProps {
+  initialValue?: string;
+  initialMode?: Mode;
+}
+
+function Base64ToolInner({ initialValue, initialMode }: Base64ToolProps) {
+  const [input, setInput] = useState(initialValue ?? '');
   const [output, setOutput] = useState('');
   const [error, setError] = useState<string | undefined>();
-  const [mode, setMode] = useState<Mode>('encode');
+  const [mode, setMode] = useState<Mode>(initialMode ?? 'encode');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -116,10 +121,10 @@ function Base64ToolInner() {
   );
 }
 
-export default function Base64Tool() {
+export default function Base64Tool({ initialValue, initialMode }: Base64ToolProps = {}) {
   return (
     <ToolErrorBoundary>
-      <Base64ToolInner />
+      <Base64ToolInner initialValue={initialValue} initialMode={initialMode} />
     </ToolErrorBoundary>
   );
 }
